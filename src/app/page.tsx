@@ -35,13 +35,17 @@ export default async function HomePage() {
     <div className="space-y-6">
       <div>
         <p className="text-sm text-muted-foreground">
-          {COMPANY.nameHe} · עוסק מורשה {COMPANY.taxId} · בעלים {COMPANY.owner}
+          {COMPANY.name} · {COMPANY.nameHe} · {COMPANY.tagline}
         </p>
         <h1 className="font-heading mt-1 text-3xl font-semibold tracking-tight">
           {session.isNetwork ? "משרד הרשת" : session.branch?.name ?? "סניף"}
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          רכש, קליטה, סיווג להנה״ח, ספירות מלאי ו-Food Cost תיאורטי. Tabit ורווחיות זכיין עדיין בחוץ.
+          רכש ומלאי · עוסק מורשה {COMPANY.taxId} · בעלים {COMPANY.owner}. קליטה, סיווג להנה״ח, ספירות
+          ו-Food Cost.{" "}
+          <a href={COMPANY.website} className="text-primary hover:underline" target="_blank" rel="noreferrer">
+            vivace-pizza.com
+          </a>
         </p>
       </div>
 

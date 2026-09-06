@@ -73,9 +73,39 @@ AI_MONTHLY_BUDGET_USD=5
 
 Same idea: persistent volume, `DATABASE_URL=file:/data/dev.db`, `UPLOAD_DIR=/data/uploads`, `npm run start:prod`.
 
-### Vercel (only with hosted DB later)
+### Origin → Vercel (Jonathan’s connector)
 
-Not recommended for this demo. You would need Turso/libSQL or Postgres (`DATABASE_URL`) **and** object storage for invoice files. The current Prisma schema is SQLite.
+`vercel.json` is in the repo (`framework: nextjs`, `prisma generate && next build`).
+
+**SQLite will not persist on Vercel.** Each deploy/cold start can lose `dev.db` and uploaded invoices. For a real Roi demo on Vercel you need a hosted DB **before** going live:
+
+1. Create a **Turso** (libSQL) or **Neon/Vercel Postgres** database.
+2. If you switch to Postgres, change `prisma/schema.prisma` `datasource.provider` to `postgresql` and re-seed.
+3. Turso can keep the current SQLite schema if you point Prisma at a `libsql://…` URL (Prisma 6 + `@prisma/adapter-libsql`).
+4. Invoice files: add **Vercel Blob** (or S3) and set `UPLOAD_DIR` only on a volume host. On Vercel, `public/uploads` is ephemeral.
+
+**If you still import the Origin repo to Vercel for a branding preview:**
+
+1. Vercel → Add New Project → the Origin Git repo (provider `cursor-origin` if offered).
+2. Root directory: repo root. Framework: Next.js (from `vercel.json`).
+3. Set Production env vars (never commit them):
+
+```
+DATABASE_URL=          # hosted Turso/Postgres — not file:./dev.db
+APP_PASSWORD=
+APP_PASSWORD_ROI=
+AUTH_SECRET=
+GOOGLE_GENERATIVE_AI_API_KEY=
+OPENAI_API_KEY=
+AI_MONTHLY_BUDGET_USD=5
+```
+
+4. After first deploy, run seed once against the hosted DB (`npx prisma db push && npx tsx prisma/seed.ts` with that `DATABASE_URL`).
+5. Send Roi the `*.vercel.app` HTTPS URL + `APP_PASSWORD`.
+
+**Recommended for the first shared demo:** Railway/Fly + volume (SQLite above). Use Vercel once Turso/Postgres exists.
+
+This environment’s Vercel MCP listed **no teams**, so the project was not created from here. Jonathan can import from the Vercel dashboard in one click.
 
 ---
 

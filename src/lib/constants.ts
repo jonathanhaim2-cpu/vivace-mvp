@@ -1,6 +1,9 @@
 export const COMPANY = {
-  name: "Vivac'e",
+  name: "Vivace",
+  wordmark: "Vivac'e",
   nameHe: "ויואצ'ה",
+  tagline: "Famiglia & Pizza",
+  website: "https://vivace-pizza.com",
   taxId: "204754121",
   owner: "רועי",
   productOwner: "יונתן",

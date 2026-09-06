@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { login } from "@/actions/auth";
+import { BrandLogo } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,24 +24,25 @@ export default async function LoginPage({
   const next = from && from.startsWith("/") && !from.startsWith("//") ? from : "/";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--background)] px-4">
-      <div className="w-full max-w-sm space-y-6 rounded-2xl border bg-card p-6 shadow-sm">
-        <div className="space-y-1 text-center">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--color-cream)] px-4">
+      <div className="w-full max-w-sm space-y-6 rounded-3xl border bg-card p-6 shadow-sm">
+        <div className="flex flex-col items-center space-y-2 text-center">
+          <BrandLogo variant="rb" />
           <p className="text-xs font-medium tracking-wide text-muted-foreground">
             {COMPANY.nameHe} · עוסק מורשה {COMPANY.taxId}
           </p>
-          <h1 className="text-2xl font-semibold">כניסה ל-Vivac&apos;e</h1>
+          <h1 className="text-2xl font-semibold">כניסה ל-{COMPANY.wordmark}</h1>
           <p className="text-sm text-muted-foreground">
             סיסמה משותפת ליונתן ולרועי. בחירת רשת/סניף נשארת אחרי הכניסה.
           </p>
         </div>
         {!isAuthEnabled() ? (
-          <p className="rounded-lg bg-muted px-3 py-2 text-sm">
+          <p className="rounded-xl bg-muted px-3 py-2 text-sm">
             אין סיסמה מוגדרת (`APP_PASSWORD`). המערכת פתוחה במצב פיתוח.
           </p>
         ) : null}
         {error === "1" ? (
-          <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <p className="rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">
             סיסמה שגויה. נסו שוב.
           </p>
         ) : null}

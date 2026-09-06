@@ -15,6 +15,7 @@ import {
   Warehouse,
 } from "lucide-react";
 import { logout } from "@/actions/auth";
+import { BrandLogo } from "@/components/brand-logo";
 import { RoleSwitcher } from "@/components/role-switcher";
 import { COMPANY } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -55,9 +56,11 @@ export function AppShell({
   return (
     <div className="min-h-full bg-background">
       <aside className="fixed inset-y-0 start-0 z-30 hidden w-64 flex-col bg-sidebar text-sidebar-foreground lg:flex">
-        <div className="border-b border-sidebar-border px-5 py-5">
-          <p className="font-heading text-lg font-semibold tracking-tight">{COMPANY.name}</p>
-          <p className="text-sm text-sidebar-foreground/70">
+        <div className="border-b border-sidebar-border px-4 py-4">
+          <Link href="/">
+            <BrandLogo variant="wb" />
+          </Link>
+          <p className="mt-2 text-[11px] text-sidebar-foreground/55">
             {COMPANY.nameHe} · עוסק מורשה {COMPANY.taxId}
           </p>
         </div>
@@ -70,10 +73,10 @@ export function AppShell({
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                  "flex items-center gap-2 rounded-full px-3 py-2 text-sm transition-colors",
                   active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground",
+                    ? "bg-[var(--brand-red)] text-white"
+                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground",
                 )}
               >
                 <Icon className="size-4" />
@@ -85,25 +88,28 @@ export function AppShell({
         <div className="border-t border-sidebar-border p-4 text-xs leading-5 text-sidebar-foreground/65">
           <p>בעלים: {COMPANY.owner}</p>
           <p>מנהל מוצר: {COMPANY.productOwner}</p>
-          <p className="mt-2">רכש · מלאי · Food Cost · הנה״ח</p>
+          <a href={COMPANY.website} className="mt-2 inline-block text-[var(--brand-red)] hover:underline" target="_blank" rel="noreferrer">
+            vivace-pizza.com
+          </a>
         </div>
       </aside>
 
-      <header className="sticky top-0 z-20 border-b bg-sidebar text-sidebar-foreground lg:ms-64">
-        <div className="flex items-center justify-between gap-3 px-4 py-3">
+      <header className="sticky top-0 z-20 border-b border-border bg-[var(--color-cream)] text-foreground lg:ms-64">
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5">
           <div className="lg:hidden">
-            <p className="font-heading text-base font-semibold">{COMPANY.name}</p>
-            <p className="text-[11px] text-sidebar-foreground/70">רכש, מלאי ו-Food Cost</p>
+            <Link href="/">
+              <BrandLogo variant="rb" compact />
+            </Link>
           </div>
-          <div className="hidden text-sm text-sidebar-foreground/80 lg:block">
+          <div className="hidden text-sm text-muted-foreground lg:block">
             {role === "network" ? "תצוגת משרד הרשת" : "תצוגת מנהל סניף"}
           </div>
           <div className="flex items-center gap-2">
             <Link
               href="/settings"
               className={cn(
-                "inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs hover:bg-sidebar-accent/70",
-                pathname.startsWith("/settings") && "bg-sidebar-accent",
+                "inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs hover:bg-muted",
+                pathname.startsWith("/settings") && "bg-muted text-[var(--brand-red)]",
               )}
             >
               <Settings className="size-3.5" />
@@ -113,7 +119,7 @@ export function AppShell({
               <form action={logout}>
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs hover:bg-sidebar-accent/70"
+                  className="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs hover:bg-muted"
                 >
                   <LogOut className="size-3.5" />
                   יציאה
@@ -129,7 +135,7 @@ export function AppShell({
         <div className="mx-auto w-full max-w-6xl px-4 py-6 pb-28 lg:pb-10">{children}</div>
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 backdrop-blur lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-[var(--color-cream)]/95 backdrop-blur lg:hidden">
         <div className="flex overflow-x-auto">
           {NAV.map((item) => {
             const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -140,7 +146,7 @@ export function AppShell({
                 href={item.href}
                 className={cn(
                   "flex min-w-[4.6rem] flex-col items-center gap-1 py-2.5 text-[11px]",
-                  active ? "text-primary" : "text-muted-foreground",
+                  active ? "text-[var(--brand-red)]" : "text-muted-foreground",
                 )}
               >
                 <Icon className="size-4" />

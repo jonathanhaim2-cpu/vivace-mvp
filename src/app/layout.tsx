@@ -15,8 +15,8 @@ const rubik = Rubik({
 });
 
 export const metadata: Metadata = {
-  title: `${COMPANY.name} · רכש ומלאי`,
-  description: `מערכת רכש, הזמנות וקליטת סחורה ל-${COMPANY.nameHe} (עוסק מורשה ${COMPANY.taxId})`,
+  title: `${COMPANY.name} · ${COMPANY.tagline} · רכש ומלאי`,
+  description: `מערכת רכש ומלאי ל-${COMPANY.nameHe} (${COMPANY.tagline}, עוסק מורשה ${COMPANY.taxId})`,
 };
 
 export const dynamic = "force-dynamic";

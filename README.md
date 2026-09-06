@@ -1,7 +1,9 @@
 # Vivac'e · ויואצ'ה — Purchase, inventory & food cost
 
-Hebrew RTL web app for **Vivac'e** (עוסק מורשה **204754121**, owner: Roi / רועי).  
+Hebrew RTL web app for **Vivace** / **ויואצ'ה** — Famiglia & Pizza ([vivace-pizza.com](https://vivace-pizza.com)), עוסק מורשה **204754121**, owner: Roi / רועי.  
 Product owner: Jonathan Haimoff.
+
+Brand: terracotta `#b34b3c`, cream `#F9F7F2`, capsule buttons. Logos in `public/brand/`.
 
 Zester-like modules: בית, רכש, ספקים, קליטה, חשבוניות, מלאי, Food Cost, דוחות, הגדרות.
 
@@ -66,9 +68,11 @@ Secrets are env-only. Never commit keys.
 10. Dishes / intermediates with a BOM.
 11. Theoretical food cost vs a standard %. **TODO:** Tabit sales import.
 
-### Database
+### Database + Vercel
 
-SQLite file (`prisma/dev.db`) is the first remote-demo store. On Railway/Fly put it on a **persistent volume** (`DATABASE_URL=file:/data/dev.db`, `UPLOAD_DIR=/data/uploads`). See **[DEPLOY.md](./DEPLOY.md)**.
+SQLite file (`prisma/dev.db`) is the first remote-demo store. On Railway/Fly put it on a **persistent volume** (`DATABASE_URL=file:/data/dev.db`, `UPLOAD_DIR=/data/uploads`).
+
+`vercel.json` is ready for Origin → Vercel, but **do not use `file:./dev.db` on Vercel** (ephemeral FS). Use Turso or Postgres + Blob for invoices. See **[DEPLOY.md](./DEPLOY.md)**.
 
 ### Out of scope
 
