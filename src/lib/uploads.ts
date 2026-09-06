@@ -12,7 +12,11 @@ const ALLOWED = new Set([
   "image/svg+xml",
 ]);
 
-export const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
+export const UPLOAD_DIR = process.env.UPLOAD_DIR?.trim() || path.join(process.cwd(), "public", "uploads");
+
+export function publicFileUrl(fileName: string) {
+  return `/api/files/${encodeURIComponent(fileName)}`;
+}
 
 export async function saveUpload(file: File) {
   if (!file || file.size === 0) {

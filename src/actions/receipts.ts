@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { assertLeafAccount } from "@/lib/accounts";
+import { analyzeStoredPhoto } from "@/lib/analyze-photo";
 import { DEFAULT_EXPENSE_LEAF_ID } from "@/lib/chart-of-accounts";
 import { ORDER_STATUSES, PRICE_CHANGE, RECEIPT_STATUSES } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
@@ -86,7 +87,17 @@ export async function submitGoodsReceipt(orderId: string, formData: FormData) {
   revalidatePath("/receipts");
   revalidatePath("/orders");
   revalidatePath(`/orders/${orderId}`);
-  const receipt = await prisma.goodsReceipt.findUnique({ where: { orderId } });
+  const receipt = await prisma.goodsReceipt.findUnique({
+    where: { orderId },
+    include: { photos: true },
+  });
+  if (receipt) {
+    for (const item of receipt.photos) {
+      await analyzeStoredPhoto(item.id);
+    }
+  }
+  revalidatePath("/invoices");
+  revalidatePath("/settings");
   redirect(`/receipts/${receipt!.id}`);
 }
 

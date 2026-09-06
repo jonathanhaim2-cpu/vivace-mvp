@@ -14,7 +14,7 @@ export default function InvoiceImportPage() {
     <div className="space-y-6">
       <PageHeader
         title="ייבוא מתיקייה"
-        description="מדמה משיכת מייל: כמה חשבוניות בבת אחת. בלי כרטיס ברירת מחדל הן ייכנסו לתור הסיווג."
+        description="מדמה משיכת מייל: כמה חשבוניות בבת אחת. בלי כרטיס ברירת מחדל הן ייכנסו לתור, ו-AI יציע כרטיס לאישור."
       />
 
       <Card>

@@ -11,6 +11,7 @@ import { COMPANY, PRICE_CHANGE } from "@/lib/constants";
 import { expenseCategoryLabel, formatDateTime, formatIls, lineTotal } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { getAppSession } from "@/lib/session";
+import { publicFileUrl } from "@/lib/uploads";
 import { cn } from "@/lib/utils";
 
 export default async function ReceiptDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -108,11 +109,11 @@ export default async function ReceiptDetailPage({ params }: { params: Promise<{ 
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
           {receipt.photos.map((photo) => (
-            <a key={photo.id} href={`/uploads/${photo.fileName}`} target="_blank" rel="noreferrer" className="block">
+            <a key={photo.id} href={publicFileUrl(photo.fileName)} target="_blank" rel="noreferrer" className="block">
               {photo.mimeType.startsWith("image/") ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={`/uploads/${photo.fileName}`}
+                  src={publicFileUrl(photo.fileName)}
                   alt={photo.originalName}
                   className="h-56 w-full rounded-lg border object-cover"
                 />

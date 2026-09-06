@@ -140,6 +140,13 @@ model InvoicePhoto {
   source         String        @default("MANUAL")
   classifiedAt   DateTime?
   createdAt      DateTime      @default(now())
+  aiSupplierName String?
+  aiInvoiceDate  String?
+  aiTotalIls     Float?
+  aiAccountId    String?
+  aiConfidence   Float?
+  aiReason       String?
+  aiStatus       String?
 }
 
 model InventoryCount {

@@ -191,11 +191,20 @@ export function isChartLeafId(id: string) {
   return CHART_OF_ACCOUNTS.some((parent) => parent.children.some((child) => child.id === id));
 }
 
-export function accountPathLabel(leafId: string | null | undefined) {
-  if (!leafId) return "ללא כרטיס";
+export function chartLeafMeta(leafId: string | null | undefined) {
+  if (!leafId) return null;
   for (const parent of CHART_OF_ACCOUNTS) {
     const child = parent.children.find((item) => item.id === leafId);
-    if (child) return `${child.name} · ${parent.name}`;
+    if (child) {
+      return { id: child.id, code: child.id, name: child.name, parentName: parent.name };
+    }
   }
-  return leafId;
+  return null;
+}
+
+export function accountPathLabel(leafId: string | null | undefined) {
+  const meta = chartLeafMeta(leafId);
+  if (!leafId) return "ללא כרטיס";
+  if (!meta) return leafId;
+  return `${meta.name} · ${meta.parentName}`;
 }

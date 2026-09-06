@@ -13,14 +13,18 @@ export function AccountPicker({
   name = "accountId",
   defaultValue,
   counts,
+  allowEmpty = false,
 }: {
   name?: string;
   defaultValue?: string | null;
   counts?: Record<string, number>;
+  allowEmpty?: boolean;
 }) {
   const initial = defaultValue && CHART_OF_ACCOUNTS.some((p) => p.children.some((c) => c.id === defaultValue))
     ? defaultValue
-    : DEFAULT_EXPENSE_LEAF_ID;
+    : allowEmpty
+      ? ""
+      : DEFAULT_EXPENSE_LEAF_ID;
   const initialKind =
     CHART_OF_ACCOUNTS.find((parent) => parent.children.some((child) => child.id === initial))?.kind ?? "EXPENSE";
 
@@ -46,6 +50,21 @@ export function AccountPicker({
           </button>
         ))}
       </div>
+
+      {allowEmpty ? (
+        <button
+          type="button"
+          onClick={() => setSelected("")}
+          className={cn(
+            "w-full rounded-xl border px-3 py-2.5 text-start text-sm",
+            selected === ""
+              ? "border-primary bg-primary/10 ring-1 ring-primary"
+              : "bg-card hover:bg-accent/40",
+          )}
+        >
+          בלי שיבוץ — נתח ב-AI
+        </button>
+      ) : null}
 
       <div className="space-y-5">
         {groups.map((parent) => (

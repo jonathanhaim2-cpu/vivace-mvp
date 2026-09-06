@@ -8,7 +8,8 @@
     "db:ready": "sh -c 'test -f .env || cp .env.example .env; prisma generate && prisma db push && tsx prisma/seed.ts'",
     "db:reset": "prisma db push --force-reset && tsx prisma/seed.ts",
     "build": "prisma generate && next build",
-    "start": "next start --hostname 0.0.0.0 --port 43145",
+    "start": "sh -c 'next start --hostname 0.0.0.0 --port ${PORT:-43145}'",
+    "start:prod": "npm run db:ready && npm start",
     "lint": "eslint",
     "postinstall": "prisma generate"
   },

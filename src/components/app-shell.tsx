@@ -7,11 +7,14 @@ import {
   ClipboardCheck,
   FileText,
   Home,
+  LogOut,
+  Settings,
   ShoppingCart,
   Truck,
   UtensilsCrossed,
   Warehouse,
 } from "lucide-react";
+import { logout } from "@/actions/auth";
 import { RoleSwitcher } from "@/components/role-switcher";
 import { COMPANY } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -35,13 +38,19 @@ export function AppShell({
   role,
   branchId,
   branches,
+  authEnabled,
 }: {
   children: React.ReactNode;
   role: Role;
   branchId: string | null;
   branches: Branch[];
+  authEnabled: boolean;
 }) {
   const pathname = usePathname();
+
+  if (pathname === "/login") {
+    return <>{children}</>;
+  }
 
   return (
     <div className="min-h-full bg-background">
@@ -89,7 +98,30 @@ export function AppShell({
           <div className="hidden text-sm text-sidebar-foreground/80 lg:block">
             {role === "network" ? "תצוגת משרד הרשת" : "תצוגת מנהל סניף"}
           </div>
-          <RoleSwitcher role={role} branchId={branchId} branches={branches} />
+          <div className="flex items-center gap-2">
+            <Link
+              href="/settings"
+              className={cn(
+                "inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs hover:bg-sidebar-accent/70",
+                pathname.startsWith("/settings") && "bg-sidebar-accent",
+              )}
+            >
+              <Settings className="size-3.5" />
+              הגדרות
+            </Link>
+            {authEnabled ? (
+              <form action={logout}>
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs hover:bg-sidebar-accent/70"
+                >
+                  <LogOut className="size-3.5" />
+                  יציאה
+                </button>
+              </form>
+            ) : null}
+            <RoleSwitcher role={role} branchId={branchId} branches={branches} />
+          </div>
         </div>
       </header>
 

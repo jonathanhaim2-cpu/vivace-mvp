@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { AppShell } from "@/components/app-shell";
 import { COMPANY } from "@/lib/constants";
+import { isAuthEnabled } from "@/lib/auth";
 import { getAppSession } from "@/lib/session";
 import "./globals.css";
 
@@ -18,6 +19,8 @@ export const metadata: Metadata = {
   description: `מערכת רכש, הזמנות וקליטת סחורה ל-${COMPANY.nameHe} (עוסק מורשה ${COMPANY.taxId})`,
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const session = await getAppSession();
 
@@ -26,7 +29,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full bg-background font-sans text-foreground">
         <DirectionProvider direction="rtl">
           <TooltipProvider>
-            <AppShell role={session.role} branchId={session.branchId} branches={session.branches}>
+            <AppShell
+              role={session.role}
+              branchId={session.branchId}
+              branches={session.branches}
+              authEnabled={isAuthEnabled()}
+            >
               {children}
             </AppShell>
             <Toaster />
