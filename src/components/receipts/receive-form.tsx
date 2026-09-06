@@ -37,8 +37,9 @@ export function ReceiveForm({ orderId, lines }: { orderId: string; lines: Line[]
                   name={`receivedQty:${line.id}`}
                   type="number"
                   min={0}
-                  step="0.01"
-                  defaultValue={line.qty}
+                  step={1}
+                  inputMode="numeric"
+                  defaultValue={Math.round(line.qty)}
                 />
               </Field>
               <Field>
