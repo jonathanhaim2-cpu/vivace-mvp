@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { assertLeafAccount } from "@/lib/accounts";
+import { DEFAULT_EXPENSE_LEAF_ID } from "@/lib/chart-of-accounts";
 import { ORDER_STATUSES, PRICE_CHANGE, RECEIPT_STATUSES } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { getAppSession } from "@/lib/session";
@@ -30,7 +32,8 @@ export async function submitGoodsReceipt(orderId: string, formData: FormData) {
   const saved = await saveUpload(photo);
 
   const notes = String(formData.get("notes") ?? "").trim() || null;
-  const expenseCategory = String(formData.get("expenseCategory") ?? "FOOD") || "FOOD";
+  const accountId = String(formData.get("accountId") ?? DEFAULT_EXPENSE_LEAF_ID);
+  await assertLeafAccount(accountId);
 
   const lineInputs = order.lines.map((line) => {
     const receivedQty = Number(formData.get(`receivedQty:${line.id}`) ?? line.qty);
@@ -61,11 +64,12 @@ export async function submitGoodsReceipt(orderId: string, formData: FormData) {
       orderId,
       status,
       notes,
-      expenseCategory,
+      accountId,
       lines: { create: lineInputs },
       photos: {
         create: {
-          expenseCategory,
+          accountId,
+          amountIls: lineInputs.reduce((sum, line) => sum + line.receivedQty * line.invoicePrice, 0),
           fileName: saved.fileName,
           originalName: saved.originalName,
           mimeType: saved.mimeType,
@@ -160,14 +164,15 @@ export async function markForwardedToAccountant(receiptId: string) {
 }
 
 export async function assignReceiptCategory(receiptId: string, formData: FormData) {
-  const expenseCategory = String(formData.get("expenseCategory") ?? "") || null;
+  const accountId = String(formData.get("accountId") ?? "");
+  await assertLeafAccount(accountId);
   await prisma.goodsReceipt.update({
     where: { id: receiptId },
-    data: { expenseCategory },
+    data: { accountId },
   });
   await prisma.invoicePhoto.updateMany({
     where: { goodsReceiptId: receiptId },
-    data: { expenseCategory },
+    data: { accountId },
   });
   revalidatePath(`/receipts/${receiptId}`);
   revalidatePath("/invoices");

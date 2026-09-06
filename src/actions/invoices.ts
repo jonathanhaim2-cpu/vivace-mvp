@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { EXPENSE_CATEGORIES } from "@/lib/constants";
+import { assertLeafAccount } from "@/lib/accounts";
 import { prisma } from "@/lib/prisma";
 import { saveUpload } from "@/lib/uploads";
 
@@ -11,16 +11,17 @@ export async function uploadStandaloneInvoice(formData: FormData) {
   if (!(photo instanceof File) || photo.size === 0) {
     throw new Error("יש להעלות צילום חשבונית");
   }
-  const category = String(formData.get("expenseCategory") ?? "OTHER");
-  if (!EXPENSE_CATEGORIES.some((c) => c.value === category)) {
-    throw new Error("קטגוריה לא חוקית");
-  }
+  const accountId = String(formData.get("accountId") ?? "");
+  await assertLeafAccount(accountId);
   const voiceNoteText = String(formData.get("voiceNoteText") ?? "").trim() || null;
+  const amountRaw = String(formData.get("amountIls") ?? "").trim();
+  const amountIls = amountRaw ? Number(amountRaw) : null;
   const saved = await saveUpload(photo);
 
   await prisma.invoicePhoto.create({
     data: {
-      expenseCategory: category,
+      accountId,
+      amountIls: amountIls != null && Number.isFinite(amountIls) ? amountIls : null,
       voiceNoteText,
       fileName: saved.fileName,
       originalName: saved.originalName,
@@ -33,10 +34,11 @@ export async function uploadStandaloneInvoice(formData: FormData) {
 }
 
 export async function updateInvoiceCategory(photoId: string, formData: FormData) {
-  const category = String(formData.get("expenseCategory") ?? "");
+  const accountId = String(formData.get("accountId") ?? "");
+  await assertLeafAccount(accountId);
   await prisma.invoicePhoto.update({
     where: { id: photoId },
-    data: { expenseCategory: category || null },
+    data: { accountId },
   });
   revalidatePath("/invoices");
 }

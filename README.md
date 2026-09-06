@@ -36,7 +36,7 @@ npm run db:reset
 2. **Products per supplier** — name, SKU, notes, stock standard between deliveries (used to suggest order qty), agreed price, discount %, carton→bags→units, VAT included/excluded.
 3. **Orders** — pick supplier (delivery window status), pick products + qty, summary + driver notes, persist. **Send via WhatsApp** opens `https://wa.me/<phone>?text=<Hebrew summary>`.
 4. **Goods receipt** — against an order, edit qty/price, flag missing / wrong price. Price change → pending back-office approval (רשת). Approve writes the new fixed price; reject marks credit-request needed. Invoice/delivery-note photo is required and stored under `public/uploads`. “Forward to accountant” is a stub: queued flag + mailto + ZIP download.
-5. **Expense stub** — categories עלות מזון / עובדים / חשמל / אחר, assign a photo to a category, optional short “voice note” transcript field. Manual upload path only.
+5. **Chart of accounts** — Jonathan’s hierarchical accountant template is seeded. Assignment is always a **leaf card**; reports roll up to **parent topics**. Income section: הכנסות ללא מע״מ. Manual upload path only (email inbox sync is still out of MVP).
 
 Simple **רשת / סניף** role toggle (cookie). No real auth.
 
@@ -80,7 +80,7 @@ npm run dev
 - ספקים ומוצרים בעברית, כולל ימי אספקה, שעת סגירה, וואטסאפ ונהג
 - הזמנה נוחה לנייד + קישור וואטסאפ עם טקסט מוכן
 - קליטת סחורה מול הזמנה, צילום חובה, אישור שינוי מחיר במשרד הרשת
-- חשבוניות: העלאה ידנית ושיוך לקטגוריית הוצאה. **סנכרון תיבת מייל — מחוץ ל-MVP**
+- חשבוניות: תבנית הנה״ח המלאה (עלויות מזון, שכר, שילוח, עמלות, שטח, פרסום, מחשוב, אנרגיה, אחזקה, הנהלה; והכנסות ללא מע״מ). שיוך לכרטיס בן וסיכום לאב. **סנכרון תיבת מייל — מחוץ ל-MVP**
 
 ### מה אין
 

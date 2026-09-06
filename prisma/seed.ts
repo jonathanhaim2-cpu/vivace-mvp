@@ -1,8 +1,48 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { PrismaClient } from "@prisma/client";
+import { CHART_OF_ACCOUNTS } from "../src/lib/chart-of-accounts";
 
 const prisma = new PrismaClient();
+
+async function seedChart() {
+  for (const [parentIndex, parent] of CHART_OF_ACCOUNTS.entries()) {
+    await prisma.account.upsert({
+      where: { id: parent.id },
+      update: {
+        name: parent.name,
+        kind: parent.kind,
+        parentId: null,
+        sortOrder: parentIndex * 100,
+      },
+      create: {
+        id: parent.id,
+        name: parent.name,
+        kind: parent.kind,
+        parentId: null,
+        sortOrder: parentIndex * 100,
+      },
+    });
+    for (const [childIndex, child] of parent.children.entries()) {
+      await prisma.account.upsert({
+        where: { id: child.id },
+        update: {
+          name: child.name,
+          kind: parent.kind,
+          parentId: parent.id,
+          sortOrder: parentIndex * 100 + childIndex + 1,
+        },
+        create: {
+          id: child.id,
+          name: child.name,
+          kind: parent.kind,
+          parentId: parent.id,
+          sortOrder: parentIndex * 100 + childIndex + 1,
+        },
+      });
+    }
+  }
+}
 
 const DEMO_INVOICE_SVG = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="720" height="960" viewBox="0 0 720 960">
@@ -21,6 +61,8 @@ const DEMO_INVOICE_SVG = `<?xml version="1.0" encoding="UTF-8"?>
 </svg>`;
 
 async function main() {
+  await seedChart();
+
   const ids = {
     herzliya: "branch_herzliya",
     telaviv: "branch_telaviv",
@@ -402,7 +444,7 @@ async function main() {
         orderId: order.id,
         status: "PENDING_PRICE_APPROVAL",
         notes: "הגבינה הגיעה במחיר גבוה מהמוסכם.",
-        expenseCategory: "FOOD",
+        accountId: "acc_food_dairy",
         lines: {
           create: [
             {
@@ -432,13 +474,78 @@ async function main() {
         photos: {
           create: {
             id: ids.photoPending,
-            expenseCategory: "FOOD",
-            voiceNoteText: "חשבונית תנובה מהבוקר, עלות מזון",
+            accountId: "acc_food_dairy",
+            amountIls: 24 * 6.9 + 8 * 21.9 + 10 * 8.2,
+            voiceNoteText: "חשבונית תנובה מהבוקר, גבינות ומוצרי חלב",
             fileName,
             originalName: "tnuva-invoice-demo.svg",
             mimeType: "image/svg+xml",
           },
         },
+      },
+    });
+  } else {
+    await prisma.goodsReceipt.update({
+      where: { id: ids.receiptPending },
+      data: { accountId: "acc_food_dairy" },
+    });
+    await prisma.invoicePhoto.updateMany({
+      where: { id: ids.photoPending },
+      data: {
+          accountId: "acc_food_dairy",
+          amountIls: 24 * 6.9 + 8 * 21.9 + 10 * 8.2,
+          voiceNoteText: "חשבונית תנובה מהבוקר, גבינות ומוצרי חלב",
+        },
+    });
+  }
+
+  const extraDir = path.join(process.cwd(), "public", "uploads");
+  await mkdir(extraDir, { recursive: true });
+
+  const extraDocs = [
+    {
+      id: "photo_electricity",
+      fileName: "demo-electricity.svg",
+      originalName: "חשמל-ספטמבר.svg",
+      accountId: "acc_energy_electricity",
+      amountIls: 1840,
+      voiceNoteText: "חשמל חודש ספטמבר סניף הרצליה",
+      title: "חשבונית חשמל",
+    },
+    {
+      id: "photo_kitchen_wages",
+      fileName: "demo-kitchen-wages.svg",
+      originalName: "שכר-מטבח.svg",
+      accountId: "acc_payroll_kitchen",
+      amountIls: 12600,
+      voiceNoteText: "משכורות עובדי מטבח",
+      title: "שכר עובדי מטבח",
+    },
+  ];
+
+  for (const doc of extraDocs) {
+    await writeFile(
+      path.join(extraDir, doc.fileName),
+      DEMO_INVOICE_SVG.replace("חשבונית מס / תעודת משלוח", doc.title),
+      "utf8",
+    );
+    await prisma.invoicePhoto.upsert({
+      where: { id: doc.id },
+      update: {
+        accountId: doc.accountId,
+        amountIls: doc.amountIls,
+        voiceNoteText: doc.voiceNoteText,
+        fileName: doc.fileName,
+        originalName: doc.originalName,
+      },
+      create: {
+        id: doc.id,
+        accountId: doc.accountId,
+        amountIls: doc.amountIls,
+        voiceNoteText: doc.voiceNoteText,
+        fileName: doc.fileName,
+        originalName: doc.originalName,
+        mimeType: "image/svg+xml",
       },
     });
   }

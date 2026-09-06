@@ -1,10 +1,5 @@
-import {
-  DOCUMENT_TYPES,
-  EXPENSE_CATEGORIES,
-  ORDER_STATUSES,
-  RECEIPT_STATUSES,
-  WEEKDAYS,
-} from "@/lib/constants";
+import { DOCUMENT_TYPES, ORDER_STATUSES, RECEIPT_STATUSES, WEEKDAYS } from "@/lib/constants";
+import { accountPathLabel } from "@/lib/chart-of-accounts";
 
 const ILS = new Intl.NumberFormat("he-IL", {
   style: "currency",
@@ -61,7 +56,7 @@ export function documentTypeLabel(value: string | null | undefined) {
 }
 
 export function expenseCategoryLabel(value: string | null | undefined) {
-  return EXPENSE_CATEGORIES.find((c) => c.value === value)?.label ?? value ?? "ללא קטגוריה";
+  return accountPathLabel(value);
 }
 
 export function orderStatusLabel(status: string) {

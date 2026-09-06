@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { EXPENSE_CATEGORIES } from "@/lib/constants";
+import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
+import { DEFAULT_EXPENSE_LEAF_ID } from "@/lib/chart-of-accounts";
 import { formatIls } from "@/lib/format";
 
 type Line = {
@@ -67,19 +68,9 @@ export function ReceiveForm({ orderId, lines }: { orderId: string; lines: Line[]
       </Field>
 
       <Field>
-        <FieldLabel htmlFor="expenseCategory">קטגוריית הוצאה</FieldLabel>
-        <select
-          id="expenseCategory"
-          name="expenseCategory"
-          defaultValue="FOOD"
-          className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
-        >
-          {EXPENSE_CATEGORIES.map((category) => (
-            <option key={category.value} value={category.value}>
-              {category.label}
-            </option>
-          ))}
-        </select>
+        <FieldLabel htmlFor="accountId">כרטיס הנה״ח (בן)</FieldLabel>
+        <GroupedAccountSelect id="accountId" defaultValue={DEFAULT_EXPENSE_LEAF_ID} kinds={["EXPENSE"]} />
+        <FieldDescription>השיוך הוא תמיד לכרטיס בן. סיכום לקטגוריית האב מופיע בחשבוניות.</FieldDescription>
       </Field>
 
       <Field>

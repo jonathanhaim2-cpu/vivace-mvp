@@ -6,13 +6,9 @@ import { PriceChangeBadge, ReceiptStatusBadge } from "@/components/status-badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { COMPANY, EXPENSE_CATEGORIES, PRICE_CHANGE } from "@/lib/constants";
-import {
-  expenseCategoryLabel,
-  formatDateTime,
-  formatIls,
-  lineTotal,
-} from "@/lib/format";
+import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
+import { COMPANY, PRICE_CHANGE } from "@/lib/constants";
+import { expenseCategoryLabel, formatDateTime, formatIls, lineTotal } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { getAppSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -43,7 +39,7 @@ export default async function ReceiptDetailPage({ params }: { params: Promise<{ 
           <h1 className="font-heading text-2xl font-semibold">קליטה · {receipt.order.supplier.name}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {receipt.order.branch.name} · {formatDateTime(receipt.createdAt)} ·{" "}
-            {expenseCategoryLabel(receipt.expenseCategory)}
+            {expenseCategoryLabel(receipt.accountId)}
           </p>
         </div>
         <ReceiptStatusBadge status={receipt.status} />
@@ -157,23 +153,13 @@ export default async function ReceiptDetailPage({ params }: { params: Promise<{ 
 
       <Card>
         <CardHeader>
-          <CardTitle>קטגוריית הוצאה</CardTitle>
+          <CardTitle>כרטיס הנה״ח</CardTitle>
         </CardHeader>
         <CardContent>
           <form action={assignReceiptCategory.bind(null, receipt.id)} className="flex flex-wrap items-end gap-2">
-            <select
-              name="expenseCategory"
-              defaultValue={receipt.expenseCategory ?? "FOOD"}
-              className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
-            >
-              {EXPENSE_CATEGORIES.map((category) => (
-                <option key={category.value} value={category.value}>
-                  {category.label}
-                </option>
-              ))}
-            </select>
+            <GroupedAccountSelect defaultValue={receipt.accountId} kinds={["EXPENSE"]} />
             <Button type="submit" size="sm">
-              עדכון קטגוריה
+              עדכון כרטיס
             </Button>
           </form>
         </CardContent>

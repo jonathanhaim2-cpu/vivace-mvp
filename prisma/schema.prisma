@@ -81,13 +81,26 @@ model OrderLine {
   receiptLine     GoodsReceiptLine?
 }
 
+model Account {
+  id        String   @id
+  name      String
+  kind      String
+  parentId  String?
+  parent    Account?  @relation("AccountHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Account[] @relation("AccountHierarchy")
+  sortOrder Int
+  receipts  GoodsReceipt[]
+  photos    InvoicePhoto[]
+}
+
 model GoodsReceipt {
   id                    String             @id @default(cuid())
   orderId               String             @unique
   order                 Order              @relation(fields: [orderId], references: [id])
   status                String
   notes                 String?
-  expenseCategory       String?
+  accountId             String?
+  account               Account?           @relation(fields: [accountId], references: [id])
   forwardedToAccountant Boolean            @default(false)
   forwardedAt           DateTime?
   createdAt             DateTime           @default(now())
@@ -110,13 +123,15 @@ model GoodsReceiptLine {
 }
 
 model InvoicePhoto {
-  id              String        @id @default(cuid())
-  goodsReceiptId  String?
-  goodsReceipt    GoodsReceipt? @relation(fields: [goodsReceiptId], references: [id], onDelete: SetNull)
-  expenseCategory String?
-  voiceNoteText   String?
-  fileName        String
-  originalName    String
-  mimeType        String
-  createdAt       DateTime      @default(now())
+  id             String        @id @default(cuid())
+  goodsReceiptId String?
+  goodsReceipt   GoodsReceipt? @relation(fields: [goodsReceiptId], references: [id], onDelete: SetNull)
+  accountId      String?
+  account        Account?      @relation(fields: [accountId], references: [id])
+  amountIls      Float?
+  voiceNoteText  String?
+  fileName       String
+  originalName   String
+  mimeType       String
+  createdAt      DateTime      @default(now())
 }

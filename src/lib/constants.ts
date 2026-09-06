@@ -23,13 +23,6 @@ export const DOCUMENT_TYPES = [
   { value: "MIX_PER_PRODUCT", label: "משולב לפי מוצר" },
 ] as const;
 
-export const EXPENSE_CATEGORIES = [
-  { value: "FOOD", label: "עלות מזון" },
-  { value: "LABOR", label: "עובדים" },
-  { value: "ELECTRICITY", label: "חשמל" },
-  { value: "OTHER", label: "אחר" },
-] as const;
-
 export const ORDER_STATUSES = {
   CONFIRMED: "CONFIRMED",
   SENT: "SENT",
