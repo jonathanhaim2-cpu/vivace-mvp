@@ -480,6 +480,9 @@ async function main() {
             fileName,
             originalName: "tnuva-invoice-demo.svg",
             mimeType: "image/svg+xml",
+            periodMonth: "2026-08",
+            source: "RECEIPT",
+            classifiedAt: new Date("2026-08-18T08:00:00"),
           },
         },
       },
@@ -495,6 +498,9 @@ async function main() {
           accountId: "acc_food_dairy",
           amountIls: 24 * 6.9 + 8 * 21.9 + 10 * 8.2,
           voiceNoteText: "חשבונית תנובה מהבוקר, גבינות ומוצרי חלב",
+          periodMonth: "2026-08",
+          source: "RECEIPT",
+          classifiedAt: new Date("2026-08-18T08:00:00"),
         },
     });
   }
@@ -506,20 +512,38 @@ async function main() {
     {
       id: "photo_electricity",
       fileName: "demo-electricity.svg",
-      originalName: "חשמל-ספטמבר.svg",
+      originalName: "חשמל-אוגוסט.svg",
       accountId: "acc_energy_electricity",
       amountIls: 1840,
-      voiceNoteText: "חשמל חודש ספטמבר סניף הרצליה",
+      voiceNoteText: "חשמל חודש אוגוסט סניף הרצליה",
       title: "חשבונית חשמל",
     },
     {
       id: "photo_kitchen_wages",
       fileName: "demo-kitchen-wages.svg",
-      originalName: "שכר-מטבח.svg",
+      originalName: "שכר-מטבח-אוגוסט.svg",
       accountId: "acc_payroll_kitchen",
       amountIls: 12600,
-      voiceNoteText: "משכורות עובדי מטבח",
+      voiceNoteText: "משכורות עובדי מטבח אוגוסט",
       title: "שכר עובדי מטבח",
+    },
+    {
+      id: "photo_produce_aug",
+      fileName: "demo-produce-aug.svg",
+      originalName: "ירקות-אוגוסט.svg",
+      accountId: "acc_food_produce",
+      amountIls: 2140,
+      voiceNoteText: "ירקות השרון אוגוסט",
+      title: "חשבונית ירקות",
+    },
+    {
+      id: "photo_rent_aug",
+      fileName: "demo-rent-aug.svg",
+      originalName: "שכירות-חנות-אוגוסט.svg",
+      accountId: "acc_premises_store_rent",
+      amountIls: 18500,
+      voiceNoteText: "שכר דירה חנות אוגוסט",
+      title: "שכר דירה חנות",
     },
   ];
 
@@ -537,6 +561,9 @@ async function main() {
         voiceNoteText: doc.voiceNoteText,
         fileName: doc.fileName,
         originalName: doc.originalName,
+        periodMonth: "2026-08",
+        source: "MANUAL",
+        classifiedAt: new Date("2026-08-28T10:00:00"),
       },
       create: {
         id: doc.id,
@@ -546,6 +573,135 @@ async function main() {
         fileName: doc.fileName,
         originalName: doc.originalName,
         mimeType: "image/svg+xml",
+        periodMonth: "2026-08",
+        source: "MANUAL",
+        classifiedAt: new Date("2026-08-28T10:00:00"),
+      },
+    });
+  }
+
+  await prisma.appSetting.upsert({
+    where: { key: "standardFoodCostPercent" },
+    update: { value: "28" },
+    create: { key: "standardFoodCostPercent", value: "28" },
+  });
+
+  await prisma.dish.upsert({
+    where: { id: "dish_dough" },
+    update: { name: "בצק פיצה (מנת ביניים)" },
+    create: {
+      id: "dish_dough",
+      name: "בצק פיצה (מנת ביניים)",
+      kind: "INTERMEDIATE",
+      notes: "מנה אחת = בצק ל-4 מגשים",
+      components: {
+        create: [
+          { productId: "prd_flour", qty: 0.08, notes: "כ-2ק״ג מתוך שק 25ק״ג" },
+          { productId: "prd_salt", qty: 0.04, notes: "מלח לשקילת בצק" },
+          { productId: "prd_oil", qty: 0.05, notes: "שמן לקערה" },
+        ],
+      },
+    },
+  });
+
+  await prisma.dish.upsert({
+    where: { id: "dish_sauce" },
+    update: { name: "רוטב עגבניות (מנת ביניים)" },
+    create: {
+      id: "dish_sauce",
+      name: "רוטב עגבניות (מנת ביניים)",
+      kind: "INTERMEDIATE",
+      notes: "מנה אחת = רוטב ל-4 פיצות",
+      components: {
+        create: [
+          { productId: "prd_cherry", qty: 0.5, notes: "1ק״ג מתוך מארז 2ק״ג" },
+          { productId: "prd_ketchup", qty: 0.15, notes: "בסיס מתוק" },
+          { productId: "prd_salt", qty: 0.02 },
+        ],
+      },
+    },
+  });
+
+  const doughHasComponents = await prisma.dishComponent.count({ where: { dishId: "dish_dough" } });
+  if (doughHasComponents === 0) {
+    await prisma.dishComponent.createMany({
+      data: [
+        { dishId: "dish_dough", productId: "prd_flour", qty: 0.08, notes: "כ-2ק״ג מתוך שק 25ק״ג" },
+        { dishId: "dish_dough", productId: "prd_salt", qty: 0.04, notes: "מלח לשקילת בצק" },
+        { dishId: "dish_dough", productId: "prd_oil", qty: 0.05, notes: "שמן לקערה" },
+      ],
+    });
+  }
+  const sauceHasComponents = await prisma.dishComponent.count({ where: { dishId: "dish_sauce" } });
+  if (sauceHasComponents === 0) {
+    await prisma.dishComponent.createMany({
+      data: [
+        { dishId: "dish_sauce", productId: "prd_cherry", qty: 0.5, notes: "1ק״ג מתוך מארז 2ק״ג" },
+        { dishId: "dish_sauce", productId: "prd_ketchup", qty: 0.15, notes: "בסיס מתוק" },
+        { dishId: "dish_sauce", productId: "prd_salt", qty: 0.02 },
+      ],
+    });
+  }
+
+  await prisma.dish.upsert({
+    where: { id: "dish_margherita" },
+    update: { name: "פיצה מרגריטה", sellPrice: 62, standardCostPercent: 28 },
+    create: {
+      id: "dish_margherita",
+      name: "פיצה מרגריטה",
+      kind: "DISH",
+      sellPrice: 62,
+      standardCostPercent: 28,
+      notes: "מגש אישי",
+    },
+  });
+  if ((await prisma.dishComponent.count({ where: { dishId: "dish_margherita" } })) === 0) {
+    await prisma.dishComponent.createMany({
+      data: [
+        { dishId: "dish_margherita", componentDishId: "dish_dough", qty: 0.25, notes: "רבע בצק" },
+        { dishId: "dish_margherita", componentDishId: "dish_sauce", qty: 0.25, notes: "רבע רוטב" },
+        { dishId: "dish_margherita", productId: "prd_cheese", qty: 0.2, notes: "כ-80ג גבינה" },
+      ],
+    });
+  }
+
+  await prisma.dish.upsert({
+    where: { id: "dish_salad" },
+    update: { name: "סלט ירקות השרון", sellPrice: 38, standardCostPercent: 26 },
+    create: {
+      id: "dish_salad",
+      name: "סלט ירקות השרון",
+      kind: "DISH",
+      sellPrice: 38,
+      standardCostPercent: 26,
+    },
+  });
+  if ((await prisma.dishComponent.count({ where: { dishId: "dish_salad" } })) === 0) {
+    await prisma.dishComponent.createMany({
+      data: [
+        { dishId: "dish_salad", productId: "prd_lettuce", qty: 0.5 },
+        { dishId: "dish_salad", productId: "prd_cherry", qty: 0.25 },
+        { dishId: "dish_salad", productId: "prd_onion", qty: 0.1 },
+      ],
+    });
+  }
+
+  const existingCount = await prisma.inventoryCount.findUnique({ where: { id: "count_open_herzliya" } });
+  if (!existingCount) {
+    const allProducts = await prisma.product.findMany({ select: { id: true, stockStandard: true } });
+    await prisma.inventoryCount.create({
+      data: {
+        id: "count_open_herzliya",
+        branchId: ids.herzliya,
+        countedOn: new Date("2026-09-06T07:30:00"),
+        status: "OPEN",
+        notes: "ספירת בוקר פתוחה — להשלים לפני הזמנת תנובה",
+        lines: {
+          create: allProducts.map((product) => ({
+            productId: product.id,
+            countedQty: Math.max(0, Math.round(product.stockStandard * 0.4)),
+          })),
+        },
       },
     });
   }

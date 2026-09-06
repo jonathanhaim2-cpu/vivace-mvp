@@ -41,7 +41,7 @@ export default async function HomePage() {
           {session.isNetwork ? "משרד הרשת" : session.branch?.name ?? "סניף"}
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          רכש, קליטת סחורה וצילום חשבוניות. מתכונים, Tabit, דוחות AI ורווחיות זכיינים מחוץ ל-MVP.
+          רכש, קליטה, סיווג להנה״ח, ספירות מלאי ו-Food Cost תיאורטי. Tabit ורווחיות זכיין עדיין בחוץ.
         </p>
       </div>
 
@@ -64,7 +64,16 @@ export default async function HomePage() {
           ספק חדש
         </Link>
         <Link href="/invoices" className={cn(buttonVariants({ variant: "outline" }))}>
-          העלאת חשבונית
+          סיווג חשבונית
+        </Link>
+        <Link href="/inventory/new" className={cn(buttonVariants({ variant: "outline" }))}>
+          ספירת מלאי
+        </Link>
+        <Link href="/foodcost" className={cn(buttonVariants({ variant: "outline" }))}>
+          Food Cost
+        </Link>
+        <Link href="/reports" className={cn(buttonVariants({ variant: "ghost" }))}>
+          דוח חודשי
         </Link>
       </div>
 

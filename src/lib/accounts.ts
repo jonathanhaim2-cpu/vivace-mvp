@@ -1,5 +1,11 @@
 import { CHART_OF_ACCOUNTS, isChartLeafId } from "@/lib/chart-of-accounts";
+import { monthRangeUtc } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
+
+function inMonth(month: string) {
+  const { start, end } = monthRangeUtc(month);
+  return { gte: start, lt: end };
+}
 
 export async function seedChartOfAccounts() {
   for (const [parentIndex, parent] of CHART_OF_ACCOUNTS.entries()) {
@@ -75,8 +81,13 @@ export type AccountRollupRow = {
   }[];
 };
 
-export async function getAccountRollup(): Promise<AccountRollupRow[]> {
+export async function getAccountRollup(month?: string): Promise<AccountRollupRow[]> {
   const photos = await prisma.invoicePhoto.findMany({
+    where: month
+      ? {
+          OR: [{ periodMonth: month }, { periodMonth: null, createdAt: inMonth(month) }],
+        }
+      : undefined,
     include: {
       account: true,
       goodsReceipt: { include: { lines: true } },
@@ -94,6 +105,25 @@ export async function getAccountRollup(): Promise<AccountRollupRow[]> {
     current.documents += 1;
     current.amount += amount;
     byLeaf.set(photo.accountId, current);
+  }
+
+  if (month) {
+    const receiptsWithoutPhotos = await prisma.goodsReceipt.findMany({
+      where: {
+        accountId: { not: null },
+        photos: { none: {} },
+        createdAt: inMonth(month),
+      },
+      include: { lines: true },
+    });
+    for (const receipt of receiptsWithoutPhotos) {
+      if (!receipt.accountId) continue;
+      const amount = receipt.lines.reduce((sum, line) => sum + line.receivedQty * line.invoicePrice, 0);
+      const current = byLeaf.get(receipt.accountId) ?? { documents: 0, amount: 0 };
+      current.documents += 1;
+      current.amount += amount;
+      byLeaf.set(receipt.accountId, current);
+    }
   }
 
   return CHART_OF_ACCOUNTS.map((parent) => {

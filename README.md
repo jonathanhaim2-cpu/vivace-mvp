@@ -1,9 +1,9 @@
-# Vivac'e · ויואצ'ה — Purchase & inventory MVP
+# Vivac'e · ויואצ'ה — Purchase, inventory & food cost
 
 Hebrew RTL web app for **Vivac'e** (עוסק מורשה **204754121**, owner: Roi / רועי).  
-Product owner: Jonathan. This repository is the approved MVP slice: purchasing, goods receipt, and invoice capture for the network back office and each branch phone.
+Product owner: Jonathan.
 
-The UX follows a Zester-like information architecture (בית, רכש, ספקים, קליטת סחורה, חשבוניות) without copying Zester as a product.
+Zester-like modules: בית, רכש, ספקים, קליטה, חשבוניות, מלאי, Food Cost, דוחות.
 
 ---
 
@@ -16,76 +16,70 @@ npm install
 npm run dev
 ```
 
-`npm run dev` generates Prisma Client, pushes the SQLite schema, seeds demo data if needed, and starts Next.js on [http://127.0.0.1:43145](http://127.0.0.1:43145).
-
-Copy `.env.example` to `.env` if you do not already have one:
+Serves [http://127.0.0.1:43145](http://127.0.0.1:43145). `predev` generates Prisma Client, pushes SQLite, and seeds demo data (idempotent upserts).
 
 ```
 DATABASE_URL="file:./dev.db"
 ```
 
-Reset demo data:
+Reset: `npm run db:reset`
 
-```bash
-npm run db:reset
-```
+### What works now
 
-### What the MVP includes
+**Purchasing (original MVP)**
+1. Suppliers + products CRUD, delivery windows, WhatsApp order deep link.
+2. Goods receipt vs invoice, photo required, price-change approval (רשת / סניף toggle).
 
-1. **Suppliers CRUD** — company, tax id, agent, document type (tax invoice / delivery note / mix per product), WhatsApp number for orders, driver, delivery days, cutoff time + reminder hours (shown in UI), optional weekly order budget per franchisee.
-2. **Products per supplier** — name, SKU, notes, stock standard between deliveries (used to suggest order qty), agreed price, discount %, carton→bags→units, VAT included/excluded.
-3. **Orders** — pick supplier (delivery window status), pick products + qty, summary + driver notes, persist. **Send via WhatsApp** opens `https://wa.me/<phone>?text=<Hebrew summary>`.
-4. **Goods receipt** — against an order, edit qty/price, flag missing / wrong price. Price change → pending back-office approval (רשת). Approve writes the new fixed price; reject marks credit-request needed. Invoice/delivery-note photo is required and stored under `public/uploads`. “Forward to accountant” is a stub: queued flag + mailto + ZIP download.
-5. **Chart of accounts** — Jonathan’s hierarchical accountant template is seeded. Assignment is always a **leaf card**; reports roll up to **parent topics**. Income section: הכנסות ללא מע״מ. Manual upload path only (email inbox sync is still out of MVP).
+**Accountant + chart of accounts**
+3. Jonathan’s hierarchical chart is seeded (leaf assignment, parent rollup).
+4. Classify invoice photos to a **leaf** card; unclassified bulk imports wait in a queue.
+5. Manual upload + **ייבוא מתיקייה** (inbox-pull stand-in).
+6. **חיבור מייל** settings stub (no Gmail OAuth in this slice).
+7. Monthly **accountant package**: ZIP of classified files + Hebrew mailto with parent/leaf totals.
+8. **דוח תחילת חודש** for a selected month (defaults to previous month). Seeded sample: August 2026.
 
-Simple **רשת / סניף** role toggle (cookie). No real auth.
+**Inventory + food cost**
+9. Per-branch inventory count sessions (open / submitted).
+10. Dishes and intermediates with a BOM (raw product **or** another dish).
+11. Theoretical food cost from agreed supplier prices; cost % vs a configurable standard. Flag if over.
+12. **TODO** placeholder: ייבוא מכירות מ-Tabit.
 
-### Out of scope (do not expect these)
+### Out of scope
 
-- Foodcost recipes / BOM
-- Tabit POS integration
-- AI reports
-- Franchise profit statements
-- Real WhatsApp Business API
-- Email inbox sync for invoices (explicit TODO on the Invoices screen)
-- Push reminders at cutoff
-
-### Suggested next phases
-
-1. Real auth + branch membership
-2. Email inbox / accountant forwarding
-3. Foodcost recipes and theoretical vs actual
-4. Tabit sales hook
-5. Franchise P&L and network reports
+- Real Gmail/IMAP OAuth (flag left off on purpose)
+- Tabit sales import
+- AI reports / franchise P&L
+- WhatsApp Business API
 
 ### Stack
 
-Next.js 16 (App Router) · TypeScript · Tailwind v4 · shadcn/ui · Prisma 6 · SQLite
+Next.js 16 App Router · TypeScript · Tailwind v4 · shadcn/ui · Prisma 6 · SQLite
 
 ---
 
 ## עברית
 
-### הרצה מקומית
+### הרצה
 
 ```bash
 npm install
 npm run dev
 ```
 
-השרת עולה על פורט **43145**. הדמו נזרע אוטומטית (סניף הרצליה / תל אביב, תנובה, שטראוס, ירקות השרון, מחסני השוק, הזמנה פתוחה וקליטה שממתינה לאישור מחיר).
+פורט **43145**. הדמו כולל ספקים, הזמנות, כרטיסי הנה״ח, חשבוניות לאוגוסט 2026, ספירת מלאי פתוחה בהרצליה, בצק+רוטב+פיצה מרגריטה וסלט.
 
-### מה יש ב-MVP
+### מה יש
 
-- ספקים ומוצרים בעברית, כולל ימי אספקה, שעת סגירה, וואטסאפ ונהג
-- הזמנה נוחה לנייד + קישור וואטסאפ עם טקסט מוכן
-- קליטת סחורה מול הזמנה, צילום חובה, אישור שינוי מחיר במשרד הרשת
-- חשבוניות: תבנית הנה״ח המלאה (עלויות מזון, שכר, שילוח, עמלות, שטח, פרסום, מחשוב, אנרגיה, אחזקה, הנהלה; והכנסות ללא מע״מ). שיוך לכרטיס בן וסיכום לאב. **סנכרון תיבת מייל — מחוץ ל-MVP**
+- רכש וקליטה כמו קודם
+- סיווג לכרטיס בן, חבילת ZIP להנה״ח, דוח חודשי
+- ייבוא מרובה במקום סנכרון מייל
+- ספירות מלאי
+- Food Cost תיאורטי עם מנות ביניים
 
 ### מה אין
 
-מתכוני Foodcost, Tabit, דוחות AI, רווחיות זכיין, API אמיתי לוואטסאפ.
+OAuth למייל, Tabit, דוחות AI, רווחיות זכיין.
 
 ---
 
-Built for Vivac'e operations. Toggle **סניף** to place orders; toggle **רשת** to approve price changes on the seeded תנובה receipt.
+Toggle **סניף** להזמנות וספירות; **רשת** לאישור מחירון. חודש הדוגמה להנה״ח: **אוגוסט 2026**.

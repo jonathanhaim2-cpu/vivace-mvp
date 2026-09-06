@@ -6,12 +6,16 @@ export function GroupedAccountSelect({
   defaultValue,
   kinds,
   required = true,
+  allowEmpty = false,
+  emptyLabel = "ללא שיבוץ — לתור הסיווג",
 }: {
   name?: string;
   id?: string;
   defaultValue?: string | null;
   kinds?: AccountKind[];
   required?: boolean;
+  allowEmpty?: boolean;
+  emptyLabel?: string;
 }) {
   const groups = CHART_OF_ACCOUNTS.filter((parent) => !kinds || kinds.includes(parent.kind));
 
@@ -20,9 +24,10 @@ export function GroupedAccountSelect({
       id={id}
       name={name}
       required={required}
-      defaultValue={defaultValue ?? DEFAULT_EXPENSE_LEAF_ID}
+      defaultValue={defaultValue ?? (allowEmpty ? "" : DEFAULT_EXPENSE_LEAF_ID)}
       className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
     >
+      {allowEmpty ? <option value="">{emptyLabel}</option> : null}
       {groups.map((parent) => (
         <optgroup key={parent.id} label={parent.name}>
           {parent.children.map((child) => (
