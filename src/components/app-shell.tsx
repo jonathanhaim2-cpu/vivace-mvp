@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { logout } from "@/actions/auth";
 import { BrandLogo } from "@/components/brand-logo";
+import { AppChat } from "@/components/chat/app-chat";
 import { RoleSwitcher } from "@/components/role-switcher";
 import { COMPANY } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -40,12 +41,16 @@ export function AppShell({
   branchId,
   branches,
   authEnabled,
+  aiAvailable,
+  chatMessages,
 }: {
   children: React.ReactNode;
   role: Role;
   branchId: string | null;
   branches: Branch[];
   authEnabled: boolean;
+  aiAvailable: boolean;
+  chatMessages: { id: string; role: string; content: string }[];
 }) {
   const pathname = usePathname();
 
@@ -156,6 +161,7 @@ export function AppShell({
           })}
         </div>
       </nav>
+      <AppChat messages={chatMessages} aiAvailable={aiAvailable} />
     </div>
   );
 }

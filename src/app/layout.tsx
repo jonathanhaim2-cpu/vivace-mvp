@@ -6,6 +6,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { AppShell } from "@/components/app-shell";
 import { COMPANY } from "@/lib/constants";
 import { isAuthEnabled } from "@/lib/auth";
+import { getAiRuntime } from "@/lib/ai";
+import { listChatMessages } from "@/actions/chat";
 import { getAppSession } from "@/lib/session";
 import "./globals.css";
 
@@ -23,6 +25,7 @@ export const dynamic = "force-dynamic";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getAppSession();
+  const [runtime, chatMessages] = await Promise.all([getAiRuntime(), listChatMessages()]);
 
   return (
     <html lang="he" dir="rtl" className={`${rubik.variable} h-full antialiased`}>
@@ -34,6 +37,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               branchId={session.branchId}
               branches={session.branches}
               authEnabled={isAuthEnabled()}
+              aiAvailable={runtime.available}
+              chatMessages={chatMessages}
             >
               {children}
             </AppShell>

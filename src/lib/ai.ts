@@ -288,3 +288,58 @@ async function callOpenAi(prompt: string, b64: string, mime: string, fileName: s
   };
   return json.choices?.[0]?.message?.content ?? "";
 }
+
+export async function completeChatText(prompt: string): Promise<string | null> {
+  const runtime = await getAiRuntime();
+  if (!runtime.available || !runtime.provider) return null;
+  try {
+    const raw =
+      runtime.provider === "google" ? await callGeminiText(prompt) : await callOpenAiText(prompt);
+    await recordAiCall(runtime.provider);
+    return raw.trim() || null;
+  } catch (error) {
+    console.error("AI chat failed", error);
+    return null;
+  }
+}
+
+async function callGeminiText(prompt: string) {
+  const key = geminiKey();
+  const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.0-flash";
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.2 },
+      }),
+    },
+  );
+  if (!response.ok) throw new Error(`Gemini ${response.status}: ${await response.text()}`);
+  const json = (await response.json()) as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[];
+  };
+  return json.candidates?.[0]?.content?.parts?.map((part) => part.text ?? "").join("") ?? "";
+}
+
+async function callOpenAiText(prompt: string) {
+  const key = openaiKey();
+  const model = process.env.OPENAI_VISION_MODEL?.trim() || "gpt-4o-mini";
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.2,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+  if (!response.ok) throw new Error(`OpenAI ${response.status}: ${await response.text()}`);
+  const json = (await response.json()) as { choices?: { message?: { content?: string } }[] };
+  return json.choices?.[0]?.message?.content ?? "";
+}

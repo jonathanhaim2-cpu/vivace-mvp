@@ -78,6 +78,7 @@ Secrets are env-only. Never commit keys.
 18. Monthly AP: per-supplier amount due, karteset request (queued email stub), approve for payment, non-procurement paid/sent-to-accountant flags. After day 10, unmarked items are red on home.
 19. Food cost hierarchy overall → department → subcategory → dish. Prep dishes have no sell price. Simple recurring income/expense lines.
 20. Rogue franchisee flag when category % is over/under target by a configurable threshold. Waste report with optional voice note.
+21. Persistent AI chat drawer on the app shell. Needs an API key; without one it shows a setup message. Uses the same cheap per-call meter as invoice vision.
 
 ### Database + Vercel
 
