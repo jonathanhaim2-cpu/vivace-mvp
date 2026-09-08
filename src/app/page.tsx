@@ -1,154 +1,197 @@
 import Link from "next/link";
+import { saveDashboardSettings } from "@/actions/dashboard";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { OrderStatusBadge } from "@/components/status-badge";
-import { COMPANY, RECEIPT_STATUSES } from "@/lib/constants";
+import { COMPANY } from "@/lib/constants";
 import {
-  formatDateTime,
-  formatDeliveryDays,
-  nextDeliveryInfo,
-  parseDeliveryDays,
-} from "@/lib/format";
-import { prisma } from "@/lib/prisma";
+  getAnomalies,
+  getCategoryFill,
+  getForecastTurnover,
+  getGoodsToReceiveToday,
+  getOrdersToPlaceToday,
+} from "@/lib/dashboard";
+import { formatIls, lineTotal } from "@/lib/format";
+import { monthKeyFromDate, monthLabel } from "@/lib/months";
 import { getAppSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const session = await getAppSession();
-  const [suppliers, openOrders, pendingApprovals, recentOrders] = await Promise.all([
-    prisma.supplier.findMany({ orderBy: { name: "asc" } }),
-    prisma.order.count({
-      where: { status: { in: ["CONFIRMED", "SENT"] }, ...(session.isNetwork ? {} : { branchId: session.branchId ?? undefined }) },
-    }),
-    prisma.goodsReceipt.count({
-      where: { status: RECEIPT_STATUSES.PENDING_PRICE_APPROVAL },
-    }),
-    prisma.order.findMany({
-      where: session.isNetwork ? {} : { branchId: session.branchId ?? undefined },
-      include: { supplier: true, branch: true },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-    }),
+  const branchId = session.isNetwork ? null : session.branchId;
+  const month = monthKeyFromDate();
+  const forecast = await getForecastTurnover();
+  const [fill, anomalies, toReceive, toOrder] = await Promise.all([
+    getCategoryFill(month, forecast, branchId),
+    getAnomalies(branchId),
+    getGoodsToReceiveToday(branchId),
+    getOrdersToPlaceToday(branchId),
   ]);
+
+  const anomalyCount =
+    anomalies.pricePending.length + anomalies.missing.length + (anomalies.unclassified > 0 ? 1 : 0);
+  const overCount = fill.filter((row) => row.over).length;
 
   return (
     <div className="space-y-6">
       <div>
         <p className="text-sm text-muted-foreground">
-          {COMPANY.name} · {COMPANY.nameHe} · {COMPANY.tagline}
+          {COMPANY.nameHe} · {COMPANY.tagline}
         </p>
         <h1 className="font-heading mt-1 text-3xl font-semibold tracking-tight">
           {session.isNetwork ? "משרד הרשת" : session.branch?.name ?? "סניף"}
         </h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          רכש ומלאי · עוסק מורשה {COMPANY.taxId} · בעלים {COMPANY.owner}. קליטה, סיווג להנה״ח, ספירות
-          ו-Food Cost.{" "}
-          <a href={COMPANY.website} className="text-primary hover:underline" target="_blank" rel="noreferrer">
-            vivace-pizza.com
-          </a>
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{monthLabel(month)}</p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard label="ספקים פעילים" value={String(suppliers.length)} href="/suppliers" />
-        <StatCard label="הזמנות פתוחות" value={String(openOrders)} href="/orders" />
-        <StatCard
-          label="ממתינות לאישור מחיר"
-          value={String(pendingApprovals)}
-          href="/receipts"
-          warn={pendingApprovals > 0}
-        />
-      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className={overCount > 0 ? "ring-1 ring-destructive/40" : undefined}>
+          <CardHeader>
+            <CardTitle>מחזור חזוי מול רכש</CardTitle>
+            <CardDescription>
+              מילוי קטגוריה מול יעד % מהמחזור. אדום = מעל היעד. מחזור {formatIls(forecast)}.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2">
+              {fill.map((row) => {
+                const fillPct =
+                  row.targetPercent && row.targetPercent > 0 && row.actualPercent != null
+                    ? Math.min(140, (row.actualPercent / row.targetPercent) * 100)
+                    : row.actualPercent
+                      ? Math.min(100, row.actualPercent)
+                      : 0;
+                return (
+                  <div key={row.id} className="space-y-1">
+                    <div className="flex items-baseline justify-between gap-2 text-sm">
+                      <span>{row.name}</span>
+                      <span className={row.over ? "font-medium text-destructive" : "text-muted-foreground"}>
+                        {row.actualPercent != null ? `${row.actualPercent.toFixed(1)}%` : "—"}
+                        {row.targetPercent != null ? ` / ${row.targetPercent}%` : ""}
+                      </span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={cn("h-full rounded-full", row.over ? "bg-destructive" : "bg-primary")}
+                        style={{ width: `${Math.max(2, fillPct)}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <details className="rounded-lg border bg-muted/30 p-3 text-sm">
+              <summary className="cursor-pointer text-primary">עריכת מחזור ויעדים</summary>
+              <form action={saveDashboardSettings} className="mt-3 grid gap-2 sm:grid-cols-2">
+                <label className="space-y-1 sm:col-span-2">
+                  <span className="text-xs text-muted-foreground">מחזור חזוי לחודש (₪)</span>
+                  <input
+                    name="forecastTurnoverIls"
+                    type="number"
+                    min={0}
+                    step="100"
+                    defaultValue={forecast}
+                    className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
+                  />
+                </label>
+                {fill.map((row) => (
+                  <label key={row.id} className="space-y-1">
+                    <span className="text-xs text-muted-foreground">{row.name} %</span>
+                    <input
+                      name={`target:${row.id}`}
+                      type="number"
+                      min={0}
+                      step="0.1"
+                      defaultValue={row.targetPercent ?? ""}
+                      className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
+                    />
+                  </label>
+                ))}
+                <button type="submit" className={cn(buttonVariants({ size: "sm" }), "sm:col-span-2")}>
+                  שמירה
+                </button>
+              </form>
+            </details>
+          </CardContent>
+        </Card>
 
-      <div className="flex flex-wrap gap-2">
-        <Link href="/orders/new" className={cn(buttonVariants())}>
-          הזמנה חדשה
-        </Link>
-        <Link href="/suppliers/new" className={cn(buttonVariants({ variant: "outline" }))}>
-          ספק חדש
-        </Link>
-        <Link href="/invoices" className={cn(buttonVariants({ variant: "outline" }))}>
-          סיווג חשבונית
-        </Link>
-        <Link href="/inventory/new" className={cn(buttonVariants({ variant: "outline" }))}>
-          ספירת מלאי
-        </Link>
-        <Link href="/foodcost" className={cn(buttonVariants({ variant: "outline" }))}>
-          Food Cost
-        </Link>
-        <Link href="/reports" className={cn(buttonVariants({ variant: "ghost" }))}>
-          דוח חודשי
-        </Link>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>חלונות אספקה</CardTitle>
-          <CardDescription>לפי ימי חלוקה ושעת סגירה של כל ספק</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {suppliers.map((supplier) => {
-            const info = nextDeliveryInfo(parseDeliveryDays(supplier.deliveryDays), supplier.orderCutoffTime);
-            return (
-              <div key={supplier.id} className="flex flex-col gap-1 border-b pb-3 last:border-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="font-medium">{supplier.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDeliveryDays(supplier.deliveryDays)} · סגירה {supplier.orderCutoffTime} · תזכורת {supplier.reminderHoursBefore} שע׳ לפני
-                  </p>
-                </div>
-                <p className={cn("text-sm", info.open ? "text-primary" : "text-destructive")}>{info.label}</p>
-              </div>
-            );
-          })}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>הזמנות אחרונות</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {recentOrders.length === 0 ? (
-            <p className="text-sm text-muted-foreground">עדיין אין הזמנות.</p>
-          ) : (
-            recentOrders.map((order) => (
-              <Link key={order.id} href={`/orders/${order.id}`} className="flex items-center justify-between gap-3 rounded-lg px-1 py-1 hover:bg-muted/60">
-                <div>
-                  <p className="font-medium">{order.supplier.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {order.branch.name} · {formatDateTime(order.createdAt)}
-                  </p>
-                </div>
-                <OrderStatusBadge status={order.status} />
+        <Card className={anomalyCount > 0 ? "ring-1 ring-destructive/40" : undefined}>
+          <CardHeader>
+            <CardTitle>חריגות מחיר ומסמך</CardTitle>
+            <CardDescription>
+              {anomalyCount === 0 ? "אין חריגות פתוחות." : `${anomalyCount} פריטים לבדיקה.`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {anomalies.pricePending.slice(0, 3).map((receipt) => (
+              <Link key={receipt.id} href={`/receipts/${receipt.id}`} className="block hover:underline">
+                מחיר שונה · {receipt.order.supplier.name}
               </Link>
-            ))
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+            ))}
+            {anomalies.missing.slice(0, 2).map((line) => (
+              <Link key={line.id} href={`/receipts/${line.goodsReceiptId}`} className="block hover:underline">
+                חוסר · {line.orderLine.product.name}
+              </Link>
+            ))}
+            {anomalies.unclassified > 0 ? (
+              <Link href="/invoices" className="block text-primary hover:underline">
+                {anomalies.unclassified} חשבוניות ממתינות לסיווג
+              </Link>
+            ) : null}
+            {anomalyCount === 0 ? <p className="text-muted-foreground">הכול תקין החודש.</p> : null}
+            <Link href="/anomalies" className="text-xs text-primary hover:underline">
+              פירוט וסינון
+            </Link>
+          </CardContent>
+        </Card>
 
-function StatCard({
-  label,
-  value,
-  href,
-  warn,
-}: {
-  label: string;
-  value: string;
-  href: string;
-  warn?: boolean;
-}) {
-  return (
-    <Link href={href}>
-      <Card className={warn ? "ring-1 ring-destructive/40" : undefined}>
-        <CardHeader>
-          <CardDescription>{label}</CardDescription>
-          <CardTitle className="text-3xl">{value}</CardTitle>
-        </CardHeader>
-      </Card>
-    </Link>
+        <Card>
+          <CardHeader>
+            <CardTitle>סחורה לקליטה היום</CardTitle>
+            <CardDescription>הזמנות פתוחות שיום האספקה שלהן היום.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {toReceive.length === 0 ? (
+              <p className="text-muted-foreground">אין קליטות מתוכננות להיום.</p>
+            ) : (
+              toReceive.map((order) => (
+                <Link key={order.id} href={`/orders/${order.id}/receive`} className="flex justify-between hover:underline">
+                  <span>
+                    {order.supplier.name}
+                    {session.isNetwork ? ` · ${order.branch.name}` : ""}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {formatIls(order.lines.reduce((s, l) => s + lineTotal(l.qty, l.unitPrice, l.discountPercent), 0))}
+                  </span>
+                </Link>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>הזמנות להוציא היום</CardTitle>
+            <CardDescription>חלון הזמנה פתוח, ואין הזמנה פתוחה לספק.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {toOrder.length === 0 ? (
+              <p className="text-muted-foreground">אין ספקים שצריך להזמין מהם עכשיו.</p>
+            ) : (
+              toOrder.map((supplier) => (
+                <Link
+                  key={supplier.id}
+                  href={`/orders/new?supplierId=${supplier.id}`}
+                  className="block hover:underline"
+                >
+                  {supplier.name} · סגירה {supplier.orderCutoffTime}
+                </Link>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }

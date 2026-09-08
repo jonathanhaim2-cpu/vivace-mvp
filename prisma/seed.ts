@@ -596,6 +596,11 @@ async function main() {
     update: { value: "28" },
     create: { key: "standardFoodCostPercent", value: "28" },
   });
+  await prisma.appSetting.upsert({
+    where: { key: "dashboard.forecastTurnoverIls" },
+    update: {},
+    create: { key: "dashboard.forecastTurnoverIls", value: "200000" },
+  });
 
   await prisma.dish.upsert({
     where: { id: "dish_dough" },

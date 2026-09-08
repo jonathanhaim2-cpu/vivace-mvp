@@ -2,7 +2,20 @@ export type ProductCategorySeed = {
   id: string;
   name: string;
   accountId: string | null;
+  targetPercent?: number;
   children: { id: string; name: string; accountId?: string | null }[];
+};
+
+/** Default purchase % of monthly forecast turnover (HQ can edit on the home tile). */
+export const PARENT_CATEGORY_TARGETS: Record<string, number> = {
+  pcat_produce: 6,
+  pcat_dairy: 10,
+  pcat_dough: 5,
+  pcat_dry: 4,
+  pcat_dessert: 2,
+  pcat_drinks: 3,
+  pcat_packaging: 2,
+  pcat_misc: 2,
 };
 
 /** Two-level purchasing categories, aligned with Jonathan's food expense leaves. */
@@ -11,6 +24,7 @@ export const PRODUCT_CATEGORIES: ProductCategorySeed[] = [
     id: "pcat_produce",
     name: "ירקות ופירות",
     accountId: "acc_food_produce",
+    targetPercent: PARENT_CATEGORY_TARGETS.pcat_produce,
     children: [
       { id: "pcat_produce_tomato", name: "עגבניות" },
       { id: "pcat_produce_greens", name: "עלים וסלטים" },
@@ -23,6 +37,7 @@ export const PRODUCT_CATEGORIES: ProductCategorySeed[] = [
     id: "pcat_dairy",
     name: "גבינות ומוצרי חלב",
     accountId: "acc_food_dairy",
+    targetPercent: PARENT_CATEGORY_TARGETS.pcat_dairy,
     children: [
       { id: "pcat_dairy_milk", name: "חלב" },
       { id: "pcat_dairy_cheese", name: "גבינות" },
@@ -34,6 +49,7 @@ export const PRODUCT_CATEGORIES: ProductCategorySeed[] = [
     id: "pcat_dough",
     name: "בצקים וקמחים",
     accountId: "acc_food_dough",
+    targetPercent: PARENT_CATEGORY_TARGETS.pcat_dough,
     children: [
       { id: "pcat_dough_flour", name: "קמחים" },
       { id: "pcat_dough_ready", name: "בצקים מוכנים" },
@@ -43,6 +59,7 @@ export const PRODUCT_CATEGORIES: ProductCategorySeed[] = [
     id: "pcat_dry",
     name: "רטבים ויבשים",
     accountId: "acc_food_dry",
+    targetPercent: PARENT_CATEGORY_TARGETS.pcat_dry,
     children: [
       { id: "pcat_dry_sauce", name: "רטבים" },
       { id: "pcat_dry_oil", name: "שמנים" },
@@ -53,24 +70,28 @@ export const PRODUCT_CATEGORIES: ProductCategorySeed[] = [
     id: "pcat_dessert",
     name: "גלידות וקינוחים",
     accountId: "acc_food_dessert",
+    targetPercent: PARENT_CATEGORY_TARGETS.pcat_dessert,
     children: [{ id: "pcat_dessert_choc", name: "שוקולד ואפייה" }],
   },
   {
     id: "pcat_drinks",
     name: "משקאות",
     accountId: "acc_food_drinks",
+    targetPercent: PARENT_CATEGORY_TARGETS.pcat_drinks,
     children: [{ id: "pcat_drinks_other", name: "משקאות אחרים" }],
   },
   {
     id: "pcat_packaging",
     name: "כלים ואריזות",
     accountId: "acc_food_packaging",
+    targetPercent: PARENT_CATEGORY_TARGETS.pcat_packaging,
     children: [{ id: "pcat_pack_other", name: "אריזות חד־פעמי" }],
   },
   {
     id: "pcat_misc",
     name: "שונות מזון",
     accountId: "acc_food_misc",
+    targetPercent: PARENT_CATEGORY_TARGETS.pcat_misc,
     children: [{ id: "pcat_misc_other", name: "שונות" }],
   },
 ];

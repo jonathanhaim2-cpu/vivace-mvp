@@ -1,8 +1,10 @@
-import { PRODUCT_CATEGORIES } from "@/lib/product-categories";
+import { PARENT_CATEGORY_TARGETS, PRODUCT_CATEGORIES } from "@/lib/product-categories";
 import { prisma } from "@/lib/prisma";
 
 export async function seedProductCategories() {
   for (const [parentIndex, parent] of PRODUCT_CATEGORIES.entries()) {
+    const existing = await prisma.productCategory.findUnique({ where: { id: parent.id } });
+    const defaultTarget = parent.targetPercent ?? PARENT_CATEGORY_TARGETS[parent.id] ?? null;
     await prisma.productCategory.upsert({
       where: { id: parent.id },
       update: {
@@ -10,6 +12,7 @@ export async function seedProductCategories() {
         parentId: null,
         sortOrder: parentIndex * 100,
         accountId: parent.accountId,
+        targetPercent: existing?.targetPercent ?? defaultTarget,
       },
       create: {
         id: parent.id,
@@ -17,6 +20,7 @@ export async function seedProductCategories() {
         parentId: null,
         sortOrder: parentIndex * 100,
         accountId: parent.accountId,
+        targetPercent: defaultTarget,
       },
     });
     for (const [childIndex, child] of parent.children.entries()) {
