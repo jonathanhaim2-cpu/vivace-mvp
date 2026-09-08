@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ORDER_STATUSES } from "@/lib/constants";
+import { supplierVisibleToBranch } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
 import { getAppSession } from "@/lib/session";
 
@@ -15,6 +16,15 @@ export async function createOrder(formData: FormData) {
 
   if (!supplierId) throw new Error("יש לבחור ספק");
   if (!branchId) throw new Error("יש לבחור סניף");
+
+  const supplier = await prisma.supplier.findUnique({
+    where: { id: supplierId },
+    include: { branchLinks: true },
+  });
+  if (!supplier) throw new Error("ספק לא נמצא");
+  if (!session.isNetwork && !supplierVisibleToBranch(supplier, branchId)) {
+    throw new Error("הספק אינו זמין לסניף זה");
+  }
 
   let parsed: { productId: string; qty: number }[] = [];
   try {

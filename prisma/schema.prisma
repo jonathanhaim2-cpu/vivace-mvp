@@ -14,28 +14,71 @@ model Branch {
   createdAt       DateTime          @default(now())
   orders          Order[]
   inventoryCounts InventoryCount[]
+  supplierLinks   SupplierBranch[]
 }
 
 model Supplier {
-  id                  String    @id @default(cuid())
-  name                String
-  taxId               String?
-  agentName           String?
-  agentPhone          String?
-  whatsappPhone       String
-  driverName          String?
-  documentType        String
-  deliveryDays        String
-  orderCutoffTime     String
-  reminderHoursBefore Int       @default(2)
-  weeklyBudgetIls     Float?
-  notes               String?
-  defaultCategoryId   String?
-  defaultCategory     ProductCategory? @relation(fields: [defaultCategoryId], references: [id])
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  products            Product[]
-  orders              Order[]
+  id                       String    @id @default(cuid())
+  name                     String
+  taxId                    String?
+  agentName                String?
+  agentPhone               String?
+  whatsappPhone            String
+  driverName               String?
+  documentType             String
+  deliveryDays             String
+  orderCutoffTime          String
+  reminderHoursBefore      Int       @default(2)
+  weeklyBudgetIls          Float?
+  notes                    String?
+  defaultCategoryId        String?
+  defaultCategory          ProductCategory? @relation(fields: [defaultCategoryId], references: [id])
+  active                   Boolean   @default(true)
+  paymentTerms             String?
+  paymentMethod            String?
+  accountingPhone          String?
+  accountingEmail          String?
+  partnerName              String?
+  partnerPercent           Float?
+  plantsCouncilUrl         String?
+  plantsCouncilDiscountPct Float?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  products                 Product[]
+  orders                   Order[]
+  branchLinks              SupplierBranch[]
+  priceLists               PriceList[]
+}
+
+model SupplierBranch {
+  supplierId String
+  branchId   String
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  branch     Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  @@id([supplierId, branchId])
+}
+
+model PriceList {
+  id         String          @id @default(cuid())
+  supplierId String
+  supplier   Supplier        @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  kind       String
+  name       String
+  items      PriceListItem[]
+  @@unique([supplierId, kind])
+}
+
+model PriceListItem {
+  id              String    @id @default(cuid())
+  priceListId     String
+  priceList       PriceList @relation(fields: [priceListId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  unitPrice       Float
+  discountPercent Float     @default(0)
+  rebatePercent   Float     @default(0)
+  plusPercent     Float     @default(0)
+  @@unique([priceListId, productId])
 }
 
 model Product {
@@ -54,12 +97,15 @@ model Product {
   cartonToBags    Int?
   bagsToUnits     Int?
   packagingNotes  String?
-  documentType    String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  orderLines      OrderLine[]
-  inventoryLines  InventoryCountLine[]
-  dishComponents  DishComponent[]
+  documentType           String?
+  networkRebatePercent   Float       @default(0)
+  networkPlusPercent     Float       @default(0)
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+  orderLines             OrderLine[]
+  inventoryLines         InventoryCountLine[]
+  dishComponents         DishComponent[]
+  priceListItems         PriceListItem[]
 }
 
 model Order {

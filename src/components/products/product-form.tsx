@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { DOCUMENT_TYPES } from "@/lib/constants";
 import { CategorySelect } from "@/components/categories/category-select";
+import { DOCUMENT_TYPES } from "@/lib/constants";
+import { afterDiscount, beforeVat, packUnits } from "@/lib/pricing";
+import { formatIls } from "@/lib/format";
 
 type ProductValues = {
   name: string;
@@ -19,6 +21,8 @@ type ProductValues = {
   bagsToUnits: number | null;
   packagingNotes: string | null;
   documentType: string | null;
+  networkRebatePercent: number;
+  networkPlusPercent: number;
 };
 
 export function ProductForm({
@@ -27,14 +31,20 @@ export function ProductForm({
   product,
   categoryTree,
   defaultCategoryId,
+  isNetwork,
 }: {
   supplierId: string;
   mixDocuments: boolean;
   product?: ProductValues & { id: string };
   categoryTree: { id: string; name: string; children: { id: string; name: string }[] }[];
   defaultCategoryId?: string | null;
+  isNetwork: boolean;
 }) {
   const action = product ? updateProduct.bind(null, product.id) : createProduct.bind(null, supplierId);
+  const listPrice = product?.agreedPrice ?? 0;
+  const discount = product?.discountPercent ?? 0;
+  const after = afterDiscount(listPrice, discount);
+  const pack = packUnits(product?.cartonToBags, product?.bagsToUnits);
 
   return (
     <form action={action} className="space-y-6">
@@ -56,7 +66,6 @@ export function ProductForm({
               defaultValue={product?.categoryId ?? defaultCategoryId ?? ""}
               emptyLabel="ללא — בחרו תת־קטגוריה"
             />
-            <FieldDescription>השיבוץ הוא לתת־קטגוריה. האב נמדד בדוחות ובדשבורד.</FieldDescription>
           </Field>
           <Field>
             <FieldLabel htmlFor="stockStandard">מלאי תקן בין משלוחים</FieldLabel>
@@ -69,12 +78,9 @@ export function ProductForm({
               required
               defaultValue={product?.stockStandard ?? 1}
             />
-            <FieldDescription>
-              הכמות שצריך להחזיק בין שני משלוחים. ההזמנה תציע כמות לפי ימים עד המשלוח הבא.
-            </FieldDescription>
           </Field>
           <Field>
-            <FieldLabel htmlFor="agreedPrice">מחיר מוסכם (₪)</FieldLabel>
+            <FieldLabel htmlFor="agreedPrice">מחיר לפני מע״מ / מחירון זכיין (₪)</FieldLabel>
             <Input
               id="agreedPrice"
               name="agreedPrice"
@@ -84,6 +90,9 @@ export function ProductForm({
               required
               defaultValue={product?.agreedPrice ?? ""}
             />
+            <FieldDescription>
+              זה המחיר שהסניף רואה. אם מסומן כולל מע״מ, לפני מע״מ מחושב אוטומטית.
+            </FieldDescription>
           </Field>
           <Field>
             <FieldLabel htmlFor="discountPercent">הנחה %</FieldLabel>
@@ -108,7 +117,47 @@ export function ProductForm({
               />
               המחיר כולל מע״מ
             </label>
+            {product ? (
+              <FieldDescription>
+                לפני מע״מ {formatIls(beforeVat(listPrice, product.vatIncluded))} · אחרי הנחה{" "}
+                {formatIls(after)}
+                {pack > 1 ? ` · קרטון ${formatIls(after * pack)} (${formatIls(after)} × ${pack})` : ""}
+              </FieldDescription>
+            ) : null}
           </Field>
+          {isNetwork ? (
+            <>
+              <Field>
+                <FieldLabel htmlFor="networkRebatePercent">ריבייט רשת % (מוסתר מסניף)</FieldLabel>
+                <Input
+                  id="networkRebatePercent"
+                  name="networkRebatePercent"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="0.1"
+                  defaultValue={product?.networkRebatePercent ?? 0}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="networkPlusPercent">פלוס רשת % (מוסתר מסניף)</FieldLabel>
+                <Input
+                  id="networkPlusPercent"
+                  name="networkPlusPercent"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="0.1"
+                  defaultValue={product?.networkPlusPercent ?? 0}
+                />
+              </Field>
+            </>
+          ) : (
+            <>
+              <input type="hidden" name="networkRebatePercent" value={product?.networkRebatePercent ?? 0} />
+              <input type="hidden" name="networkPlusPercent" value={product?.networkPlusPercent ?? 0} />
+            </>
+          )}
           <Field>
             <FieldLabel htmlFor="cartonToBags">קרטון → שקיות</FieldLabel>
             <Input
@@ -128,6 +177,7 @@ export function ProductForm({
               min={0}
               defaultValue={product?.bagsToUnits ?? ""}
             />
+            <FieldDescription>תצוגת קרטון = מחיר יחידה אחרי הנחה × כמות באריזה.</FieldDescription>
           </Field>
         </div>
 

@@ -68,6 +68,13 @@ Secrets are env-only. Never commit keys.
 10. Dishes / intermediates with a BOM.
 11. Theoretical food cost vs a standard %. **TODO:** Tabit sales import.
 
+**Catalog (Roi feedback)**
+12. Two-level product categories with dashboard fill vs target % of forecast turnover.
+13. Home tiles: forecast fill, price/document anomalies, goods to receive, orders to place.
+14. Supplier active flag (hidden from franchisee ordering), per-branch availability, payment/accounting/partner fields.
+15. Franchisee vs network price lists — branch never sees HQ rebate/plus.
+16. Excel/CSV product import under a supplier. Plants Council URL + fixed % is a **manual stub** (no live scrape).
+
 ### Database + Vercel
 
 SQLite file (`prisma/dev.db`) is the first remote-demo store. On Railway/Fly put it on a **persistent volume** (`DATABASE_URL=file:/data/dev.db`, `UPLOAD_DIR=/data/uploads`).

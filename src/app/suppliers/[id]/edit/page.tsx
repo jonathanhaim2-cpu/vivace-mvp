@@ -6,16 +6,20 @@ import { prisma } from "@/lib/prisma";
 
 export default async function EditSupplierPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [supplier, tree] = await Promise.all([
-    prisma.supplier.findUnique({ where: { id } }),
+  const [supplier, tree, branches] = await Promise.all([
+    prisma.supplier.findUnique({
+      where: { id },
+      include: { branchLinks: true },
+    }),
     listCategoryTree(),
+    prisma.branch.findMany({ orderBy: { name: "asc" } }),
   ]);
   if (!supplier) notFound();
 
   return (
     <div>
       <PageHeader title={`עריכת ${supplier.name}`} />
-      <SupplierForm supplier={supplier} categoryTree={tree} />
+      <SupplierForm supplier={supplier} categoryTree={tree} branches={branches} />
     </div>
   );
 }

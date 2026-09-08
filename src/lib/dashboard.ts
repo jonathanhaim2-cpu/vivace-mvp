@@ -2,6 +2,7 @@ import { nowInIsrael, nextDeliveryInfo, parseDeliveryDays } from "@/lib/format";
 import { monthKeyFromDate, monthRangeUtc } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { RECEIPT_STATUSES } from "@/lib/constants";
+import { supplierVisibleToBranch } from "@/lib/catalog";
 
 const FORECAST_KEY = "dashboard.forecastTurnoverIls";
 
@@ -117,8 +118,14 @@ export async function getGoodsToReceiveToday(branchId?: string | null) {
   });
 }
 
-export async function getOrdersToPlaceToday(branchId?: string | null) {
-  const suppliers = await prisma.supplier.findMany({ orderBy: { name: "asc" } });
+export async function getOrdersToPlaceToday(branchId?: string | null, isNetwork = false) {
+  const suppliers = await prisma.supplier.findMany({
+    include: { branchLinks: true },
+    orderBy: { name: "asc" },
+  });
+  const visible = suppliers.filter((supplier) =>
+    isNetwork ? supplier.active : supplierVisibleToBranch(supplier, branchId ?? null),
+  );
   const openIds = new Set(
     (
       await prisma.order.findMany({
@@ -130,7 +137,7 @@ export async function getOrdersToPlaceToday(branchId?: string | null) {
       })
     ).map((o) => o.supplierId),
   );
-  return suppliers.filter((supplier) => {
+  return visible.filter((supplier) => {
     const info = nextDeliveryInfo(parseDeliveryDays(supplier.deliveryDays), supplier.orderCutoffTime);
     return info.open && !openIds.has(supplier.id);
   });

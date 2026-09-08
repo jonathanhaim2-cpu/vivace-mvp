@@ -1,5 +1,6 @@
 import { OrderWizard } from "@/components/orders/order-wizard";
 import { EmptyState, PageHeader } from "@/components/page-header";
+import { listOrderableSuppliers } from "@/lib/catalog";
 import { lineTotal, startOfIsraelWeek } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { getAppSession } from "@/lib/session";
@@ -20,22 +21,30 @@ export default async function NewOrderPage({
     );
   }
 
-  const suppliers = await prisma.supplier.findMany({
-    orderBy: { name: "asc" },
-  });
-  const products = supplierId
+  const suppliers = await listOrderableSuppliers({ role: session.role, branchId: session.branchId });
+  const allowedSupplier = supplierId && suppliers.some((item) => item.id === supplierId) ? supplierId : undefined;
+  const productsRaw = allowedSupplier
     ? await prisma.product.findMany({
         where: { supplierId },
+        include: { priceListItems: { include: { priceList: true } } },
         orderBy: { name: "asc" },
       })
     : [];
+  const products = productsRaw.map((product) => {
+    const franchisee = product.priceListItems.find((item) => item.priceList.kind === "FRANCHISEE");
+    return {
+      ...product,
+      agreedPrice: franchisee?.unitPrice ?? product.agreedPrice,
+      discountPercent: franchisee?.discountPercent ?? product.discountPercent,
+    };
+  });
 
   const weekStart = startOfIsraelWeek();
-  const weeklyLines = supplierId
+  const weeklyLines = allowedSupplier
     ? await prisma.orderLine.findMany({
         where: {
           order: {
-            supplierId,
+            supplierId: allowedSupplier,
             branchId: session.branchId,
             createdAt: { gte: weekStart },
           },
@@ -56,7 +65,7 @@ export default async function NewOrderPage({
       <OrderWizard
         suppliers={suppliers}
         products={products}
-        selectedSupplierId={supplierId}
+        selectedSupplierId={allowedSupplier}
         branchId={session.branchId}
         branchName={session.branch?.name ?? "סניף"}
         weeklySpent={weeklySpent}

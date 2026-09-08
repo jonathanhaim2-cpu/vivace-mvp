@@ -26,7 +26,7 @@ export default async function HomePage() {
     getCategoryFill(month, forecast, branchId),
     getAnomalies(branchId),
     getGoodsToReceiveToday(branchId),
-    getOrdersToPlaceToday(branchId),
+    getOrdersToPlaceToday(branchId, session.isNetwork),
   ]);
 
   const anomalyCount =

@@ -47,3 +47,26 @@ export const PRICE_CHANGE = {
 } as const;
 
 export type Role = "network" | "branch";
+
+export const PRICE_LIST_KIND = {
+  FRANCHISEE: "FRANCHISEE",
+  NETWORK: "NETWORK",
+} as const;
+
+export const PAYMENT_METHODS = [
+  { value: "TRANSFER", label: "העברה בנקאית" },
+  { value: "CARD", label: "כרטיס אשראי" },
+  { value: "CHECK", label: "שיק" },
+  { value: "CASH", label: "מזומן" },
+] as const;
+
+export const PAYMENT_TERMS = [
+  { value: "IMMEDIATE", label: "שוטף + 0" },
+  { value: "NET15", label: "שוטף + 15" },
+  { value: "NET30", label: "שוטף + 30" },
+  { value: "NET45", label: "שוטף + 45" },
+  { value: "NET60", label: "שוטף + 60" },
+  { value: "CASH", label: "מזומן בעסקה" },
+] as const;
+
+export const VAT_RATE = 0.18;

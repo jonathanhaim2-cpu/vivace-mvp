@@ -4,6 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import { CHART_OF_ACCOUNTS } from "../src/lib/chart-of-accounts";
 import { seedProductCategories } from "../src/lib/categories";
 import { PRODUCT_CATEGORY_ASSIGNMENTS, SUPPLIER_DEFAULT_CATEGORIES } from "../src/lib/product-categories";
+import { ensurePriceLists, syncProductPriceLists } from "../src/lib/catalog";
 
 const prisma = new PrismaClient();
 
@@ -172,6 +173,59 @@ async function main() {
 
   for (const [supplierId, categoryId] of Object.entries(SUPPLIER_DEFAULT_CATEGORIES)) {
     await prisma.supplier.update({ where: { id: supplierId }, data: { defaultCategoryId: categoryId } });
+  }
+
+  await prisma.supplier.update({
+    where: { id: ids.tnuva },
+    data: {
+      paymentTerms: "NET30",
+      paymentMethod: "TRANSFER",
+      accountingPhone: "03-6402200",
+      accountingEmail: "ap@tnuva.example",
+      partnerName: null,
+      partnerPercent: null,
+    },
+  });
+  await prisma.supplier.update({
+    where: { id: ids.strauss },
+    data: {
+      paymentTerms: "NET45",
+      paymentMethod: "TRANSFER",
+      accountingPhone: "04-8401000",
+      accountingEmail: "ap@strauss.example",
+    },
+  });
+  await prisma.supplier.update({
+    where: { id: ids.vegetables },
+    data: {
+      paymentTerms: "IMMEDIATE",
+      paymentMethod: "TRANSFER",
+      accountingPhone: "09-9551212",
+      accountingEmail: "office@sharon-veg.example",
+      plantsCouncilUrl: "https://www.plants.org.il/",
+      plantsCouncilDiscountPct: 10,
+    },
+  });
+  await prisma.supplier.update({
+    where: { id: ids.warehouse },
+    data: {
+      paymentTerms: "NET30",
+      paymentMethod: "CARD",
+      accountingPhone: "08-6667788",
+      accountingEmail: "ap@shuk.example",
+    },
+  });
+
+  const allBranches = [ids.herzliya, ids.telaviv];
+  const allSuppliers = [ids.tnuva, ids.strauss, ids.vegetables, ids.warehouse];
+  for (const supplierId of allSuppliers) {
+    for (const branchId of allBranches) {
+      await prisma.supplierBranch.upsert({
+        where: { supplierId_branchId: { supplierId, branchId } },
+        update: {},
+        create: { supplierId, branchId },
+      });
+    }
   }
 
   const products = [
@@ -377,7 +431,8 @@ async function main() {
   ];
 
   for (const product of products) {
-    await prisma.product.upsert({
+    const networkRebatePercent = product.supplierId === ids.tnuva ? 8 : 0;
+    const saved = await prisma.product.upsert({
       where: { id: product.id },
       update: {
         name: product.name,
@@ -392,12 +447,20 @@ async function main() {
         packagingNotes: product.packagingNotes,
         documentType: product.documentType ?? null,
         categoryId: PRODUCT_CATEGORY_ASSIGNMENTS[product.id] ?? null,
+        networkRebatePercent,
+        networkPlusPercent: 0,
       },
       create: {
         ...product,
         categoryId: PRODUCT_CATEGORY_ASSIGNMENTS[product.id] ?? null,
+        networkRebatePercent,
+        networkPlusPercent: 0,
       },
     });
+    await syncProductPriceLists(saved);
+  }
+  for (const supplierId of [ids.tnuva, ids.strauss, ids.vegetables, ids.warehouse]) {
+    await ensurePriceLists(supplierId);
   }
 
   const existingOpen = await prisma.order.findUnique({ where: { id: ids.orderOpen } });

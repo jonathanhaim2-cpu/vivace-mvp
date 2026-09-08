@@ -39,6 +39,23 @@ export default async function SettingsPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>מועצת הצמחים</CardTitle>
+          <CardDescription>
+            אין משיכה אוטומטית של מחירון יומי ב-MVP. אצל ספק תוצרת שומרים קישור ידני ואחוז קבוע מתחת לרשימה.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="text-sm">
+          <p>
+            עריכה בכרטיס הספק, תחת «סניפים + מועצת הצמחים». ברירת מחדל לקישור:{" "}
+            <a href="https://www.plants.org.il/" className="text-primary hover:underline" target="_blank" rel="noreferrer">
+              plants.org.il
+            </a>
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>שימוש ב-AI</CardTitle>
           <CardDescription>
             ספירה גסה של קריאות ניתוח חשבוניות בחודש {monthLabel(runtime.month)}.

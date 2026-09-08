@@ -180,7 +180,7 @@ export function OrderWizard({
                     <p className="font-medium">{product.name}</p>
                     <p className="text-xs text-muted-foreground">
                       {product.sku ? `${product.sku} · ` : ""}
-                      {formatIls(product.agreedPrice)}
+                      אחרי הנחה {formatIls(lineTotal(1, product.agreedPrice, product.discountPercent))}
                       {product.discountPercent ? ` · הנחה ${product.discountPercent}%` : ""}
                       {product.vatIncluded ? " · כולל מע״מ" : " · לפני מע״מ"}
                     </p>

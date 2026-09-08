@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { ProductForm } from "@/components/products/product-form";
 import { listCategoryTree } from "@/lib/categories";
 import { prisma } from "@/lib/prisma";
+import { getAppSession } from "@/lib/session";
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -13,6 +14,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
     }),
     listCategoryTree(),
   ]);
+  const session = await getAppSession();
   if (!product) notFound();
 
   return (
@@ -23,6 +25,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
         mixDocuments={product.supplier.documentType === "MIX_PER_PRODUCT"}
         product={product}
         categoryTree={tree}
+        isNetwork={session.isNetwork}
       />
     </div>
   );
