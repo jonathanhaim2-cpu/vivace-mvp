@@ -665,9 +665,20 @@ async function main() {
     create: { key: "dashboard.forecastTurnoverIls", value: "200000" },
   });
 
+  await prisma.recurringLine.upsert({
+    where: { id: "rec_rent" },
+    update: { name: "שכירות חנות", kind: "EXPENSE", cadence: "FIXED", amountIls: 18500 },
+    create: { id: "rec_rent", name: "שכירות חנות", kind: "EXPENSE", cadence: "FIXED", amountIls: 18500 },
+  });
+  await prisma.recurringLine.upsert({
+    where: { id: "rec_turnover" },
+    update: { name: "מחזור חזוי", kind: "INCOME", cadence: "VARIABLE", amountIls: 200000 },
+    create: { id: "rec_turnover", name: "מחזור חזוי", kind: "INCOME", cadence: "VARIABLE", amountIls: 200000 },
+  });
+
   await prisma.dish.upsert({
     where: { id: "dish_dough" },
-    update: { name: "בצק פיצה (מנת ביניים)" },
+    update: { name: "בצק פיצה (מנת ביניים)", sellPrice: null },
     create: {
       id: "dish_dough",
       name: "בצק פיצה (מנת ביניים)",
@@ -685,7 +696,7 @@ async function main() {
 
   await prisma.dish.upsert({
     where: { id: "dish_sauce" },
-    update: { name: "רוטב עגבניות (מנת ביניים)" },
+    update: { name: "רוטב עגבניות (מנת ביניים)", sellPrice: null },
     create: {
       id: "dish_sauce",
       name: "רוטב עגבניות (מנת ביניים)",

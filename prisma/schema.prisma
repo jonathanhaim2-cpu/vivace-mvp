@@ -264,6 +264,16 @@ model DishComponent {
   notes           String?
 }
 
+model RecurringLine {
+  id        String  @id @default(cuid())
+  name      String
+  kind      String
+  cadence   String
+  amountIls Float
+  accountId String?
+  notes     String?
+}
+
 model AppSetting {
   key   String @id
   value String

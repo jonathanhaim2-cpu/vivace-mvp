@@ -20,7 +20,7 @@ export default async function DishDetailPage({ params }: { params: Promise<{ id:
       },
     }),
     prisma.dish.findMany({ include: { components: true } }),
-    prisma.product.findMany({ include: { supplier: true }, orderBy: { name: "asc" } }),
+    prisma.product.findMany({ include: { supplier: true, category: { include: { parent: true } } }, orderBy: { name: "asc" } }),
   ]);
   if (!dish) notFound();
 
@@ -57,23 +57,31 @@ export default async function DishDetailPage({ params }: { params: Promise<{ id:
         <CardHeader>
           <CardTitle>עלות תיאורטית {formatIls(cost)}</CardTitle>
           <CardDescription>
-            {percent != null ? `${percent.toFixed(1)}% ממחיר המכירה` : "הזינו מחיר מכירה לחישוב אחוז"}
+            {dish.kind === "INTERMEDIATE"
+              ? "מנת ביניים בלי מחיר מכירה — רק עלות רכיבים"
+              : percent != null
+                ? `${percent.toFixed(1)}% ממחיר המכירה`
+                : "הזינו מחיר מכירה לחישוב אחוז"}
             {` · תקן ${dish.standardCostPercent}%`}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form action={updateDishPricing.bind(null, dish.id)} className="grid gap-3 sm:grid-cols-3 sm:items-end">
-            <Field>
-              <FieldLabel htmlFor="sellPrice">מחיר מכירה</FieldLabel>
-              <Input
-                id="sellPrice"
-                name="sellPrice"
-                type="number"
-                min={0}
-                step="0.01"
-                defaultValue={dish.sellPrice ?? ""}
-              />
-            </Field>
+            {dish.kind === "INTERMEDIATE" ? (
+              <p className="text-sm text-muted-foreground sm:col-span-2">מנת ביניים — אין שדה מחיר מכירה.</p>
+            ) : (
+              <Field>
+                <FieldLabel htmlFor="sellPrice">מחיר מכירה</FieldLabel>
+                <Input
+                  id="sellPrice"
+                  name="sellPrice"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  defaultValue={dish.sellPrice ?? ""}
+                />
+              </Field>
+            )}
             <Field>
               <FieldLabel htmlFor="standardCostPercent">תקן %</FieldLabel>
               <Input

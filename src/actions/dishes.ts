@@ -5,12 +5,14 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 
 export async function updateDishPricing(dishId: string, formData: FormData) {
+  const dish = await prisma.dish.findUnique({ where: { id: dishId } });
+  if (!dish) throw new Error("מנה לא נמצאה");
   const sellPriceRaw = String(formData.get("sellPrice") ?? "").trim();
   const percentRaw = String(formData.get("standardCostPercent") ?? "").trim();
   await prisma.dish.update({
     where: { id: dishId },
     data: {
-      sellPrice: sellPriceRaw ? Number(sellPriceRaw) : null,
+      sellPrice: dish.kind === "INTERMEDIATE" ? null : sellPriceRaw ? Number(sellPriceRaw) : null,
       standardCostPercent: percentRaw ? Number(percentRaw) : 28,
     },
   });
@@ -29,7 +31,7 @@ export async function createDish(formData: FormData) {
     data: {
       name,
       kind,
-      sellPrice: sellPriceRaw ? Number(sellPriceRaw) : null,
+      sellPrice: kind === "INTERMEDIATE" ? null : sellPriceRaw ? Number(sellPriceRaw) : null,
       notes,
     },
   });
