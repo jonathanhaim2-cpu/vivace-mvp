@@ -1536,7 +1536,318 @@
       "name": "vivac'e_42893",
       "slug": "dry-kitchen",
       "catHint": "רטבים ויבשים",
-      "products": []
+      "products": [
+        {
+          "name": "אבקת סוכר 1 ק'ג ברמן",
+          "sku": "1444",
+          "agreedPrice": 7.35,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "אגוזי מלך ארוז 1 ק'ג",
+          "sku": "475",
+          "agreedPrice": 42.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "אורגנו 1 ק'ג שמש",
+          "sku": "515",
+          "agreedPrice": 19.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "בזיליקום 1 ק'ג",
+          "sku": "525",
+          "agreedPrice": 30.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "בלסמי מצומצם 250 מ'ל 1/6 כשר",
+          "sku": "9351",
+          "agreedPrice": 73.95,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "דבש טהור ייבוא 1 ק'ג 6 יח' בארגז",
+          "sku": "19061",
+          "agreedPrice": 26.9,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "זית פרוס ירוק 9 ליטר 'לנדא'",
+          "sku": "3347",
+          "agreedPrice": 85.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "זית קלמטה חצאים 10 ק'ג",
+          "sku": "3434",
+          "agreedPrice": 220.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "חומץ טבעי 4 ל' הילל קרטון 1/4",
+          "sku": "5840",
+          "agreedPrice": 24.9,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "חרדל תלמה 5 ק'ג",
+          "sku": "148",
+          "agreedPrice": 85.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "לימון ישר מן העץ 4 ל קרטון 1/3",
+          "sku": "6950",
+          "agreedPrice": 26.7,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "לימון כבוש פרג 1 ק'ג 1/6 מארז",
+          "sku": "5134",
+          "agreedPrice": 182.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "מיונז אמיתי שבי 5 ק'ג דלי כחול",
+          "sku": "1203",
+          "agreedPrice": 52.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "מלח דק 1/12 ק'ג",
+          "sku": "103",
+          "agreedPrice": 18.9,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "ניילון גופיות קטן 400  גרם",
+          "sku": "721",
+          "agreedPrice": 2.9,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "סוכר לבן 1/10 ק'ג ייבוא",
+          "sku": "101",
+          "agreedPrice": 40.4,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "פולפה איטלקית 10 ק'ג דסקו",
+          "sku": "2141",
+          "agreedPrice": 86.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "פלפל שחור גרוס 1 ק'ג 'ברמן'",
+          "sku": "547",
+          "agreedPrice": 35.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "פלפל שחור טחון 1 ק'ג ברמן",
+          "sku": "507",
+          "agreedPrice": 28.6,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "פלפל שטה גרוס 1 ק'ג ברמן",
+          "sku": "5599",
+          "agreedPrice": 23.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "פלפל שטה סודני עין הציפור 1 קג",
+          "sku": "5610",
+          "agreedPrice": 95.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "פפריקה מתוקה 1 ק'ג ברמן",
+          "sku": "5504",
+          "agreedPrice": 13.2,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "צ'יפס סטייק 17.5 ק'ג מילוטל",
+          "sku": "999104",
+          "agreedPrice": 184.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "קטשופ מנות 'הלמנס' 1/996",
+          "sku": "9412",
+          "agreedPrice": 132.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "קקאו הולנדי 500 ג' איכותי ברמן",
+          "sku": "1421",
+          "agreedPrice": 31.5,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "רסק ע'ג A9 28% פריניר1/6 עד'ח",
+          "sku": "8188",
+          "agreedPrice": 155.3,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "שמן זית אושן 4 ליטר כ.מעולה",
+          "sku": "8614",
+          "agreedPrice": 115.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "שמן קנולה 1 ליטר 1/15 'עדה חרדית'",
+          "sku": "8015",
+          "agreedPrice": 123.2,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "שמן קנולה 15 ליטר",
+          "sku": "9261",
+          "agreedPrice": 105.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "שמרים יבשים 500 גר' דגן עד'ח",
+          "sku": "8410",
+          "agreedPrice": 11.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "תמצית וניל 1 ליטר שבי",
+          "sku": "813",
+          "agreedPrice": 0.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1,
+          "packUnit": "יח'",
+          "label": null
+        }
+      ]
     },
     {
       "id": "sup_produce",
