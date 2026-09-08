@@ -30,6 +30,8 @@ model Supplier {
   reminderHoursBefore Int       @default(2)
   weeklyBudgetIls     Float?
   notes               String?
+  defaultCategoryId   String?
+  defaultCategory     ProductCategory? @relation(fields: [defaultCategoryId], references: [id])
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   products            Product[]
@@ -43,6 +45,8 @@ model Product {
   name            String
   sku             String?
   notes           String?
+  categoryId      String?
+  category        ProductCategory? @relation(fields: [categoryId], references: [id])
   stockStandard   Float
   agreedPrice     Float
   discountPercent Float       @default(0)
@@ -94,6 +98,21 @@ model Account {
   sortOrder Int
   receipts  GoodsReceipt[]
   photos    InvoicePhoto[]
+  productCategories ProductCategory[]
+}
+
+model ProductCategory {
+  id          String   @id
+  name        String
+  parentId    String?
+  parent      ProductCategory?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children    ProductCategory[] @relation("CategoryTree")
+  sortOrder   Int      @default(0)
+  accountId   String?
+  account     Account? @relation(fields: [accountId], references: [id])
+  targetPercent Float?
+  products    Product[]
+  suppliers   Supplier[]
 }
 
 model GoodsReceipt {

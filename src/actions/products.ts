@@ -30,6 +30,7 @@ function readProductInput(formData: FormData) {
     name,
     sku: String(formData.get("sku") ?? "").trim() || null,
     notes: String(formData.get("notes") ?? "").trim() || null,
+    categoryId: String(formData.get("categoryId") ?? "").trim() || null,
     stockStandard,
     agreedPrice,
     discountPercent: Number.isFinite(discountPercent) ? discountPercent : 0,

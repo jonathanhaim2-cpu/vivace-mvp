@@ -2,6 +2,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { PrismaClient } from "@prisma/client";
 import { CHART_OF_ACCOUNTS } from "../src/lib/chart-of-accounts";
+import { seedProductCategories } from "../src/lib/categories";
+import { PRODUCT_CATEGORY_ASSIGNMENTS, SUPPLIER_DEFAULT_CATEGORIES } from "../src/lib/product-categories";
 
 const prisma = new PrismaClient();
 
@@ -62,6 +64,7 @@ const DEMO_INVOICE_SVG = `<?xml version="1.0" encoding="UTF-8"?>
 
 async function main() {
   await seedChart();
+  await seedProductCategories();
 
   const ids = {
     herzliya: "branch_herzliya",
@@ -166,6 +169,10 @@ async function main() {
       notes: "מזווה יבש. חלק מהפריטים בחשבונית מס וחלק בתעודת משלוח.",
     },
   });
+
+  for (const [supplierId, categoryId] of Object.entries(SUPPLIER_DEFAULT_CATEGORIES)) {
+    await prisma.supplier.update({ where: { id: supplierId }, data: { defaultCategoryId: categoryId } });
+  }
 
   const products = [
     {
@@ -384,8 +391,12 @@ async function main() {
         bagsToUnits: product.bagsToUnits,
         packagingNotes: product.packagingNotes,
         documentType: product.documentType ?? null,
+        categoryId: PRODUCT_CATEGORY_ASSIGNMENTS[product.id] ?? null,
       },
-      create: product,
+      create: {
+        ...product,
+        categoryId: PRODUCT_CATEGORY_ASSIGNMENTS[product.id] ?? null,
+      },
     });
   }
 

@@ -40,6 +40,7 @@ function readSupplierInput(formData: FormData) {
     reminderHoursBefore: Number.isFinite(reminderHoursBefore) ? reminderHoursBefore : 2,
     weeklyBudgetIls: weeklyBudgetRaw ? Number(weeklyBudgetRaw) : null,
     notes: String(formData.get("notes") ?? "").trim() || null,
+    defaultCategoryId: String(formData.get("defaultCategoryId") ?? "").trim() || null,
   };
 }
 

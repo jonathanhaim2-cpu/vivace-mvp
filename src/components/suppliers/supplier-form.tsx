@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DOCUMENT_TYPES, WEEKDAYS } from "@/lib/constants";
 import { parseDeliveryDays } from "@/lib/format";
+import { CategorySelect } from "@/components/categories/category-select";
 
 type SupplierValues = {
   name: string;
@@ -19,12 +20,15 @@ type SupplierValues = {
   reminderHoursBefore: number;
   weeklyBudgetIls: number | null;
   notes: string | null;
+  defaultCategoryId: string | null;
 };
 
 export function SupplierForm({
   supplier,
+  categoryTree = [],
 }: {
   supplier?: SupplierValues & { id: string };
+  categoryTree?: { id: string; name: string; children: { id: string; name: string }[] }[];
 }) {
   const action = supplier ? updateSupplier.bind(null, supplier.id) : createSupplier;
   const days = supplier ? parseDeliveryDays(supplier.deliveryDays) : [0, 2, 4];
@@ -135,6 +139,18 @@ export function SupplierForm({
               </label>
             ))}
           </div>
+        </Field>
+
+        <Field>
+          <FieldLabel htmlFor="defaultCategoryId">קטגוריית ברירת מחדל</FieldLabel>
+          <CategorySelect
+            id="defaultCategoryId"
+            name="defaultCategoryId"
+            tree={categoryTree}
+            defaultValue={supplier?.defaultCategoryId}
+            emptyLabel="ללא"
+          />
+          <FieldDescription>מוצע אוטומטית במוצר חדש אצל הספק.</FieldDescription>
         </Field>
 
         <Field>

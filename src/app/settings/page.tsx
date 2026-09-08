@@ -1,11 +1,13 @@
 import { logout } from "@/actions/auth";
 import { PageHeader } from "@/components/page-header";
 import { AiMissingBanner } from "@/components/ai-missing-banner";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAiRuntime } from "@/lib/ai";
 import { isAuthEnabled } from "@/lib/auth";
 import { monthLabel } from "@/lib/months";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +24,18 @@ export default async function SettingsPage() {
       />
 
       {runtime.reason === "no_key" ? <AiMissingBanner /> : null}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>קטגוריות מוצרים</CardTitle>
+          <CardDescription>אב ותת־קטגוריה לשיבוץ במחירון. לא מעמיסים את התפריט הראשי.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link href="/categories" className={cn(buttonVariants())}>
+            ניהול קטגוריות
+          </Link>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

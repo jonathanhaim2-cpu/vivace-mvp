@@ -4,11 +4,13 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DOCUMENT_TYPES } from "@/lib/constants";
+import { CategorySelect } from "@/components/categories/category-select";
 
 type ProductValues = {
   name: string;
   sku: string | null;
   notes: string | null;
+  categoryId: string | null;
   stockStandard: number;
   agreedPrice: number;
   discountPercent: number;
@@ -23,10 +25,14 @@ export function ProductForm({
   supplierId,
   mixDocuments,
   product,
+  categoryTree,
+  defaultCategoryId,
 }: {
   supplierId: string;
   mixDocuments: boolean;
   product?: ProductValues & { id: string };
+  categoryTree: { id: string; name: string; children: { id: string; name: string }[] }[];
+  defaultCategoryId?: string | null;
 }) {
   const action = product ? updateProduct.bind(null, product.id) : createProduct.bind(null, supplierId);
 
@@ -41,6 +47,16 @@ export function ProductForm({
           <Field>
             <FieldLabel htmlFor="sku">מק״ט</FieldLabel>
             <Input id="sku" name="sku" defaultValue={product?.sku ?? ""} />
+          </Field>
+          <Field className="sm:col-span-2">
+            <FieldLabel htmlFor="categoryId">קטגוריה / תת־קטגוריה</FieldLabel>
+            <CategorySelect
+              id="categoryId"
+              tree={categoryTree}
+              defaultValue={product?.categoryId ?? defaultCategoryId ?? ""}
+              emptyLabel="ללא — בחרו תת־קטגוריה"
+            />
+            <FieldDescription>השיבוץ הוא לתת־קטגוריה. האב נמדד בדוחות ובדשבורד.</FieldDescription>
           </Field>
           <Field>
             <FieldLabel htmlFor="stockStandard">מלאי תקן בין משלוחים</FieldLabel>

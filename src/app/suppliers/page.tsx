@@ -14,9 +14,14 @@ export default async function SuppliersPage() {
     <div>
       <PageHeader
         title="ספקים"
-        description="פרטי חברה, סוכן, וואטסאפ, נהג, ימי אספקה, שעת סגירה ותקציב שבועי לסניף."
+        description="פרטי חברה, סוכן, וואטסאפ, נהג וימי אספקה."
         action={{ href: "/suppliers/new", label: "ספק חדש" }}
       />
+      <p className="mb-4 text-sm">
+        <Link href="/categories" className="text-primary hover:underline">
+          ניהול קטגוריות ותתי־קטגוריות
+        </Link>
+      </p>
       {suppliers.length === 0 ? (
         <EmptyState
           title="אין ספקים"
