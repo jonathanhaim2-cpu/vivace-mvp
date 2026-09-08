@@ -1,8 +1,10 @@
 import { EmptyState, PageHeader } from "@/components/page-header";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { getAppSession } from "@/lib/session";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 export default async function InventoryPage() {
@@ -17,9 +19,14 @@ export default async function InventoryPage() {
     <div>
       <PageHeader
         title="מלאי · ספירות"
-        description="ספירת מלאי לפי סניף. שומרים כמות שנספרה לכל מוצר, עם תאריך."
+        description="ספירת מלאי לפי סניף. שומרים כמות שנספרה לכל מוצר, עם תאריך. פחת בנפרד."
         action={{ href: "/inventory/new", label: "ספירה חדשה" }}
       />
+      <p className="mb-4 text-sm">
+        <Link href="/waste" className={cn(buttonVariants({ variant: "ghost" }))}>
+          דוח פחת
+        </Link>
+      </p>
       {counts.length === 0 ? (
         <EmptyState
           title="אין ספירות"

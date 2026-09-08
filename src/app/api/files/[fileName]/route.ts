@@ -20,7 +20,17 @@ export async function GET(_request: Request, context: { params: Promise<{ fileNa
             ? "image/webp"
             : ext === ".svg"
               ? "image/svg+xml"
-              : "image/jpeg";
+              : ext === ".webm"
+                ? "audio/webm"
+                : ext === ".mp3"
+                  ? "audio/mpeg"
+                  : ext === ".wav"
+                    ? "audio/wav"
+                    : ext === ".ogg"
+                      ? "audio/ogg"
+                      : ext === ".m4a"
+                        ? "audio/mp4"
+                        : "image/jpeg";
     return new NextResponse(bytes, {
       headers: { "Content-Type": type, "Cache-Control": "private, max-age=3600" },
     });

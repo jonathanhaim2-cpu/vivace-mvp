@@ -15,6 +15,7 @@ model Branch {
   orders          Order[]
   inventoryCounts InventoryCount[]
   supplierLinks   SupplierBranch[]
+  wasteEntries    WasteEntry[]
 }
 
 model Supplier {
@@ -107,6 +108,7 @@ model Product {
   inventoryLines         InventoryCountLine[]
   dishComponents         DishComponent[]
   priceListItems         PriceListItem[]
+  wasteEntries           WasteEntry[]
 }
 
 model Order {
@@ -272,6 +274,20 @@ model RecurringLine {
   amountIls Float
   accountId String?
   notes     String?
+}
+
+model WasteEntry {
+  id             String   @id @default(cuid())
+  branchId       String
+  branch         Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  occurredOn     DateTime
+  productId      String?
+  product        Product? @relation(fields: [productId], references: [id])
+  qty            Float    @default(0)
+  estimatedCost  Float    @default(0)
+  notes          String?
+  voiceFileName  String?
+  createdAt      DateTime @default(now())
 }
 
 model AppSetting {

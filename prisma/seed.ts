@@ -664,6 +664,11 @@ async function main() {
     update: {},
     create: { key: "dashboard.forecastTurnoverIls", value: "200000" },
   });
+  await prisma.appSetting.upsert({
+    where: { key: "dashboard.rogueDeviationPercent" },
+    update: {},
+    create: { key: "dashboard.rogueDeviationPercent", value: "2" },
+  });
 
   await prisma.recurringLine.upsert({
     where: { id: "rec_rent" },

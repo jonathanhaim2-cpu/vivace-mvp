@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { saveForecastTurnover } from "@/lib/dashboard";
+import { saveForecastTurnover, saveRogueDeviationPercent } from "@/lib/dashboard";
 import { prisma } from "@/lib/prisma";
 
 export async function saveDashboardSettings(formData: FormData) {
@@ -10,6 +10,13 @@ export async function saveDashboardSettings(formData: FormData) {
     throw new Error("מחזור חזוי לא חוקי");
   }
   await saveForecastTurnover(forecast);
+
+  const rogueRaw = String(formData.get("rogueDeviationPercent") ?? "").trim();
+  if (rogueRaw) {
+    const rogue = Number(rogueRaw);
+    if (!Number.isFinite(rogue) || rogue < 0) throw new Error("סף סורר לא חוקי");
+    await saveRogueDeviationPercent(rogue);
+  }
 
   const parents = await prisma.productCategory.findMany({ where: { parentId: null } });
   for (const parent of parents) {

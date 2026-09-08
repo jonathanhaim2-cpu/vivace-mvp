@@ -57,6 +57,12 @@ export default async function ReportsPage({
         <Link href="/invoices" className={cn(buttonVariants({ variant: "outline" }))}>
           סיווג חשבוניות
         </Link>
+        <Link href="/waste" className={cn(buttonVariants({ variant: "outline" }))}>
+          דוח פחת
+        </Link>
+        <Link href="/ap" className={cn(buttonVariants({ variant: "ghost" }))}>
+          תשלומים
+        </Link>
       </div>
 
       <AccountRollup rows={rollup} />

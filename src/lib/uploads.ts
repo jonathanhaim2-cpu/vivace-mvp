@@ -10,6 +10,13 @@ const ALLOWED = new Set([
   "image/heif",
   "application/pdf",
   "image/svg+xml",
+  "audio/webm",
+  "audio/mpeg",
+  "audio/mp4",
+  "audio/ogg",
+  "audio/wav",
+  "audio/x-wav",
+  "audio/mp3",
 ]);
 
 export const UPLOAD_DIR = process.env.UPLOAD_DIR?.trim() || path.join(process.cwd(), "public", "uploads");
@@ -27,7 +34,7 @@ export async function saveUpload(file: File) {
   }
   const mime = file.type || "application/octet-stream";
   if (!ALLOWED.has(mime)) {
-    throw new Error("סוג קובץ לא נתמך. יש להעלות תמונה או PDF");
+    throw new Error("סוג קובץ לא נתמך. יש להעלות תמונה, PDF או קובץ קול");
   }
 
   await mkdir(UPLOAD_DIR, { recursive: true });

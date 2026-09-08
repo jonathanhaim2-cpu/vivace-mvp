@@ -5,6 +5,7 @@ import { RECEIPT_STATUSES } from "@/lib/constants";
 import { supplierVisibleToBranch } from "@/lib/catalog";
 
 const FORECAST_KEY = "dashboard.forecastTurnoverIls";
+const ROGUE_KEY = "dashboard.rogueDeviationPercent";
 
 export type CategoryFill = {
   id: string;
@@ -27,6 +28,42 @@ export async function saveForecastTurnover(amount: number) {
     update: { value: String(amount) },
     create: { key: FORECAST_KEY, value: String(amount) },
   });
+}
+
+export async function getRogueDeviationPercent() {
+  const row = await prisma.appSetting.findUnique({ where: { key: ROGUE_KEY } });
+  const value = Number(row?.value ?? 2);
+  return Number.isFinite(value) && value >= 0 ? value : 2;
+}
+
+export async function saveRogueDeviationPercent(value: number) {
+  await prisma.appSetting.upsert({
+    where: { key: ROGUE_KEY },
+    update: { value: String(value) },
+    create: { key: ROGUE_KEY, value: String(value) },
+  });
+}
+
+export async function getRogueBranches(month = monthKeyFromDate(), forecast?: number) {
+  const threshold = await getRogueDeviationPercent();
+  const turnover = forecast ?? (await getForecastTurnover());
+  const branches = await prisma.branch.findMany({ orderBy: { name: "asc" } });
+  const result: { id: string; name: string; reasons: string[] }[] = [];
+  for (const branch of branches) {
+    const fill = await getCategoryFill(month, turnover, branch.id);
+    const reasons = fill
+      .filter((row) => {
+        if (row.targetPercent == null || row.actualPercent == null) return false;
+        if (row.spent <= 0 && row.actualPercent <= 0) return false;
+        return Math.abs(row.actualPercent - row.targetPercent) >= threshold;
+      })
+      .map((row) => {
+        const dir = (row.actualPercent ?? 0) > (row.targetPercent ?? 0) ? "מעל" : "מתחת";
+        return `${row.name} ${dir} יעד (${row.actualPercent?.toFixed(1)}% / ${row.targetPercent}%)`;
+      });
+    if (reasons.length > 0) result.push({ id: branch.id, name: branch.name, reasons });
+  }
+  return { threshold, branches: result };
 }
 
 export async function getCategoryFill(month = monthKeyFromDate(), forecast: number, branchId?: string | null) {

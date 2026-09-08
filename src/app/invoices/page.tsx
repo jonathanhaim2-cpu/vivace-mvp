@@ -63,9 +63,12 @@ export default async function InvoicesPage() {
         <Link href="/ap" className={cn(buttonVariants({ variant: "outline" }))}>
           תשלומים וכרטסת
         </Link>
-        <Link href="/reports" className={cn(buttonVariants({ variant: "ghost" }))}>
-          דוח חודשי
-        </Link>
+          <Link href="/reports" className={cn(buttonVariants({ variant: "ghost" }))}>
+            דוח חודשי
+          </Link>
+          <Link href="/waste" className={cn(buttonVariants({ variant: "ghost" }))}>
+            דוח פחת
+          </Link>
         <Link href="/settings" className={cn(buttonVariants({ variant: "ghost" }))}>
           שימוש AI
         </Link>

@@ -9,6 +9,7 @@ import {
   getForecastTurnover,
   getGoodsToReceiveToday,
   getOrdersToPlaceToday,
+  getRogueBranches,
 } from "@/lib/dashboard";
 import { getOverdueAccountantItems } from "@/lib/ap";
 import { formatIls, lineTotal } from "@/lib/format";
@@ -23,12 +24,13 @@ export default async function HomePage() {
   const branchId = session.isNetwork ? null : session.branchId;
   const month = monthKeyFromDate();
   const forecast = await getForecastTurnover();
-  const [fill, anomalies, toReceive, toOrder, overdue] = await Promise.all([
+  const [fill, anomalies, toReceive, toOrder, overdue, rogue] = await Promise.all([
     getCategoryFill(month, forecast, branchId),
     getAnomalies(branchId),
     getGoodsToReceiveToday(branchId),
     getOrdersToPlaceToday(branchId, session.isNetwork),
     getOverdueAccountantItems(month),
+    session.isNetwork ? getRogueBranches(month, forecast) : Promise.resolve({ threshold: 2, branches: [] as { id: string; name: string; reasons: string[] }[] }),
   ]);
 
   const anomalyCount =
@@ -54,6 +56,21 @@ export default async function HomePage() {
         >
           {overdue.length} הוצאות לא מרכש בלי סימון שולם/נשלח להנה״ח (אחרי ה-10 לחודש)
         </Link>
+      ) : null}
+
+      {session.isNetwork && rogue.branches.length > 0 ? (
+        <div className="rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm">
+          <p className="font-medium text-destructive">סניפים סוררים (חריגת יעד ≥ {rogue.threshold} נקודות אחוז)</p>
+          <ul className="mt-1 space-y-1">
+            {rogue.branches.map((branch) => (
+              <li key={branch.id}>
+                <span className="font-medium">{branch.name}</span>
+                {" · "}
+                {branch.reasons.join(" · ")}
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -103,6 +120,17 @@ export default async function HomePage() {
                     min={0}
                     step="100"
                     defaultValue={forecast}
+                    className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
+                  />
+                </label>
+                <label className="space-y-1 sm:col-span-2">
+                  <span className="text-xs text-muted-foreground">סף סניף סורר (נקודות אחוז מעל/מתחת ליעד)</span>
+                  <input
+                    name="rogueDeviationPercent"
+                    type="number"
+                    min={0}
+                    step="0.1"
+                    defaultValue={rogue.threshold}
                     className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
                   />
                 </label>
