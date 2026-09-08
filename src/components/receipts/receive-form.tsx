@@ -1,9 +1,14 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { scanReceiptDocument } from "@/actions/receipt-scan";
 import { submitGoodsReceipt } from "@/actions/receipts";
+import { AiMissingBanner } from "@/components/ai-missing-banner";
+import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
 import { DEFAULT_EXPENSE_LEAF_ID } from "@/lib/chart-of-accounts";
 import { formatIls } from "@/lib/format";
 
@@ -15,11 +20,50 @@ type Line = {
   product: { name: string; sku: string | null };
 };
 
-export function ReceiveForm({ orderId, lines }: { orderId: string; lines: Line[] }) {
+export function ReceiveForm({
+  orderId,
+  lines,
+  aiAvailable,
+}: {
+  orderId: string;
+  lines: Line[];
+  aiAvailable: boolean;
+}) {
   const action = submitGoodsReceipt.bind(null, orderId);
+  const [qty, setQty] = useState<Record<string, number>>(() =>
+    Object.fromEntries(lines.map((line) => [line.id, Math.round(line.qty)])),
+  );
+  const [price, setPrice] = useState<Record<string, number>>(() =>
+    Object.fromEntries(lines.map((line) => [line.id, line.unitPrice])),
+  );
+  const [scanMessage, setScanMessage] = useState<string | null>(null);
+  const [pending, startScan] = useTransition();
+
+  function onPhotoChange(file: File | null) {
+    if (!file) return;
+    const fd = new FormData();
+    fd.set("photo", file);
+    startScan(async () => {
+      const result = await scanReceiptDocument(orderId, fd);
+      setScanMessage(result.message);
+      setQty((current) => {
+        const next = { ...current };
+        for (const row of result.lines) next[row.orderLineId] = row.receivedQty;
+        return next;
+      });
+      setPrice((current) => {
+        const next = { ...current };
+        for (const row of result.lines) next[row.orderLineId] = row.invoicePrice;
+        return next;
+      });
+    });
+  }
 
   return (
     <form action={action} className="space-y-6">
+      {!aiAvailable ? <AiMissingBanner /> : null}
+      {scanMessage ? <p className="text-sm text-primary">{scanMessage}</p> : null}
+
       <div className="space-y-3">
         {lines.map((line) => (
           <div key={line.id} className="rounded-xl border bg-card p-4">
@@ -39,7 +83,10 @@ export function ReceiveForm({ orderId, lines }: { orderId: string; lines: Line[]
                   min={0}
                   step={1}
                   inputMode="numeric"
-                  defaultValue={Math.round(line.qty)}
+                  value={qty[line.id] ?? 0}
+                  onChange={(event) =>
+                    setQty((current) => ({ ...current, [line.id]: Math.round(Number(event.target.value) || 0) }))
+                  }
                 />
               </Field>
               <Field>
@@ -50,7 +97,10 @@ export function ReceiveForm({ orderId, lines }: { orderId: string; lines: Line[]
                   type="number"
                   min={0}
                   step="0.01"
-                  defaultValue={line.unitPrice}
+                  value={price[line.id] ?? 0}
+                  onChange={(event) =>
+                    setPrice((current) => ({ ...current, [line.id]: Number(event.target.value) || 0 }))
+                  }
                 />
               </Field>
               <label className="flex items-end gap-2 pb-1 text-sm">
@@ -64,14 +114,24 @@ export function ReceiveForm({ orderId, lines }: { orderId: string; lines: Line[]
 
       <Field>
         <FieldLabel htmlFor="photo">צילום חשבונית / תעודת משלוח</FieldLabel>
-        <Input id="photo" name="photo" type="file" accept="image/*,application/pdf" required />
-        <FieldDescription>חובה. הקובץ נשמר מקומית בתיקיית uploads של הסביבה.</FieldDescription>
+        <Input
+          id="photo"
+          name="photo"
+          type="file"
+          accept="image/*,application/pdf"
+          required
+          onChange={(event) => onPhotoChange(event.target.files?.[0] ?? null)}
+        />
+        <FieldDescription>
+          {pending
+            ? "סורק את המסמך וממלא כמויות..."
+            : "העלאה ממלאת כמויות ומחירים מהמסמך כשאפשר. העובד מאשר בעיקר כמויות. חובה לשמור את הקובץ."}
+        </FieldDescription>
       </Field>
 
       <Field>
         <FieldLabel htmlFor="accountId">כרטיס הנה״ח (בן)</FieldLabel>
         <GroupedAccountSelect id="accountId" defaultValue={DEFAULT_EXPENSE_LEAF_ID} kinds={["EXPENSE"]} />
-        <FieldDescription>השיוך הוא תמיד לכרטיס בן. סיכום לקטגוריית האב מופיע בחשבוניות.</FieldDescription>
       </Field>
 
       <Field>
@@ -79,7 +139,9 @@ export function ReceiveForm({ orderId, lines }: { orderId: string; lines: Line[]
         <Textarea id="notes" name="notes" placeholder="למשל: ארגז אחד רטוב, חסר פריט" />
       </Field>
 
-      <Button type="submit">שמירת קליטה</Button>
+      <Button type="submit" disabled={pending}>
+        שמירת קליטה
+      </Button>
     </form>
   );
 }

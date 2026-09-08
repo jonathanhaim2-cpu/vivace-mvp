@@ -46,7 +46,7 @@ export async function submitGoodsReceipt(orderId: string, formData: FormData) {
     const wrongPrice = pricesDiffer(invoicePrice, line.unitPrice);
     return {
       orderLineId: line.id,
-      receivedQty: Number.isFinite(receivedQty) ? receivedQty : 0,
+      receivedQty: Number.isFinite(receivedQty) ? Math.round(receivedQty) : 0,
       invoicePrice: Number.isFinite(invoicePrice) ? invoicePrice : line.unitPrice,
       missing,
       wrongPrice,

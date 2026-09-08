@@ -144,24 +144,81 @@ export async function analyzeInvoiceDocument(input: {
   mimeType: string;
   fileName: string;
 }): Promise<AiSuggestion | null> {
+  return runVisionJson(buildPrompt(), input, parseSuggestion);
+}
+
+export type ReceiptExtractLine = {
+  name: string | null;
+  sku: string | null;
+  qty: number | null;
+  unitPrice: number | null;
+};
+
+function buildReceiptPrompt(catalog: { name: string; sku: string | null }[]) {
+  const list = catalog
+    .map((item) => `- ${item.name}${item.sku ? ` | מק״ט ${item.sku}` : ""}`)
+    .join("\n");
+  return `אתה קורא תעודת משלוח / חשבונית מס למסעדת Vivac'e.
+חלץ שורות פריטים: שם, מק״ט אם יש, כמות שהתקבלה, מחיר יחידה בשקלים.
+החזר JSON בלבד:
+{"lines":[{"name":"","sku":"","qty":0,"unitPrice":0}]}
+qty מספר שלם. אם לא בטוח בכמות — השאר את הכמות מההזמנה אל תמציא.
+פריטי ההזמנה האפשריים:
+${list}`;
+}
+
+function parseReceiptLines(raw: string): ReceiptExtractLine[] | null {
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start < 0 || end < 0) return null;
+  try {
+    const parsed = JSON.parse(raw.slice(start, end + 1)) as { lines?: unknown };
+    if (!Array.isArray(parsed.lines)) return null;
+    return parsed.lines.map((item) => {
+      const row = item as Record<string, unknown>;
+      const qty = Number(row.qty);
+      const unitPrice = Number(row.unitPrice);
+      return {
+        name: typeof row.name === "string" ? row.name : null,
+        sku: typeof row.sku === "string" ? row.sku : null,
+        qty: Number.isFinite(qty) ? Math.round(qty) : null,
+        unitPrice: Number.isFinite(unitPrice) ? unitPrice : null,
+      };
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function runVisionJson<T>(
+  prompt: string,
+  input: { buffer: Buffer; mimeType: string; fileName: string },
+  parse: (raw: string) => T | null,
+): Promise<T | null> {
   const runtime = await getAiRuntime();
   if (!runtime.available || !runtime.provider) return null;
-
-  const prompt = buildPrompt();
   const b64 = input.buffer.toString("base64");
   const mime = input.mimeType || "image/jpeg";
-
   try {
     const raw =
       runtime.provider === "google"
         ? await callGemini(prompt, b64, mime)
         : await callOpenAi(prompt, b64, mime, input.fileName);
     await recordAiCall(runtime.provider);
-    return parseSuggestion(raw);
+    return parse(raw);
   } catch (error) {
-    console.error("AI invoice analysis failed", error);
+    console.error("AI vision failed", error);
     return null;
   }
+}
+
+export async function analyzeReceiptLines(input: {
+  buffer: Buffer;
+  mimeType: string;
+  fileName: string;
+  catalog: { name: string; sku: string | null }[];
+}): Promise<ReceiptExtractLine[] | null> {
+  return runVisionJson(buildReceiptPrompt(input.catalog), input, parseReceiptLines);
 }
 
 async function callGemini(prompt: string, b64: string, mime: string) {

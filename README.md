@@ -74,6 +74,7 @@ Secrets are env-only. Never commit keys.
 14. Supplier active flag (hidden from franchisee ordering), per-branch availability, payment/accounting/partner fields.
 15. Franchisee vs network price lists — branch never sees HQ rebate/plus.
 16. Excel/CSV product import under a supplier. Plants Council URL + fixed % is a **manual stub** (no live scrape).
+17. Goods-receipt scan: upload a delivery note to prefill qty/prices. No AI key → heuristic (ordered qty) + banner. Qty stays integer.
 
 ### Database + Vercel
 
