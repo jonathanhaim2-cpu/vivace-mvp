@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 
 export async function seedProductCategories() {
   for (const [parentIndex, parent] of PRODUCT_CATEGORIES.entries()) {
-    const existing = await prisma.productCategory.findUnique({ where: { id: parent.id } });
     const defaultTarget = parent.targetPercent ?? PARENT_CATEGORY_TARGETS[parent.id] ?? null;
     await prisma.productCategory.upsert({
       where: { id: parent.id },
@@ -12,7 +11,8 @@ export async function seedProductCategories() {
         parentId: null,
         sortOrder: parentIndex * 100,
         accountId: parent.accountId,
-        targetPercent: existing?.targetPercent ?? defaultTarget,
+        // Always write seed defaults so Railway/db:ready picks up HQ target updates.
+        targetPercent: defaultTarget,
       },
       create: {
         id: parent.id,

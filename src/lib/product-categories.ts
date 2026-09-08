@@ -8,14 +8,14 @@ export type ProductCategorySeed = {
 
 /** Default purchase % of monthly forecast turnover (HQ can edit on the home tile). */
 export const PARENT_CATEGORY_TARGETS: Record<string, number> = {
-  pcat_produce: 6,
-  pcat_dairy: 10,
-  pcat_dough: 5,
-  pcat_dry: 4,
-  pcat_dessert: 2,
-  pcat_drinks: 3,
-  pcat_packaging: 2,
-  pcat_misc: 2,
+  pcat_produce: 3.32,
+  pcat_dairy: 11.45,
+  pcat_dough: 2.47,
+  pcat_dry: 5.89,
+  pcat_dessert: 0.7,
+  pcat_drinks: 2.5,
+  pcat_packaging: 3.74,
+  pcat_misc: 0.54,
 };
 
 /** Two-level purchasing categories, aligned with Jonathan's food expense leaves. */
@@ -47,7 +47,7 @@ export const PRODUCT_CATEGORIES: ProductCategorySeed[] = [
   },
   {
     id: "pcat_dough",
-    name: "בצקים וקמחים",
+    name: "פסטות",
     accountId: "acc_food_dough",
     targetPercent: PARENT_CATEGORY_TARGETS.pcat_dough,
     children: [
@@ -89,7 +89,7 @@ export const PRODUCT_CATEGORIES: ProductCategorySeed[] = [
   },
   {
     id: "pcat_misc",
-    name: "שונות מזון",
+    name: "שונות",
     accountId: "acc_food_misc",
     targetPercent: PARENT_CATEGORY_TARGETS.pcat_misc,
     children: [{ id: "pcat_misc_other", name: "שונות" }],
