@@ -148,6 +148,7 @@ export function nowInIsrael() {
 
   return {
     day: weekdayMap[get("weekday")] ?? new Date().getDay(),
+    date: Number(get("day")) || 1,
     minutes: Number(get("hour")) * 60 + Number(get("minute")),
     dateLabel: `${get("day")}/${get("month")}/${get("year")}`,
   };

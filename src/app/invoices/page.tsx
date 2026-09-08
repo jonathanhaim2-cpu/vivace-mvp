@@ -60,6 +60,9 @@ export default async function InvoicesPage() {
         <Link href="/invoices/package" className={cn(buttonVariants())}>
           חבילה להנה״ח
         </Link>
+        <Link href="/ap" className={cn(buttonVariants({ variant: "outline" }))}>
+          תשלומים וכרטסת
+        </Link>
         <Link href="/reports" className={cn(buttonVariants({ variant: "ghost" }))}>
           דוח חודשי
         </Link>

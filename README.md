@@ -75,6 +75,7 @@ Secrets are env-only. Never commit keys.
 15. Franchisee vs network price lists — branch never sees HQ rebate/plus.
 16. Excel/CSV product import under a supplier. Plants Council URL + fixed % is a **manual stub** (no live scrape).
 17. Goods-receipt scan: upload a delivery note to prefill qty/prices. No AI key → heuristic (ordered qty) + banner. Qty stays integer.
+18. Monthly AP: per-supplier amount due, karteset request (queued email stub), approve for payment, non-procurement paid/sent-to-accountant flags. After day 10, unmarked items are red on home.
 
 ### Database + Vercel
 

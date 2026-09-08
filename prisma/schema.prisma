@@ -48,6 +48,7 @@ model Supplier {
   orders                   Order[]
   branchLinks              SupplierBranch[]
   priceLists               PriceList[]
+  apMonths                 SupplierApMonth[]
 }
 
 model SupplierBranch {
@@ -205,6 +206,9 @@ model InvoicePhoto {
   source         String        @default("MANUAL")
   classifiedAt   DateTime?
   createdAt      DateTime      @default(now())
+  paid           Boolean       @default(false)
+  paidAt         DateTime?
+  sentToAccountant Boolean     @default(false)
   aiSupplierName String?
   aiInvoiceDate  String?
   aiTotalIls     Float?
@@ -263,4 +267,18 @@ model DishComponent {
 model AppSetting {
   key   String @id
   value String
+}
+
+model SupplierApMonth {
+  id                   String    @id @default(cuid())
+  supplierId           String
+  supplier             Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  month                String
+  kartesetRequestedAt  DateTime?
+  kartesetStatus       String?
+  amountDue            Float     @default(0)
+  approvedForPayment   Boolean   @default(false)
+  payMethod            String?
+  notes                String?
+  @@unique([supplierId, month])
 }

@@ -10,6 +10,7 @@ import {
   getGoodsToReceiveToday,
   getOrdersToPlaceToday,
 } from "@/lib/dashboard";
+import { getOverdueAccountantItems } from "@/lib/ap";
 import { formatIls, lineTotal } from "@/lib/format";
 import { monthKeyFromDate, monthLabel } from "@/lib/months";
 import { getAppSession } from "@/lib/session";
@@ -22,11 +23,12 @@ export default async function HomePage() {
   const branchId = session.isNetwork ? null : session.branchId;
   const month = monthKeyFromDate();
   const forecast = await getForecastTurnover();
-  const [fill, anomalies, toReceive, toOrder] = await Promise.all([
+  const [fill, anomalies, toReceive, toOrder, overdue] = await Promise.all([
     getCategoryFill(month, forecast, branchId),
     getAnomalies(branchId),
     getGoodsToReceiveToday(branchId),
     getOrdersToPlaceToday(branchId, session.isNetwork),
+    getOverdueAccountantItems(month),
   ]);
 
   const anomalyCount =
@@ -44,6 +46,15 @@ export default async function HomePage() {
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">{monthLabel(month)}</p>
       </div>
+
+      {overdue.length > 0 ? (
+        <Link
+          href="/ap"
+          className="block rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+        >
+          {overdue.length} הוצאות לא מרכש בלי סימון שולם/נשלח להנה״ח (אחרי ה-10 לחודש)
+        </Link>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className={overCount > 0 ? "ring-1 ring-destructive/40" : undefined}>

@@ -56,6 +56,18 @@ export default async function SettingsPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>תשלומים להנה״ח</CardTitle>
+          <CardDescription>כרטסת לספקים, אישור לתשלום, וצ׳קליסט הוצאות לא מרכש.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link href="/ap" className={cn(buttonVariants())}>
+            לוח AP
+          </Link>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>שימוש ב-AI</CardTitle>
           <CardDescription>
             ספירה גסה של קריאות ניתוח חשבוניות בחודש {monthLabel(runtime.month)}.
