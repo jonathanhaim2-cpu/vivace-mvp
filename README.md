@@ -20,7 +20,7 @@ npm install
 npm run dev
 ```
 
-Serves [http://127.0.0.1:43145](http://127.0.0.1:43145). `predev` generates Prisma Client, pushes SQLite, and seeds demo data (idempotent upserts).
+Serves [http://127.0.0.1:43145](http://127.0.0.1:43145). `predev` generates Prisma Client, pushes SQLite, and runs the **structural** seed (chart of accounts, empty category tree, tiny settings). No demo catalog.
 
 Copy `.env.example` → `.env`. With no `APP_PASSWORD`, the app stays open for local work.
 
@@ -29,6 +29,7 @@ DATABASE_URL="file:./dev.db"
 ```
 
 Reset: `npm run db:reset`  
+Optional old demo catalog: `SEED_DEMO=true npm run db:reset`  
 Production-style: `npm run build && npm run start:prod`
 
 ### Remote login
@@ -61,7 +62,7 @@ Secrets are env-only. Never commit keys.
 5. Manual upload + **ייבוא מתיקייה**, with AI suggestion when a key is set.
 6. **חיבור מייל** settings stub (no Gmail OAuth).
 7. Monthly **accountant package**: ZIP + Hebrew mailto.
-8. **דוח תחילת חודש** (defaults to previous month). Seeded sample: August 2026.
+8. **דוח תחילת חודש** (defaults to previous month).
 
 **Inventory + food cost**
 9. Per-branch inventory counts.
@@ -108,7 +109,7 @@ npm install
 npm run dev
 ```
 
-פורט **43145**. הדמו כולל ספקים, הזמנות, כרטיסי הנה״ח, חשבוניות לאוגוסט 2026, ספירת מלאי בהרצליה, ומנות Food Cost.
+פורט **43145**. ברירת המחדל: כרטיסי הנה״ח, עץ קטגוריות ריק, והגדרות מינימליות. אין ספקי דמו, מוצרים או הזמנות. סניף אמיתי מוסיפים ב**הגדרות**.
 
 לשיתוף עם רועי: ראו `DEPLOY.md` — סיסמה ב-`APP_PASSWORD`, כתובת HTTPS, ומפתח AI אופציונלי.
 
@@ -120,4 +121,4 @@ npm run dev
 - סיווג לכרטיס בן, חבילת ZIP להנה״ח, דוח חודשי
 - ספירות מלאי ו-Food Cost תיאורטי
 
-Toggle **סניף** להזמנות וספירות; **רשת** לאישור מחירון. חודש הדוגמה להנה״ח: **אוגוסט 2026**.
+Toggle **סניף** להזמנות וספירות; **רשת** לאישור מחירון. קטלוג הדמו הישן רק עם `SEED_DEMO=true`.

@@ -1,5 +1,5 @@
 import { createInventoryCount } from "@/actions/inventory";
-import { PageHeader } from "@/components/page-header";
+import { EmptyState, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -20,9 +20,25 @@ export default async function NewInventoryCountPage() {
     day: "2-digit",
   }).format(new Date());
 
+  if (!session.branchId) {
+    return (
+      <div>
+        <PageHeader title="ספירת מלאי חדשה" description="הזינו כמות שנספרה. אפשר להשלים ולשמור שוב כל עוד הספירה פתוחה." />
+        <EmptyState
+          title="אין סניף"
+          description="ספירה שייכת לסניף. הוסיפו סניף בהגדרות ואז חזרו לכאן."
+          action={{ href: "/settings", label: "הוספת סניף" }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div>
       <PageHeader title="ספירת מלאי חדשה" description="הזינו כמות שנספרה. אפשר להשלים ולשמור שוב כל עוד הספירה פתוחה." />
+      {products.length === 0 ? (
+        <p className="mb-4 text-sm text-muted-foreground">אין מוצרים עדיין. אפשר לפתוח ספירה ריקה, או להוסיף ספק ומוצרים קודם.</p>
+      ) : null}
       <form action={createInventoryCount} className="space-y-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field>

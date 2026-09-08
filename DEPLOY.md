@@ -67,7 +67,7 @@ OPENAI_API_KEY=
 AI_MONTHLY_BUDGET_USD=5
 ```
 
-`start:prod` runs `db:ready` (Prisma generate + `db push` + **idempotent seed**) then `next start`.
+`start:prod` runs `db:ready` (Prisma generate + `db push` + **structural seed**: chart, category tree, tiny settings). It does **not** recreate the old Tnuva/Herzliya demo. Known demo IDs are wiped if they are still in the SQLite file. Set `SEED_DEMO=true` only if you explicitly want that catalog.
 
 ### Fly.io
 
@@ -131,4 +131,4 @@ Open http://127.0.0.1:43145 — you should see **כניסה ל-Vivac'e** if `APP
 4. Roi logs in at **כניסה ל-Vivac'e**. The רשת/סניף toggle still works after login.
 5. If no AI key is configured, classification stays manual. Settings → **שימוש ב-AI** shows call count and estimated USD.
 
-Seed data (branches, suppliers, August 2026 invoices, dishes) is applied on first boot via `db:ready` and stays idempotent.
+Seed on boot (`db:ready`) upserts Jonathan’s chart of accounts and the empty category tree. It does not recreate demo suppliers, products, orders, or dishes. `SEED_DEMO=true` is opt-in and off by default.

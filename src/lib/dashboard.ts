@@ -18,8 +18,8 @@ export type CategoryFill = {
 
 export async function getForecastTurnover() {
   const row = await prisma.appSetting.findUnique({ where: { key: FORECAST_KEY } });
-  const value = Number(row?.value ?? 200000);
-  return Number.isFinite(value) && value > 0 ? value : 200000;
+  const value = Number(row?.value ?? 0);
+  return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
 export async function saveForecastTurnover(amount: number) {

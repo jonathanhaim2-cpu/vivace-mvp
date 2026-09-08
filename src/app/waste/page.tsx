@@ -1,5 +1,5 @@
 import { createWasteEntry, deleteWasteEntry } from "@/actions/waste";
-import { PageHeader } from "@/components/page-header";
+import { EmptyState, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
@@ -57,6 +57,13 @@ export default async function WastePage({
         </Button>
       </form>
 
+      {!session.branchId && session.branches.length === 0 ? (
+        <EmptyState
+          title="אין סניף"
+          description="פחת משויך לסניף. הוסיפו סניף בהגדרות ואז חזרו לדוח."
+          action={{ href: "/settings", label: "הוספת סניף" }}
+        />
+      ) : (
       <Card>
         <CardHeader>
           <CardTitle>רישום פחת</CardTitle>
@@ -114,6 +121,7 @@ export default async function WastePage({
           </form>
         </CardContent>
       </Card>
+      )}
 
       <div className="space-y-2">
         {entries.length === 0 ? (

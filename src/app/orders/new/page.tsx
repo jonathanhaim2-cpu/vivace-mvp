@@ -16,7 +16,8 @@ export default async function NewOrderPage({
     return (
       <EmptyState
         title="אין סניף פעיל"
-        description="צריך סניף כדי להזמין. הריצו את ה-seed או צרו סניף בדמו."
+        description="צריך סניף כדי להזמין. הוסיפו סניף בהגדרות ואז חזרו להזמנה."
+        action={{ href: "/settings", label: "הוספת סניף" }}
       />
     );
   }

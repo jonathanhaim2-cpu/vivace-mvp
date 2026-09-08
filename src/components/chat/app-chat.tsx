@@ -63,7 +63,7 @@ export function AppChat({
         ) : null}
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4">
           {rows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">למשל: כמה לתשלום לתנובה החודש? או סכם חריגות רכש.</p>
+            <p className="text-sm text-muted-foreground">למשל: כמה לתשלום לספקים החודש? או סכם חריגות רכש.</p>
           ) : (
             rows.map((row) => (
               <div

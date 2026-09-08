@@ -1,18 +1,22 @@
 import { logout } from "@/actions/auth";
+import { createBranch } from "@/actions/branches";
 import { PageHeader } from "@/components/page-header";
 import { AiMissingBanner } from "@/components/ai-missing-banner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { getAiRuntime } from "@/lib/ai";
 import { isAuthEnabled } from "@/lib/auth";
 import { monthLabel } from "@/lib/months";
+import { getAppSession } from "@/lib/session";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const runtime = await getAiRuntime();
+  const [runtime, session] = await Promise.all([getAiRuntime(), getAppSession()]);
   const providerLabel =
     runtime.provider === "google" ? "Google Gemini Flash" : runtime.provider === "openai" ? "OpenAI" : "אין ספק";
 
@@ -24,6 +28,40 @@ export default async function SettingsPage() {
       />
 
       {runtime.reason === "no_key" ? <AiMissingBanner /> : null}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>סניפים</CardTitle>
+          <CardDescription>
+            ה-seed לא יוצר סניפי דמו. הוסיפו כאן סניף אמיתי לפני הזמנות, מלאי ופחת.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {session.branches.length === 0 ? (
+            <p className="text-sm text-muted-foreground">אין סניפים עדיין.</p>
+          ) : (
+            <ul className="space-y-1 text-sm">
+              {session.branches.map((branch) => (
+                <li key={branch.id}>
+                  <span className="font-medium">{branch.name}</span>
+                  {branch.address ? <span className="text-muted-foreground"> · {branch.address}</span> : null}
+                </li>
+              ))}
+            </ul>
+          )}
+          <form action={createBranch} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+            <Field>
+              <FieldLabel htmlFor="name">שם סניף</FieldLabel>
+              <Input id="name" name="name" required placeholder="למשל: הרצליה" />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="address">כתובת (אופציונלי)</FieldLabel>
+              <Input id="address" name="address" placeholder="רחוב, עיר" />
+            </Field>
+            <Button type="submit">הוספת סניף</Button>
+          </form>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

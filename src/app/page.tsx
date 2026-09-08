@@ -44,10 +44,19 @@ export default async function HomePage() {
           {COMPANY.nameHe} · {COMPANY.tagline}
         </p>
         <h1 className="font-heading mt-1 text-3xl font-semibold tracking-tight">
-          {session.isNetwork ? "משרד הרשת" : session.branch?.name ?? "סניף"}
+          {session.isNetwork ? "משרד הרשת" : session.branch?.name ?? "אין סניף עדיין"}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">{monthLabel(month)}</p>
       </div>
+
+      {session.branches.length === 0 ? (
+        <Link
+          href="/settings"
+          className="block rounded-xl border border-dashed bg-card px-4 py-3 text-sm"
+        >
+          אין סניפים במערכת. הוסיפו סניף אמיתי בהגדרות כדי להתחיל הזמנות, מלאי ופחת.
+        </Link>
+      ) : null}
 
       {overdue.length > 0 ? (
         <Link
