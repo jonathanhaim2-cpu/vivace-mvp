@@ -10,13 +10,13 @@ export type ImportedProductRow = {
   bagsToUnits: number | null;
 };
 
-const NAME_KEYS = ["name", "שם", "שם מוצר", "product", "item"];
-const SKU_KEYS = ["sku", "מקט", "מק״ט", "מק\"ט", "barcode"];
-const PRICE_KEYS = ["price", "מחיר", "agreedprice", "unitprice", "מחיר לפני מעמ", "מחיר לפני מע״מ"];
-const DISCOUNT_KEYS = ["discount", "הנחה", "discountpercent", "הנחה %"];
-const VAT_KEYS = ["vat", "מע״מ", "מעמ", "vatincluded"];
+const NAME_KEYS = ["name", "שם", "שםמוצר", "שםהמוצר", "product", "item"];
+const SKU_KEYS = ["sku", "מקט", "מקטהמוצר", "מק״ט", 'מק(ט', "barcode", "ברקוד"];
+const PRICE_KEYS = ["price", "מחיר", "agreedprice", "unitprice", "מחירלפנימעמ", "מחירלפנימע״מ", "מחירליח"];
+const DISCOUNT_KEYS = ["discount", "הנחה", "discountpercent", "אחוזהנחה", "הנחה%"];
+const VAT_EXEMPT_KEYS = ["פטורממעמ", 'פטורממע"מ', "vat", "vatincluded", "מע״מ", "מעמ"];
 const CARTON_KEYS = ["carton", "קרטון", "cartontobags"];
-const BAGS_KEYS = ["bags", "יחידות", "bagstounits", "pack"];
+const BAGS_KEYS = ["bags", "יחידות", "bagstounits", "pack", "כמותבמארז"];
 
 function cell(row: Record<string, unknown>, keys: string[]) {
   const map = new Map(Object.keys(row).map((key) => [normalizeHeader(key), row[key]]));
@@ -40,8 +40,9 @@ function parseRow(row: Record<string, unknown>): ImportedProductRow | null {
   const name = cell(row, NAME_KEYS);
   if (!name) return null;
   const price = num(cell(row, PRICE_KEYS));
-  const vatRaw = cell(row, VAT_KEYS).toLowerCase();
-  const vatIncluded = vatRaw === "" ? true : !["0", "false", "לא", "no", "ללא"].includes(vatRaw);
+  const exemptRaw = cell(row, VAT_EXEMPT_KEYS).toLowerCase();
+  // Zest column "פטור ממע\"מ": כן = exempt = not vatIncluded
+  const vatIncluded = !["כן", "yes", "true", "1"].includes(exemptRaw);
   return {
     name,
     sku: cell(row, SKU_KEYS) || null,
@@ -58,9 +59,5 @@ export function parseProductSpreadsheet(buffer: Buffer, fileName: string): Impor
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   if (!sheet) return [];
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
-  const parsed = rows.map(parseRow).filter((row): row is ImportedProductRow => row != null);
-  if (parsed.length === 0 && fileName.toLowerCase().endsWith(".csv")) {
-    return parsed;
-  }
-  return parsed;
+  return rows.map(parseRow).filter((row): row is ImportedProductRow => row != null);
 }

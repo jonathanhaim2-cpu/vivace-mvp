@@ -1,0 +1,1209 @@
+{
+  "branch": {
+    "id": "branch_pilot",
+    "name": "סניף פיילוט",
+    "address": ""
+  },
+  "suppliers": [
+    {
+      "id": "sup_cohen",
+      "name": "כהן",
+      "slug": "cohen",
+      "catHint": "יבשים",
+      "products": [
+        {
+          "name": "אבקת סוכר 1 ק'ג - כהן",
+          "sku": "16427",
+          "agreedPrice": 6.5,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": "קונדיטוריה ואפייה"
+        },
+        {
+          "name": "אגוז מוסקט טחון 1 ק'ג - כהן (פסח)",
+          "sku": "11002",
+          "agreedPrice": 54.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "אגוז מלך 1 ק'ג - כהן",
+          "sku": "14003",
+          "agreedPrice": 31.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "אגוז מלך גרוס 1 ק'ג - כהן",
+          "sku": "14008",
+          "agreedPrice": 41.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": "פירות יבשים"
+        },
+        {
+          "name": "אגוז מלך טחון 1 ק'ג - כהן (פסח)",
+          "sku": "16015",
+          "agreedPrice": 41.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": "קונדיטוריה ואפייה"
+        },
+        {
+          "name": "אורגנו 1 ק'ג - כהן בדצ",
+          "sku": "11008B",
+          "agreedPrice": 15.5,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "אורז עגול אוסטרלי",
+          "sku": "12018",
+          "agreedPrice": 8.2,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "אנשובי ארוך בשמן צמחי 50 ג'",
+          "sku": "13007",
+          "agreedPrice": 5.5,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 100.0,
+          "packUnit": "יח'",
+          "label": "שימורים"
+        },
+        {
+          "name": "בזיליקום 500 גרם - כהן (פסח)",
+          "sku": "11014",
+          "agreedPrice": 34.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 0.5,
+          "packUnit": "ק\"ג",
+          "label": "תבלינים/תבלינים /תבלינים/תבלינים/תבלינים/תבלינים"
+        },
+        {
+          "name": "בישקוטים 400 גרם - כהן",
+          "sku": "32021",
+          "agreedPrice": 10.5,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ארגז",
+          "label": null
+        },
+        {
+          "name": "גרנולה אגוזים שקדים וקשיו - כהן",
+          "sku": "27361",
+          "agreedPrice": 19.5,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": "מוצרי מכולת"
+        },
+        {
+          "name": "דבש 1 ק'ג צנצנת פלסטיק לנדא - כהן",
+          "sku": "27018",
+          "agreedPrice": 27.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "זית סורי מבוקע גדול 10 ק'ג",
+          "sku": "13755",
+          "agreedPrice": 149.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 10.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "זית קלמטה חצאים יווני לנדא - כהן",
+          "sku": "13742",
+          "agreedPrice": 19.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 10.0,
+          "packUnit": "ק\"ג",
+          "label": "שימורים"
+        },
+        {
+          "name": "זיתי קלמטה יווני בינוני - כהן קהילות",
+          "sku": "13064P",
+          "agreedPrice": 170.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "חומץ חום 4 ל' - הלל",
+          "sku": "17009",
+          "agreedPrice": 7.2,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 4.0,
+          "packUnit": "ליטר",
+          "label": "רטבים וממרחים"
+        },
+        {
+          "name": "חרדל דיג'ון חלק צרפתי פיין FINE-כהן",
+          "sku": "17466",
+          "agreedPrice": 0.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 5.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "מחית וניל טהורה 1 ק'ג",
+          "sku": "27759",
+          "agreedPrice": 190.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": "קונדיטוריה ואפייה"
+        },
+        {
+          "name": "מחית נוגט לוז 65% NOYER (נויר) פרווה 1 ק'ג - כהן",
+          "sku": "161081",
+          "agreedPrice": 256.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "מחית פטריות כמהין קיץ שחורות 5% 500 גרם-כהן",
+          "sku": "32008",
+          "agreedPrice": 68.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 500.0,
+          "packUnit": "גרם",
+          "label": "מוצרים איטלקיים"
+        },
+        {
+          "name": "מחית שקדים NOYER 100% (נויר) 4 ק'ג - כהן",
+          "sku": "16830",
+          "agreedPrice": 45.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 4.0,
+          "packUnit": "ק\"ג",
+          "label": "קונדיטוריה ואפייה"
+        },
+        {
+          "name": "מיונז אמיתי 5 ק'ג - כהן(דלי כחול)",
+          "sku": "17497",
+          "agreedPrice": 98.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 2.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "מיונז אמיתי 5 ק'ג פיין FINE קרמי - כהן(לנדא)",
+          "sku": "17370",
+          "agreedPrice": 64.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": "FINE"
+        },
+        {
+          "name": "מיץ לימון 2 ל' איכותי- 99.8% רכז - כהן (פסח)",
+          "sku": "17242",
+          "agreedPrice": 50.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 4.0,
+          "packUnit": "יח'",
+          "label": "רטבים וממרחים"
+        },
+        {
+          "name": "מלח דק 1 ק'ג (מלח שולחן) - סלית (לנדא)",
+          "sku": "27069P",
+          "agreedPrice": 1.5,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "ממרח זית קלמטה 1 ק'ג - כהן //",
+          "sku": "17453",
+          "agreedPrice": 126.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 4.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "ממרח לימון כבוש 3 ק'ג",
+          "sku": "17208",
+          "agreedPrice": 45.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": "רטבים וממרחים"
+        },
+        {
+          "name": "ממרח עגבניות מיובשות 1 ק'ג - כהן (פסח)",
+          "sku": "17415",
+          "agreedPrice": 21.5,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": "ממרחי הבית"
+        },
+        {
+          "name": "ממרחית לבנה חלבית כרמית (5 ק'ג)",
+          "sku": "16484",
+          "agreedPrice": 98.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "משקה סויה בריסטה 1 ל' ללא גלוטן- NATRUE-כהן",
+          "sku": "33007",
+          "agreedPrice": 7.7,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ליטר",
+          "label": "אלטרנטיבי"
+        },
+        {
+          "name": "משקה שיבולת שועל בריסטה 1 ל' ללא גלוטן- NATRUE-כהן",
+          "sku": "33004",
+          "agreedPrice": 7.7,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ליטר",
+          "label": "אלטרנטיבי"
+        },
+        {
+          "name": "משקה שקדים 0% סוכר 1 ל' ללא גלוטן - NATRUE-כהן",
+          "sku": "33006",
+          "agreedPrice": 46.2,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 6.0,
+          "packUnit": "יח'",
+          "label": "אלטרנטיבי"
+        },
+        {
+          "name": "ניוקי תפו'א טרי (80%) 800 גרם - כהן",
+          "sku": "32001",
+          "agreedPrice": 61.6,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 8.0,
+          "packUnit": "יח'",
+          "label": "מוצרים איטלקיים"
+        },
+        {
+          "name": "נענע עלים  - כהן //",
+          "sku": "11122",
+          "agreedPrice": 44.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 500.0,
+          "packUnit": "גרם",
+          "label": "תבלינים"
+        },
+        {
+          "name": "סוכר לבן 1 ק'ג- בדץ- אירופאי",
+          "sku": "27661.",
+          "agreedPrice": 38.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "סוכרזית ממתיק מנות 1000 יח'",
+          "sku": "27739",
+          "agreedPrice": 22.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": "מוצרי מכולת"
+        },
+        {
+          "name": "סטייק ציפס מילוטל 17.5 קג",
+          "sku": "ZNS-295",
+          "agreedPrice": 175.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ארגז",
+          "label": null
+        },
+        {
+          "name": "עגבניות מיובשות לחות קוביות - כהן",
+          "sku": "14386",
+          "agreedPrice": 240.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 10.0,
+          "packUnit": "ק\"ג",
+          "label": "פירות יבשים/פירות יבשים"
+        },
+        {
+          "name": "עגבניות פולפה דקה מאוד איטלקי(2X5) ק'ג- כהן(פסח)",
+          "sku": "32005",
+          "agreedPrice": 64.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 10.0,
+          "packUnit": "ק\"ג",
+          "label": "מוצרים איטלקיים"
+        },
+        {
+          "name": "עגבניות שרי איטלקי",
+          "sku": "32044",
+          "agreedPrice": 102.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 6.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "ערמונים קלופים 100 גרם - כהן",
+          "sku": "27306",
+          "agreedPrice": 145.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 50.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "פיסטוק טחון 1 ק'ג - כהן",
+          "sku": "16170",
+          "agreedPrice": 95.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": "קונדיטוריה ואפייה"
+        },
+        {
+          "name": "פלפל אדום שלם חריף עם מקל 1 ק'ג - כהן //",
+          "sku": "11149",
+          "agreedPrice": 36.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": "תבלינים/תבלינים /תבלינים/תבלינים/תבלינים/תבלינים"
+        },
+        {
+          "name": "פלפל לבן טחון תהילה 1 ק'ג - כהן",
+          "sku": "11168",
+          "agreedPrice": 37.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "פלפל שחור גרוס דק תהילה 1 ק'ג - כהן",
+          "sku": "11176",
+          "agreedPrice": 41.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": "תבלינים/תבלינים /תבלינים/תבלינים/תבלינים/תבלינים"
+        },
+        {
+          "name": "פלפל שחור טחון תהילה 1 ק'ג - כהן",
+          "sku": "11184",
+          "agreedPrice": 33.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": "תבלינים"
+        },
+        {
+          "name": "פלפל שטה שלם 1 ק'ג - כהן (פסח)",
+          "sku": "11200",
+          "agreedPrice": 35.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": "תבלינים"
+        },
+        {
+          "name": "פפריקה מתוקה תהילה 1 ק'ג - כהן",
+          "sku": "11211",
+          "agreedPrice": 15.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": "תבלינים/תבלינים /תבלינים/תבלינים/תבלינים/תבלינים"
+        },
+        {
+          "name": "צימוק חום יווני ללא שמן - כהן(פסח)",
+          "sku": "14266",
+          "agreedPrice": 17.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": "פירות יבשים/פירות יבשים"
+        },
+        {
+          "name": "צלפים 370 גרם - כהן",
+          "sku": "13762",
+          "agreedPrice": 8.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 220.0,
+          "packUnit": "גרם",
+          "label": null
+        },
+        {
+          "name": "צלפים מיניאטורים 970 גרם - כהן",
+          "sku": "13763",
+          "agreedPrice": 270.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 6.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "קטשופ מנות 998 יח' - הלמנס",
+          "sku": "17186",
+          "agreedPrice": 125.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "קינמון טחון 1 ק'ג - כהן (פסח)",
+          "sku": "11242",
+          "agreedPrice": 0.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "קמח סמולינה דורום איטלקי 1 ק'ג (טחינה גסה)",
+          "sku": "161041",
+          "agreedPrice": 9.5,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 10.0,
+          "packUnit": "ק\"ג",
+          "label": "קונדיטוריה ואפייה"
+        },
+        {
+          "name": "קמח תירס פולנטה להכנה מהירה איטלקי 500 גרם - כהן",
+          "sku": "12338",
+          "agreedPrice": 62.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ארגז",
+          "label": null
+        },
+        {
+          "name": "קפוא מיץ לימון טבעי",
+          "sku": "18262",
+          "agreedPrice": 19.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 2.0,
+          "packUnit": "ליטר",
+          "label": "קפואים"
+        },
+        {
+          "name": "קפוא פלחי תפו'א עם קליפה (2.5*7) - מילוטל",
+          "sku": "18136",
+          "agreedPrice": 201.25,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 17.5,
+          "packUnit": "ק\"ג",
+          "label": "קפואים/קפואים/קפואים"
+        },
+        {
+          "name": "קפוא צ'יפס אמריקאי 7/7 בלגי (1.5*6) //",
+          "sku": "18032",
+          "agreedPrice": 0.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 9.0,
+          "packUnit": "ק\"ג",
+          "label": "קפואים/קפואים"
+        },
+        {
+          "name": "קפוא תחתיות ארטישוק (5X2) ק'ג",
+          "sku": "18098",
+          "agreedPrice": 169.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 10.0,
+          "packUnit": "ק\"ג",
+          "label": "קפואים/קפואים/קפואים"
+        },
+        {
+          "name": "קקאו כהה 22%-20% 1 ק'ג - כהן (פסח)",
+          "sku": "16242",
+          "agreedPrice": 58.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": "קונדיטוריה ואפייה"
+        },
+        {
+          "name": "רוזמרין עלים 500 גרם - כהן (פסח)",
+          "sku": "11254",
+          "agreedPrice": 15.5,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 0.5,
+          "packUnit": "ק\"ג",
+          "label": "תבלינים/תבלינים /תבלינים/תבלינים/תבלינים/תבלינים"
+        },
+        {
+          "name": "רסק עגבניות 28-30% A8 - כהן(פסח קטניות)",
+          "sku": "13767",
+          "agreedPrice": 108.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 6.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "שוקולד חום חלבי מטבעות 32.5% - כרמית",
+          "sku": "16578",
+          "agreedPrice": 225.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 5.0,
+          "packUnit": "ק\"ג",
+          "label": "קונדיטוריה ואפייה"
+        },
+        {
+          "name": "שמן (רוטב) תיבול בטעם כמהין לבנות 250 מ'ל-כהן",
+          "sku": "32010",
+          "agreedPrice": 62.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 2.0,
+          "packUnit": "יח'",
+          "label": "מוצרים איטלקיים"
+        },
+        {
+          "name": "שמן (רוטב) תיבול בטעם כמהין שחורות 250 מ'ל-כהן",
+          "sku": "32009",
+          "agreedPrice": 62.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 2.0,
+          "packUnit": "יח'",
+          "label": "מוצרים איטלקיים"
+        },
+        {
+          "name": "שמן זית כתית מעולה 3 ליטר - איטלקי ZUCCHI",
+          "sku": "15138",
+          "agreedPrice": 110.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 3.0,
+          "packUnit": "ק\"ג",
+          "label": "מוצרים איטלקיים"
+        },
+        {
+          "name": "שמן זית כתית מעולה-3.8 ליטר ספרדי%0.4 - כהן",
+          "sku": "15075",
+          "agreedPrice": 110.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 3.8,
+          "packUnit": "ק\"ג",
+          "label": "שמנים"
+        },
+        {
+          "name": "שמן קנולה 5 ל' - כהן",
+          "sku": "15061",
+          "agreedPrice": 90.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 3.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "שמרים יבשים 500 גרם פליישמן",
+          "sku": "16981-1",
+          "agreedPrice": 190.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "שקד מולבן גפרור אמריקאי 1 ק'ג - כהן (פסח)",
+          "sku": "16287",
+          "agreedPrice": 49.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": "קונדיטוריה ואפייה"
+        },
+        {
+          "name": "תמצית ונילה 1 ל' - NC 50522 באלירום עד'ח",
+          "sku": "20115",
+          "agreedPrice": 210.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        }
+      ]
+    },
+    {
+      "id": "sup_alcohol",
+      "name": "יין ומשקאות חריפים",
+      "slug": "alcohol",
+      "catHint": "משקאות",
+      "products": [
+        {
+          "name": "אפרול 6/1000",
+          "sku": "70012",
+          "agreedPrice": 102.71,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "ג'ין גורדון 1 ליטר 37.5%",
+          "sku": "70772",
+          "agreedPrice": 127.35,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "מונין פטל שחור 700",
+          "sku": "70184",
+          "agreedPrice": 66.9,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "מונין פסיפלורה 1 ליטר",
+          "sku": "70205",
+          "agreedPrice": 86.85,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ליטר",
+          "label": null
+        },
+        {
+          "name": "סמירנוף אדום 1 ליטר 37.5%",
+          "sku": "70281",
+          "agreedPrice": 130.99,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "פיבר טרי פרימיום ג׳ינג׳ר ביר 200 מ״ל",
+          "sku": "29969",
+          "agreedPrice": 114.24,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ארגז",
+          "label": null
+        },
+        {
+          "name": "פרנג'ליקו 700/6",
+          "sku": "70113",
+          "agreedPrice": 109.14,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "צינזנו  ורמוט  ביאנקו",
+          "sku": "70066",
+          "agreedPrice": 50.57,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "צינזנו  ורמוט אדום",
+          "sku": "70073",
+          "agreedPrice": 49.92,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "קמפרי 1000",
+          "sku": "70573",
+          "agreedPrice": 101.08,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "תבור קברנה סוביניון 750 מ'ל",
+          "sku": "71058",
+          "agreedPrice": 33.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": "יין תבור"
+        }
+      ]
+    },
+    {
+      "id": "sup_produce",
+      "name": "ירקות טריים",
+      "slug": "produce",
+      "catHint": "ירקות ופירות",
+      "products": [
+        {
+          "name": "אורגנו טרי",
+          "sku": "ZNS-190",
+          "agreedPrice": 5.0,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "אורוגולה",
+          "sku": "ZNS-153",
+          "agreedPrice": 0.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "בזיליקום (גוש)",
+          "sku": "195",
+          "agreedPrice": 33.0,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "בזיליקום גוש קטיף",
+          "sku": "149",
+          "agreedPrice": 4.5,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "בטטה",
+          "sku": "35",
+          "agreedPrice": 9.5,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "בייבי מיקס גוש קטיף",
+          "sku": "154",
+          "agreedPrice": 33.0,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "בצל יבש",
+          "sku": "24",
+          "agreedPrice": 1.7,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "בצל ירוק גוש ק'ג",
+          "sku": "300",
+          "agreedPrice": 33.0,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "בצל ירוק גוש קטיף",
+          "sku": "198",
+          "agreedPrice": 4.5,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "בצל סגול",
+          "sku": "25",
+          "agreedPrice": 4.5,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "חסה לאליק",
+          "sku": "143",
+          "agreedPrice": 10.0,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "חסה סלנובה גוש",
+          "sku": "153",
+          "agreedPrice": 10.0,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "חציל חממה",
+          "sku": "9",
+          "agreedPrice": 4.5,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "מלפפון",
+          "sku": "8",
+          "agreedPrice": 8.5,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "עגבניה אשכולות",
+          "sku": "20",
+          "agreedPrice": 5.0,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "עלי מנגולד גוש קטיף",
+          "sku": "171",
+          "agreedPrice": 4.5,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "פטרוזיליה (גוש)",
+          "sku": "194",
+          "agreedPrice": 28.0,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "פטרוזיליה גוש קטיף",
+          "sku": "147",
+          "agreedPrice": 4.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "פטריות ארוז",
+          "sku": "161",
+          "agreedPrice": 28.0,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "פלפל אדום",
+          "sku": "28",
+          "agreedPrice": 7.0,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "פלפל חריף",
+          "sku": "31",
+          "agreedPrice": 8.0,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "שום קלוף",
+          "sku": "44",
+          "agreedPrice": 25.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "שרי צהוב",
+          "sku": "ZNS-191",
+          "agreedPrice": 23.0,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "שרי תמר",
+          "sku": "5",
+          "agreedPrice": 19.0,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        },
+        {
+          "name": "תפו'א לבן",
+          "sku": "12",
+          "agreedPrice": 3.5,
+          "discountPercent": 0.0,
+          "vatIncluded": false,
+          "packQty": 1.0,
+          "packUnit": "ק\"ג",
+          "label": null
+        }
+      ]
+    },
+    {
+      "id": "sup_coffee",
+      "name": "קפה",
+      "slug": "coffee",
+      "catHint": "משקאות",
+      "products": [
+        {
+          "name": "500 גרם פולי קפה נטול פרימו ארומה",
+          "sku": "CO410028",
+          "agreedPrice": 79.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "פולי כף קטן",
+          "sku": "PULICAF S",
+          "agreedPrice": 0.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "פולי קפה גלובו עלית",
+          "sku": "CO410051",
+          "agreedPrice": 82.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        }
+      ]
+    },
+    {
+      "id": "sup_tapuza",
+      "name": "תפוזזה",
+      "slug": "tapuza",
+      "catHint": "משקאות",
+      "products": [
+        {
+          "name": "תפוזזה זכוכית קמעונאי",
+          "sku": "7290018949009",
+          "agreedPrice": 57.6,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 12.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "ג'ין-תפוזזה קמעונאי",
+          "sku": "7290018949191",
+          "agreedPrice": 98.4,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 12.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "וודקה-לימוננדה קמעונאי",
+          "sku": "7290018949184",
+          "agreedPrice": 98.4,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 12.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "לימוננדה זכוכית קמעונאי",
+          "sku": "7290018949023",
+          "agreedPrice": 57.6,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 12.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "פיקדון",
+          "sku": "156",
+          "agreedPrice": 0.0,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 1.0,
+          "packUnit": "יח'",
+          "label": null
+        },
+        {
+          "name": "תפוחחה זכוכית קמעונאי",
+          "sku": "7290018949016",
+          "agreedPrice": 57.6,
+          "discountPercent": 0.0,
+          "vatIncluded": true,
+          "packQty": 12.0,
+          "packUnit": "יח'",
+          "label": null
+        }
+      ]
+    }
+  ]
+}

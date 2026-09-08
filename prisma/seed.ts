@@ -4,12 +4,20 @@ import { PrismaClient } from "@prisma/client";
 import { seedChartOfAccounts } from "../src/lib/accounts";
 import { seedProductCategories } from "../src/lib/categories";
 import { DEMO_IDS, seedDemo } from "./seed-demo";
+import { seedRealCatalog } from "./seed-real";
 
 const prisma = new PrismaClient();
 
 function demoEnabled() {
   const raw = process.env.SEED_DEMO?.trim().toLowerCase();
   return raw === "true" || raw === "1" || raw === "yes";
+}
+
+function realEnabled() {
+  const raw = process.env.SEED_REAL?.trim().toLowerCase();
+  // default ON for production real-data testing unless explicitly disabled
+  if (raw === "false" || raw === "0" || raw === "no") return false;
+  return true;
 }
 
 async function seedMinimalSettings() {
@@ -120,6 +128,11 @@ async function main() {
   }
 
   await wipeKnownDemo();
+  if (realEnabled()) {
+    await seedRealCatalog(prisma);
+    console.log("Vivac'e real catalog seeded (suppliers + products from Zest exports).");
+    return;
+  }
   console.log("Vivac'e structural seed ready (chart + categories + settings). Demo catalog skipped.");
 }
 
