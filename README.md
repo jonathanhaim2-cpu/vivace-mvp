@@ -30,6 +30,7 @@ DATABASE_URL="file:./dev.db"
 
 Reset: `npm run db:reset`  
 Optional old demo catalog: `SEED_DEMO=true npm run db:reset`  
+Invoice catalog merge (17 suppliers): 2026-09-09.  
 Production-style: `npm run build && npm run start:prod`
 
 ### Remote login
