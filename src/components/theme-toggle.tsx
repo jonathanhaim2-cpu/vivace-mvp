@@ -28,7 +28,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
       role="group"
       aria-label="בחירת ערכת צבע"
       className={cn(
-        "inline-flex rounded-full border border-border bg-card/90 p-0.5 shadow-sm",
+        "inline-flex rounded-full border border-border bg-muted/70 p-0.5 shadow-sm",
         compact ? "gap-0" : "gap-0.5",
       )}
     >
@@ -47,7 +47,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
               compact ? "size-8" : "h-8 gap-1.5 px-2.5",
               active
                 ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                : "text-foreground/70 hover:bg-background hover:text-foreground",
             )}
           >
             <Icon className="size-3.5" />

@@ -31,20 +31,12 @@ export default async function LoginPage({
       </div>
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-[var(--shadow-card-lg)] sm:p-10">
         <div className="flex flex-col items-center text-center">
-          <BrandLogo variant="auto" />
-          <p className="mt-5 text-xs font-medium tracking-wide text-muted-foreground">
+          <BrandLogo variant="auto" showTagline />
+          <p className="mt-4 text-xs font-medium tracking-wide text-muted-foreground">
             {COMPANY.nameHe} · ע.מ {COMPANY.taxId}
           </p>
-          <h1 className="mt-3 text-2xl font-semibold tracking-tight">כניסה ל-{COMPANY.wordmark}</h1>
-          <p className="mt-2 max-w-sm text-xs leading-relaxed text-muted-foreground">
-            סיסמה משותפת ליונתן ולרועי. בחירת רשת/סניף נשארת אחרי הכניסה.
-          </p>
+          <h1 className="mt-4 text-2xl font-semibold tracking-tight">כניסה</h1>
         </div>
-        {!isAuthEnabled() ? (
-          <p className="mt-6 rounded-xl border border-border bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
-            אין סיסמה מוגדרת (`APP_PASSWORD`). המערכת פתוחה במצב פיתוח.
-          </p>
-        ) : null}
         {error === "1" ? (
           <p className="mt-6 rounded-xl border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             סיסמה שגויה. נסו שוב.

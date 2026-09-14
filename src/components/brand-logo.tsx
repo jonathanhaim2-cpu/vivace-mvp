@@ -20,7 +20,7 @@ function LogoMark({
   className?: string;
 }) {
   return (
-    <div className={cn("relative", compact ? "h-10 w-40" : "h-[4.75rem] w-60", className)}>
+    <div className={cn("relative", compact ? "h-10 w-40" : "h-28 w-72 sm:h-32 sm:w-80", className)}>
       <Image
         src={src}
         alt={alt}
