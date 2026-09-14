@@ -130,9 +130,13 @@ export function SupplierForm({
               name="orderCutoffTime"
               type="time"
               dir="ltr"
+              lang="en-GB"
               required
               defaultValue={supplier?.orderCutoffTime ?? "14:00"}
             />
+            <FieldDescription>
+              תצוגה 24 שעות, למשל 14:00 (לא 00:14). השדה מבודד LTR בעברית.
+            </FieldDescription>
           </Field>
           <Field>
             <FieldLabel htmlFor="reminderHoursBefore">תזכורת לפני סגירה (שעות)</FieldLabel>
