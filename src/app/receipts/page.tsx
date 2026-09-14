@@ -33,7 +33,7 @@ export default async function ReceiptsPage() {
         <div className="space-y-3">
           {receipts.map((receipt) => (
             <Link key={receipt.id} href={`/receipts/${receipt.id}`}>
-              <Card className="hover:bg-accent/30">
+              <Card className="transition-colors hover:bg-accent/40 hover:ring-primary/20">
                 <CardContent className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="font-medium">{receipt.order.supplier.name}</p>

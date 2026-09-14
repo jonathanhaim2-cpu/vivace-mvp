@@ -1,5 +1,5 @@
 export const COMPANY = {
-  name: "Vivace",
+  name: "Vivac'e",
   wordmark: "Vivac'e",
   nameHe: "ויואצ'ה",
   tagline: "Famiglia & Pizza",

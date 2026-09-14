@@ -192,7 +192,7 @@ export function ProductForm({
               id="documentType"
               name="documentType"
               defaultValue={product?.documentType ?? ""}
-              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
             >
               <option value="">ברירת מחדל של הספק</option>
               {DOCUMENT_TYPES.filter((t) => t.value !== "MIX_PER_PRODUCT").map((type) => (

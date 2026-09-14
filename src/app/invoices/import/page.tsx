@@ -35,7 +35,7 @@ export default function InvoiceImportPage() {
                 id="periodMonth"
                 name="periodMonth"
                 defaultValue={monthKeyFromDate()}
-                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
               >
                 {months.map((key) => (
                   <option key={key} value={key}>

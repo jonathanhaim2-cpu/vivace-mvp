@@ -47,7 +47,7 @@ export default async function InventoryCountDetailPage({
               name="kind"
               defaultValue={count.kind}
               disabled={!open}
-              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
             >
               <option value={INVENTORY_KIND.START}>תחילת חודש</option>
               <option value={INVENTORY_KIND.END}>סוף חודש</option>

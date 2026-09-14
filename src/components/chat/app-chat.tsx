@@ -45,7 +45,7 @@ export function AppChat({
 
   return (
     <Sheet>
-      <SheetTrigger className="fixed bottom-20 end-4 z-40 inline-flex size-12 items-center justify-center rounded-full bg-[var(--brand-red)] text-white shadow-lg lg:bottom-6">
+      <SheetTrigger className="fixed bottom-20 end-4 z-40 inline-flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg lg:bottom-6">
         <MessageCircle className="size-5" />
         <span className="sr-only">צ׳אט AI</span>
       </SheetTrigger>

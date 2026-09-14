@@ -30,7 +30,7 @@ export default async function ReportsPage({
           <select
             name="month"
             defaultValue={month}
-            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+            className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm"
           >
             {recentMonthKeys().map((key) => (
               <option key={key} value={key}>

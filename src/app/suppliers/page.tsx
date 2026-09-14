@@ -45,7 +45,7 @@ export default async function SuppliersPage() {
             const method = PAYMENT_METHODS.find((t) => t.value === supplier.paymentMethod)?.label;
             return (
               <Link key={supplier.id} href={`/suppliers/${supplier.id}`}>
-                <Card className="h-full hover:bg-accent/30">
+                <Card className="h-full transition-colors hover:bg-accent/40 hover:ring-primary/20">
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between gap-2">
                       <span>{supplier.name}</span>

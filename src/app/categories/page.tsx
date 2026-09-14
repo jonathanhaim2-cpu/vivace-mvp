@@ -25,7 +25,7 @@ export default async function CategoriesPage() {
         <CardContent>
           <form action={createCategory} className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <Input name="name" placeholder="שם" required className="sm:max-w-xs" />
-            <select name="parentId" className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm">
+            <select name="parentId" className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm">
               <option value="">קטגוריית אב</option>
               {tree.map((parent) => (
                 <option key={parent.id} value={parent.id}>

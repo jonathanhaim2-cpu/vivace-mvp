@@ -23,7 +23,7 @@ export function DishCreateForm() {
           name="kind"
           value={kind}
           onChange={(event) => setKind(event.target.value)}
-          className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+          className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
         >
           <option value="DISH">מנה למכירה</option>
           <option value="INTERMEDIATE">מנת ביניים / עיבוד</option>

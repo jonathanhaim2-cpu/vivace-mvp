@@ -2,6 +2,7 @@ import Link from "next/link";
 import { saveDashboardSettings } from "@/actions/dashboard";
 import { ClockTime } from "@/components/clock-time";
 import { ForecastInputForm } from "@/components/dashboard/forecast-form";
+import { PageHeader } from "@/components/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { COMPANY } from "@/lib/constants";
@@ -41,20 +42,15 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-sm text-muted-foreground">
-          {COMPANY.nameHe} · {COMPANY.tagline}
-        </p>
-        <h1 className="font-heading mt-1 text-3xl font-semibold tracking-tight">
-          {session.isNetwork ? "משרד הרשת" : session.branch?.name ?? "אין סניף עדיין"}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">{monthLabel(month)}</p>
-      </div>
+      <PageHeader
+        title={session.isNetwork ? "משרד הרשת" : session.branch?.name ?? "אין סניף עדיין"}
+        description={`${COMPANY.nameHe} · ${COMPANY.tagline} · ${monthLabel(month)}`}
+      />
 
       {session.branches.length === 0 ? (
         <Link
           href="/settings"
-          className="block rounded-xl border border-dashed bg-card px-4 py-3 text-sm"
+          className="block rounded-xl border border-dashed border-border bg-card px-4 py-3 text-sm shadow-[var(--shadow-card)]"
         >
           אין סניפים במערכת. הוסיפו סניף בהגדרות כדי להתחיל הזמנות, מלאי ופחת.
         </Link>
@@ -63,14 +59,14 @@ export default async function HomePage() {
       {overdue.length > 0 ? (
         <Link
           href="/ap"
-          className="block rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+          className="block rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
         >
           {overdue.length} הוצאות לא מרכש בלי סימון שולם/נשלח להנה״ח (אחרי ה-10 לחודש)
         </Link>
       ) : null}
 
       {session.isNetwork && rogue.branches.length > 0 ? (
-        <div className="rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm">
           <p className="font-medium text-destructive">סניפים סוררים (חריגת יעד ≥ {rogue.threshold} נקודות אחוז)</p>
           <ul className="mt-1 space-y-1">
             {rogue.branches.map((branch) => (

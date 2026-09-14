@@ -105,7 +105,7 @@ export default async function FoodCostPage() {
             const prep = dish.kind === "INTERMEDIATE";
             return (
               <Link key={dish.id} href={`/foodcost/${dish.id}`}>
-                <Card className={over ? "ring-1 ring-destructive/40" : "hover:bg-accent/30"}>
+                <Card className={over ? "ring-1 ring-destructive/40" : "transition-colors hover:bg-accent/40"}>
                   <CardHeader>
                     <CardTitle>{dish.name}</CardTitle>
                     <CardDescription>{prep ? "מנת ביניים / עיבוד · בלי מחיר מכירה" : "מנה למכירה"}</CardDescription>
@@ -165,14 +165,14 @@ export default async function FoodCostPage() {
             </Field>
             <Field>
               <FieldLabel htmlFor="kind">סוג</FieldLabel>
-              <select id="kind" name="kind" className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm">
+              <select id="kind" name="kind" className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm">
                 <option value="EXPENSE">הוצאה</option>
                 <option value="INCOME">הכנסה</option>
               </select>
             </Field>
             <Field>
               <FieldLabel htmlFor="cadence">קבוע / משתנה</FieldLabel>
-              <select id="cadence" name="cadence" className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm">
+              <select id="cadence" name="cadence" className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm">
                 <option value="FIXED">קבוע</option>
                 <option value="VARIABLE">משתנה</option>
               </select>

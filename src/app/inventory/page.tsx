@@ -47,7 +47,7 @@ export default async function InventoryPage() {
         <div className="space-y-3">
           {counts.map((count) => (
             <Link key={count.id} href={`/inventory/${count.id}`}>
-              <Card className="hover:bg-accent/30">
+              <Card className="transition-colors hover:bg-accent/40 hover:ring-primary/20">
                 <CardContent className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="font-medium">{count.branch.name}</p>

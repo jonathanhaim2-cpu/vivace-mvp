@@ -41,7 +41,7 @@ export default async function OrdersPage() {
             );
             return (
               <Link key={order.id} href={`/orders/${order.id}`}>
-                <Card className="hover:bg-accent/30">
+                <Card className="transition-colors hover:bg-accent/40 hover:ring-primary/20">
                   <CardContent className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="font-medium">{order.supplier.name}</p>

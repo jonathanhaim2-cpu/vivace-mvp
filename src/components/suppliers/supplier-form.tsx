@@ -114,7 +114,7 @@ export function SupplierForm({
               id="documentType"
               name="documentType"
               defaultValue={supplier?.documentType ?? "TAX_INVOICE"}
-              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
             >
               {DOCUMENT_TYPES.map((type) => (
                 <option key={type.value} value={type.value}>
@@ -239,7 +239,7 @@ export function SupplierForm({
               id="paymentTerms"
               name="paymentTerms"
               defaultValue={supplier?.paymentTerms ?? ""}
-              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
             >
               <option value="">לא הוגדר</option>
               {PAYMENT_TERMS.map((term) => (
@@ -255,7 +255,7 @@ export function SupplierForm({
               id="paymentMethod"
               name="paymentMethod"
               defaultValue={supplier?.paymentMethod ?? ""}
-              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
             >
               <option value="">לא הוגדר</option>
               {PAYMENT_METHODS.map((method) => (

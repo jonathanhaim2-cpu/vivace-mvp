@@ -4,6 +4,7 @@ import { DirectionProvider } from "@/components/ui/direction";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { AppShell } from "@/components/app-shell";
+import { ThemeProvider } from "@/components/theme-provider";
 import { COMPANY } from "@/lib/constants";
 import { isAuthEnabled } from "@/lib/auth";
 import { getAiRuntime } from "@/lib/ai";
@@ -17,8 +18,8 @@ const rubik = Rubik({
 });
 
 export const metadata: Metadata = {
-  title: `${COMPANY.name} · ${COMPANY.tagline} · רכש ומלאי`,
-  description: `מערכת רכש ומלאי ל-${COMPANY.nameHe} (${COMPANY.tagline}, עוסק מורשה ${COMPANY.taxId})`,
+  title: `${COMPANY.wordmark} · ${COMPANY.tagline} · רכש ומלאי`,
+  description: `מערכת רכש ומלאי ל-${COMPANY.nameHe} (${COMPANY.tagline}, ע.מ ${COMPANY.taxId})`,
 };
 
 export const dynamic = "force-dynamic";
@@ -28,23 +29,25 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const [runtime, chatMessages] = await Promise.all([getAiRuntime(), listChatMessages()]);
 
   return (
-    <html lang="he" dir="rtl" className={`${rubik.variable} h-full antialiased`}>
+    <html lang="he" dir="rtl" suppressHydrationWarning className={`${rubik.variable} h-full antialiased`}>
       <body className="min-h-full bg-background font-sans text-foreground">
-        <DirectionProvider direction="rtl">
-          <TooltipProvider>
-            <AppShell
-              role={session.role}
-              branchId={session.branchId}
-              branches={session.branches}
-              authEnabled={isAuthEnabled()}
-              aiAvailable={runtime.available}
-              chatMessages={chatMessages}
-            >
-              {children}
-            </AppShell>
-            <Toaster />
-          </TooltipProvider>
-        </DirectionProvider>
+        <ThemeProvider>
+          <DirectionProvider direction="rtl">
+            <TooltipProvider>
+              <AppShell
+                role={session.role}
+                branchId={session.branchId}
+                branches={session.branches}
+                authEnabled={isAuthEnabled()}
+                aiAvailable={runtime.available}
+                chatMessages={chatMessages}
+              >
+                {children}
+              </AppShell>
+              <Toaster />
+            </TooltipProvider>
+          </DirectionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

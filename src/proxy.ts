@@ -11,7 +11,11 @@ export function proxy(request: NextRequest) {
     pathname === "/login" ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
-    pathname === "/robots.txt";
+    pathname === "/robots.txt" ||
+    pathname.startsWith("/brand/") ||
+    pathname.startsWith("/uploads/") ||
+    pathname.startsWith("/vivace-logo") ||
+    /\.(?:png|jpe?g|gif|svg|webp|ico|txt|woff2?)$/i.test(pathname);
 
   if (!isAuthEnabled() || isPublic) {
     return NextResponse.next({ request: { headers: requestHeaders } });
@@ -28,5 +32,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|uploads/).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|uploads/|brand/|vivace-logo).*)"],
 };

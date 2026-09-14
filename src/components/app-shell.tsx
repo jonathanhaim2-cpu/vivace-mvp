@@ -18,6 +18,7 @@ import { logout } from "@/actions/auth";
 import { BrandLogo } from "@/components/brand-logo";
 import { AppChat } from "@/components/chat/app-chat";
 import { RoleSwitcher } from "@/components/role-switcher";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { COMPANY } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { Role } from "@/lib/constants";
@@ -61,12 +62,12 @@ export function AppShell({
   return (
     <div className="min-h-full bg-background">
       <aside className="fixed inset-y-0 start-0 z-30 hidden w-64 flex-col bg-sidebar text-sidebar-foreground print:hidden lg:flex">
-        <div className="border-b border-sidebar-border px-4 py-4">
-          <Link href="/">
-            <BrandLogo variant="wb" />
+        <div className="border-b border-sidebar-border px-5 py-5">
+          <Link href="/" className="block">
+            <BrandLogo variant="wb" className="items-start" />
           </Link>
-          <p className="mt-2 text-[11px] text-sidebar-foreground/55">
-            {COMPANY.nameHe} · עוסק מורשה {COMPANY.taxId}
+          <p className="mt-3 text-[11px] tracking-wide text-sidebar-foreground/55">
+            {COMPANY.nameHe} · ע.מ {COMPANY.taxId}
           </p>
         </div>
         <nav className="flex flex-1 flex-col gap-1 p-3">
@@ -78,13 +79,13 @@ export function AppShell({
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-2 rounded-full px-3 py-2 text-sm transition-colors",
+                  "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition-colors",
                   active
-                    ? "bg-[var(--brand-red)] text-white"
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
                     : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground",
                 )}
               >
-                <Icon className="size-4" />
+                <Icon className="size-4 shrink-0" />
                 {item.label}
               </Link>
             );
@@ -93,32 +94,38 @@ export function AppShell({
         <div className="border-t border-sidebar-border p-4 text-xs leading-5 text-sidebar-foreground/65">
           <p>בעלים: {COMPANY.owner}</p>
           <p>מנהל מוצר: {COMPANY.productOwner}</p>
-          <a href={COMPANY.website} className="mt-2 inline-block text-[var(--brand-red)] hover:underline" target="_blank" rel="noreferrer">
+          <a
+            href={COMPANY.website}
+            className="mt-2 inline-block text-sidebar-primary hover:underline"
+            target="_blank"
+            rel="noreferrer"
+          >
             vivace-pizza.com
           </a>
         </div>
       </aside>
 
-      <header className="sticky top-0 z-20 border-b border-border bg-[var(--color-cream)] text-foreground print:hidden lg:ms-64">
+      <header className="sticky top-0 z-20 border-b border-border bg-background/90 text-foreground backdrop-blur-md print:hidden lg:ms-64">
         <div className="flex items-center justify-between gap-3 px-4 py-2.5">
           <div className="lg:hidden">
             <Link href="/">
-              <BrandLogo variant="rb" compact />
+              <BrandLogo variant="auto" compact />
             </Link>
           </div>
           <div className="hidden text-sm text-muted-foreground lg:block">
             {role === "network" ? "תצוגת משרד הרשת" : "תצוגת מנהל סניף"}
           </div>
           <div className="flex items-center gap-2">
+            <ThemeToggle compact />
             <Link
               href="/settings"
               className={cn(
                 "inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs hover:bg-muted",
-                pathname.startsWith("/settings") && "bg-muted text-[var(--brand-red)]",
+                pathname.startsWith("/settings") && "bg-muted text-primary",
               )}
             >
               <Settings className="size-3.5" />
-              הגדרות
+              <span className="hidden sm:inline">הגדרות</span>
             </Link>
             {authEnabled ? (
               <form action={logout}>
@@ -127,7 +134,7 @@ export function AppShell({
                   className="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs hover:bg-muted"
                 >
                   <LogOut className="size-3.5" />
-                  יציאה
+                  <span className="hidden sm:inline">יציאה</span>
                 </button>
               </form>
             ) : null}
@@ -140,7 +147,7 @@ export function AppShell({
         <div className="mx-auto w-full max-w-6xl px-4 py-6 pb-28 lg:pb-10">{children}</div>
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-[var(--color-cream)]/95 backdrop-blur print:hidden lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur-md print:hidden lg:hidden">
         <div className="flex overflow-x-auto">
           {NAV.map((item) => {
             const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -150,8 +157,8 @@ export function AppShell({
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex min-w-[4.6rem] flex-col items-center gap-1 py-2.5 text-[11px]",
-                  active ? "text-[var(--brand-red)]" : "text-muted-foreground",
+                  "flex min-w-[4.6rem] flex-col items-center gap-1 py-2.5 text-[11px] transition-colors",
+                  active ? "text-primary" : "text-muted-foreground",
                 )}
               >
                 <Icon className="size-4" />

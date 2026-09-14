@@ -50,7 +50,7 @@ export default async function WastePage({
       </Card>
 
       <form className="flex flex-wrap gap-2">
-        <select name="month" defaultValue={month} className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm">
+        <select name="month" defaultValue={month} className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm">
           {recentMonthKeys().map((key) => (
             <option key={key} value={key}>
               {monthLabel(key)}
@@ -82,7 +82,7 @@ export default async function WastePage({
                   id="branchId"
                   name="branchId"
                   defaultValue={session.branchId ?? ""}
-                  className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                  className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
                 >
                   {session.branches.map((branch) => (
                     <option key={branch.id} value={branch.id}>
@@ -100,7 +100,7 @@ export default async function WastePage({
             </Field>
             <Field>
               <FieldLabel htmlFor="productId">מוצר (אופציונלי)</FieldLabel>
-              <select id="productId" name="productId" className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm">
+              <select id="productId" name="productId" className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm">
                 <option value="">ללא — רק הערה</option>
                 {products.map((product) => (
                   <option key={product.id} value={product.id}>

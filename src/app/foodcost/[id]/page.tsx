@@ -142,7 +142,7 @@ export default async function DishDetailPage({ params }: { params: Promise<{ id:
               <select
                 id="productId"
                 name="productId"
-                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
               >
                 <option value="">—</option>
                 {products.map((product) => (
@@ -157,7 +157,7 @@ export default async function DishDetailPage({ params }: { params: Promise<{ id:
               <select
                 id="componentDishId"
                 name="componentDishId"
-                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
               >
                 <option value="">—</option>
                 {intermediates.map((item) => (

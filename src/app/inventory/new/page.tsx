@@ -55,7 +55,7 @@ export default async function NewInventoryCountPage() {
               id="branchId"
               name="branchId"
               defaultValue={session.branchId ?? ""}
-              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
             >
               {session.branches.map((branch) => (
                 <option key={branch.id} value={branch.id}>
@@ -74,7 +74,7 @@ export default async function NewInventoryCountPage() {
               id="kind"
               name="kind"
               defaultValue={INVENTORY_KIND.SPOT}
-              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
             >
               <option value={INVENTORY_KIND.START}>תחילת חודש</option>
               <option value={INVENTORY_KIND.END}>סוף חודש</option>
