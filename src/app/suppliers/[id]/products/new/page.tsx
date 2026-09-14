@@ -23,6 +23,7 @@ export default async function NewProductPage({ params }: { params: Promise<{ id:
         categoryTree={tree}
         defaultCategoryId={supplier.defaultCategoryId}
         isNetwork={session.isNetwork}
+        supplierPlantsCouncilRelevant={supplier.plantsCouncilRelevant}
       />
     </div>
   );

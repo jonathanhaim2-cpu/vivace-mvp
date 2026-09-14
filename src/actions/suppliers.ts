@@ -76,6 +76,9 @@ function readSupplierInput(formData: FormData) {
     accountingEmail: String(formData.get("accountingEmail") ?? "").trim() || null,
     plantsCouncilUrl: String(formData.get("plantsCouncilUrl") ?? "").trim() || null,
     plantsCouncilDiscountPct: optionalFloat(formData.get("plantsCouncilDiscountPct")),
+    plantsCouncilRelevant: formData
+      .getAll("plantsCouncilRelevant")
+      .some((value) => value === "on" || value === "true" || value === "1"),
   };
 }
 

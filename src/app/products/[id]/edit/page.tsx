@@ -26,6 +26,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
         product={product}
         categoryTree={tree}
         isNetwork={session.isNetwork}
+        supplierPlantsCouncilRelevant={product.supplier.plantsCouncilRelevant}
       />
     </div>
   );

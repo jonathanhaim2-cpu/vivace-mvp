@@ -21,7 +21,7 @@ import {
   resolveOrderDays,
   suggestOrderQty,
 } from "@/lib/format";
-import { PLANTS_COUNCIL } from "@/lib/plants-council";
+import { isPlantsCouncilRelevant, PLANTS_COUNCIL } from "@/lib/plants-council";
 import { networkNetPrice, visiblePrice } from "@/lib/pricing";
 import { prisma } from "@/lib/prisma";
 import { getAppSession } from "@/lib/session";
@@ -111,15 +111,18 @@ export default async function SupplierDetailPage({
           <p>תנאי תשלום: {terms ?? "לא הוגדר"}</p>
           <p>אמצעי תשלום: {method ?? "לא הוגדר"}</p>
           <p>הנה״ח: {[supplier.accountingPhone, supplier.accountingEmail].filter(Boolean).join(" · ") || "—"}</p>
-          {supplier.plantsCouncilUrl || supplier.plantsCouncilDiscountPct != null ? (
+          {supplier.plantsCouncilRelevant ? (
             <p className="sm:col-span-2">
-              {PLANTS_COUNCIL.nameHe}:{" "}
+              {PLANTS_COUNCIL.nameHe}: רלוונטי
               {supplier.plantsCouncilUrl ? (
-                <a href={supplier.plantsCouncilUrl} className="text-primary hover:underline" target="_blank" rel="noreferrer">
-                  קישור ידני
-                </a>
+                <>
+                  {" · "}
+                  <a href={supplier.plantsCouncilUrl} className="text-primary hover:underline" target="_blank" rel="noreferrer">
+                    קישור ידני
+                  </a>
+                </>
               ) : (
-                "אין קישור"
+                " · אין קישור"
               )}
               {supplier.plantsCouncilDiscountPct != null ? ` · ${supplier.plantsCouncilDiscountPct}% מתחת למחירון` : ""}
             </p>
@@ -200,6 +203,9 @@ export default async function SupplierDetailPage({
                           מלאי תקן {product.stockStandard} · הצעת הזמנה {suggested}
                           {pack ? ` · ${pack}` : ""}
                         </p>
+                        {isPlantsCouncilRelevant(supplier, product) ? (
+                          <p className="text-xs text-muted-foreground">{PLANTS_COUNCIL.nameHe}</p>
+                        ) : null}
                       </div>
                       <div className="flex gap-2">
                         <Link

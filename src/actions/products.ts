@@ -19,6 +19,14 @@ function optionalFloat(value: FormDataEntryValue | null, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function readPlantsCouncilRelevant(formData: FormData) {
+  const values = formData.getAll("plantsCouncilRelevant").map(String);
+  if (values.includes("inherit")) return null;
+  if (values.includes("true") || values.includes("on") || values.includes("1")) return null;
+  if (values.includes("false")) return false;
+  return null;
+}
+
 function readProductInput(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const stockStandard = Number(formData.get("stockStandard") ?? 0);
@@ -49,6 +57,7 @@ function readProductInput(formData: FormData) {
     documentType: documentType || null,
     networkRebatePercent: optionalFloat(formData.get("networkRebatePercent")),
     networkPlusPercent: optionalFloat(formData.get("networkPlusPercent")),
+    plantsCouncilRelevant: readPlantsCouncilRelevant(formData),
   };
 }
 

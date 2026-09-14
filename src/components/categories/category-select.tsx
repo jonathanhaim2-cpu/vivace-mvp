@@ -30,6 +30,7 @@ export function CategorySelect({
           </option>
         ) : (
           <optgroup key={parent.id} label={parent.name}>
+            <option value={parent.id}>{parent.name} (קטגוריית אב)</option>
             {parent.children.map((child) => (
               <option key={child.id} value={child.id}>
                 {child.name}

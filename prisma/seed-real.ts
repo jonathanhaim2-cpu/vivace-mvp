@@ -55,6 +55,7 @@ export async function seedRealCatalog(client: PrismaClient) {
         documentType: supplier.slug === "produce" ? "DELIVERY_NOTE" : "TAX_INVOICE",
         plantsCouncilUrl: supplier.slug === "produce" ? "https://www.plants.org.il/" : null,
         plantsCouncilDiscountPct: supplier.slug === "produce" ? 10 : null,
+        plantsCouncilRelevant: supplier.slug === "produce",
       },
       create: {
         id: supplier.id,
@@ -68,6 +69,7 @@ export async function seedRealCatalog(client: PrismaClient) {
         reminderHoursBefore: 2,
         plantsCouncilUrl: supplier.slug === "produce" ? "https://www.plants.org.il/" : null,
         plantsCouncilDiscountPct: supplier.slug === "produce" ? 10 : null,
+        plantsCouncilRelevant: supplier.slug === "produce",
       },
     });
     await client.supplierBranch.upsert({

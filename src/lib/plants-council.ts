@@ -10,3 +10,12 @@ export const PLANTS_COUNCIL = {
   noteHe:
     "אין משיכה אוטומטית של מחירון יומי ב-MVP. שומרים קישור ידני ואחוז קבוע מתחת למחירון (למשל 10%−) אצל ספק תוצרת טרייה.",
 } as const;
+
+export function isPlantsCouncilRelevant(
+  supplier: { plantsCouncilRelevant?: boolean | null },
+  product?: { plantsCouncilRelevant?: boolean | null } | null,
+) {
+  if (product?.plantsCouncilRelevant === false) return false;
+  if (product?.plantsCouncilRelevant === true) return true;
+  return Boolean(supplier.plantsCouncilRelevant);
+}

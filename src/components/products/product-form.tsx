@@ -4,6 +4,7 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CategorySelect } from "@/components/categories/category-select";
+import { PlantsCouncilProductField } from "@/components/suppliers/plants-council-fields";
 import { DOCUMENT_TYPES } from "@/lib/constants";
 import { afterDiscount, beforeVat, packUnits } from "@/lib/pricing";
 import { formatIls } from "@/lib/format";
@@ -23,6 +24,7 @@ type ProductValues = {
   documentType: string | null;
   networkRebatePercent: number;
   networkPlusPercent: number;
+  plantsCouncilRelevant?: boolean | null;
 };
 
 export function ProductForm({
@@ -32,6 +34,7 @@ export function ProductForm({
   categoryTree,
   defaultCategoryId,
   isNetwork,
+  supplierPlantsCouncilRelevant = false,
 }: {
   supplierId: string;
   mixDocuments: boolean;
@@ -39,6 +42,7 @@ export function ProductForm({
   categoryTree: { id: string; name: string; children: { id: string; name: string }[] }[];
   defaultCategoryId?: string | null;
   isNetwork: boolean;
+  supplierPlantsCouncilRelevant?: boolean;
 }) {
   const action = product ? updateProduct.bind(null, product.id) : createProduct.bind(null, supplierId);
   const listPrice = product?.agreedPrice ?? 0;
@@ -59,12 +63,12 @@ export function ProductForm({
             <Input id="sku" name="sku" defaultValue={product?.sku ?? ""} />
           </Field>
           <Field className="sm:col-span-2">
-            <FieldLabel htmlFor="categoryId">קטגוריה / תת־קטגוריה</FieldLabel>
+            <FieldLabel htmlFor="categoryId">קטגוריה / תת־קטגוריה (אפשר גם קטגוריית אב)</FieldLabel>
             <CategorySelect
               id="categoryId"
               tree={categoryTree}
               defaultValue={product?.categoryId ?? defaultCategoryId ?? ""}
-              emptyLabel="ללא — בחרו תת־קטגוריה"
+            emptyLabel="ללא — אפשר קטגוריית אב או תת־קטגוריה"
             />
           </Field>
           <Field>
@@ -204,6 +208,10 @@ export function ProductForm({
           <FieldLabel htmlFor="packagingNotes">הערות אריזה / המרה</FieldLabel>
           <Input id="packagingNotes" name="packagingNotes" defaultValue={product?.packagingNotes ?? ""} />
         </Field>
+        <PlantsCouncilProductField
+          supplierRelevant={supplierPlantsCouncilRelevant}
+          productRelevant={product?.plantsCouncilRelevant}
+        />
         <Field>
           <FieldLabel htmlFor="notes">הערות</FieldLabel>
           <Textarea id="notes" name="notes" defaultValue={product?.notes ?? ""} rows={3} />

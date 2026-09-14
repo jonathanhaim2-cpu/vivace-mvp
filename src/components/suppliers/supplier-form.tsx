@@ -4,9 +4,9 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CategorySelect } from "@/components/categories/category-select";
+import { PlantsCouncilSupplierFields } from "@/components/suppliers/plants-council-fields";
 import { DOCUMENT_TYPES, PAYMENT_METHODS, PAYMENT_TERMS, WEEKDAYS } from "@/lib/constants";
 import { parseDeliveryDays, parseWeekdays } from "@/lib/format";
-import { PLANTS_COUNCIL } from "@/lib/plants-council";
 
 type SupplierValues = {
   name: string;
@@ -33,6 +33,7 @@ type SupplierValues = {
   accountingEmail: string | null;
   plantsCouncilUrl: string | null;
   plantsCouncilDiscountPct: number | null;
+  plantsCouncilRelevant?: boolean;
   branchLinks?: { branchId: string }[];
 };
 
@@ -296,29 +297,11 @@ export function SupplierForm({
             </div>
             <FieldDescription>אם לא נבחר אף סניף — הספק זמין לכולם.</FieldDescription>
           </Field>
-          <Field>
-            <FieldLabel htmlFor="plantsCouncilUrl">קישור מחירון {PLANTS_COUNCIL.nameHe}</FieldLabel>
-            <Input
-              id="plantsCouncilUrl"
-              name="plantsCouncilUrl"
-              defaultValue={supplier?.plantsCouncilUrl ?? ""}
-              placeholder={PLANTS_COUNCIL.defaultUrl}
-            />
-            <FieldDescription>{PLANTS_COUNCIL.noteHe}</FieldDescription>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="plantsCouncilDiscountPct">% מתחת למחירון המועצה</FieldLabel>
-            <Input
-              id="plantsCouncilDiscountPct"
-              name="plantsCouncilDiscountPct"
-              type="number"
-              min={0}
-              max={100}
-              step="0.1"
-              defaultValue={supplier?.plantsCouncilDiscountPct ?? ""}
-              placeholder="10"
-            />
-          </Field>
+          <PlantsCouncilSupplierFields
+            relevant={supplier?.plantsCouncilRelevant ?? false}
+            url={supplier?.plantsCouncilUrl}
+            discountPct={supplier?.plantsCouncilDiscountPct}
+          />
         </div>
       </details>
 
