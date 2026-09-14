@@ -69,4 +69,14 @@ export const PAYMENT_TERMS = [
   { value: "CASH", label: "מזומן בעסקה" },
 ] as const;
 
-export const VAT_RATE = 0.18;
+export const INVENTORY_KIND = {
+  START: "START",
+  END: "END",
+  SPOT: "SPOT",
+} as const;
+
+export const STANDARD_STATUS = {
+  PENDING: "PENDING",
+  APPROVED: "APPROVED",
+  REJECTED: "REJECTED",
+} as const;

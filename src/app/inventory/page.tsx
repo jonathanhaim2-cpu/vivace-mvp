@@ -2,6 +2,7 @@ import { EmptyState, PageHeader } from "@/components/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDate } from "@/lib/format";
+import { inventoryKindLabel } from "@/lib/order-standards";
 import { prisma } from "@/lib/prisma";
 import { getAppSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -22,11 +23,20 @@ export default async function InventoryPage() {
         description="ספירת מלאי לפי סניף. שומרים כמות שנספרה לכל מוצר, עם תאריך. פחת בנפרד."
         action={{ href: "/inventory/new", label: "ספירה חדשה" }}
       />
-      <p className="mb-4 text-sm">
+      <p className="mb-4 flex flex-wrap gap-2 text-sm">
+        <Link href="/inventory/standards" className={cn(buttonVariants({ variant: "outline" }))}>
+          אישור תקני הזמנה
+        </Link>
         <Link href="/waste" className={cn(buttonVariants({ variant: "ghost" }))}>
           דוח פחת
         </Link>
       </p>
+      <Card className="mb-4">
+        <CardContent className="py-3 text-sm text-muted-foreground">
+          רכש חכם v1: ספירת תחילת חודש → הזמנות בחודש → ספירת סוף חודש → הצעת תקן למוצר לאישור עובד.
+          שאלות פחת יומי / מכולת נרשמות בדוח הפחת (אין מודל ML בשלב זה).
+        </CardContent>
+      </Card>
       {counts.length === 0 ? (
         <EmptyState
           title="אין ספירות"
@@ -42,7 +52,8 @@ export default async function InventoryPage() {
                   <div>
                     <p className="font-medium">{count.branch.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {formatDate(count.countedOn)} · {count._count.lines} פריטים
+                      {formatDate(count.countedOn)} · {inventoryKindLabel(count.kind)}
+                      {count.periodMonth ? ` · ${count.periodMonth}` : ""} · {count._count.lines} פריטים
                       {count.notes ? ` · ${count.notes}` : ""}
                     </p>
                   </div>

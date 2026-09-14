@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { INVENTORY_KIND } from "@/lib/constants";
+import { monthKeyFromDate } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { getAppSession } from "@/lib/session";
 
@@ -23,7 +25,10 @@ export default async function NewInventoryCountPage() {
   if (!session.branchId) {
     return (
       <div>
-        <PageHeader title="ספירת מלאי חדשה" description="הזינו כמות שנספרה. אפשר להשלים ולשמור שוב כל עוד הספירה פתוחה." />
+        <PageHeader
+          title="ספירת מלאי חדשה"
+          description="בחרו תחילת חודש / סוף חודש / נקודתית. סגירת ספירת סוף חודש מציעה תקני הזמנה לאישור."
+        />
         <EmptyState
           title="אין סניף"
           description="ספירה שייכת לסניף. הוסיפו סניף בהגדרות ואז חזרו לכאן."
@@ -35,7 +40,10 @@ export default async function NewInventoryCountPage() {
 
   return (
     <div>
-      <PageHeader title="ספירת מלאי חדשה" description="הזינו כמות שנספרה. אפשר להשלים ולשמור שוב כל עוד הספירה פתוחה." />
+      <PageHeader
+        title="ספירת מלאי חדשה"
+        description="בחרו תחילת חודש / סוף חודש / נקודתית. סגירת ספירת סוף חודש מציעה תקני הזמנה לאישור."
+      />
       {products.length === 0 ? (
         <p className="mb-4 text-sm text-muted-foreground">אין מוצרים עדיין. אפשר לפתוח ספירה ריקה, או להוסיף ספק ומוצרים קודם.</p>
       ) : null}
@@ -59,6 +67,23 @@ export default async function NewInventoryCountPage() {
           <Field>
             <FieldLabel htmlFor="countedOn">תאריך ספירה</FieldLabel>
             <Input id="countedOn" name="countedOn" type="date" defaultValue={dateValue} />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="kind">סוג ספירה</FieldLabel>
+            <select
+              id="kind"
+              name="kind"
+              defaultValue={INVENTORY_KIND.SPOT}
+              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+            >
+              <option value={INVENTORY_KIND.START}>תחילת חודש</option>
+              <option value={INVENTORY_KIND.END}>סוף חודש</option>
+              <option value={INVENTORY_KIND.SPOT}>ספירה נקודתית</option>
+            </select>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="periodMonth">חודש תקן</FieldLabel>
+            <Input id="periodMonth" name="periodMonth" type="month" defaultValue={monthKeyFromDate()} dir="ltr" />
           </Field>
           <Field className="sm:col-span-2">
             <FieldLabel htmlFor="notes">הערות</FieldLabel>

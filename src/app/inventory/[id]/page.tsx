@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { INVENTORY_KIND } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
+import { inventoryKindLabel } from "@/lib/order-standards";
 import { prisma } from "@/lib/prisma";
 
 export default async function InventoryCountDetailPage({
@@ -29,7 +31,7 @@ export default async function InventoryCountDetailPage({
     <div className="space-y-5">
       <PageHeader
         title={`ספירה · ${count.branch.name}`}
-        description={`${formatDate(count.countedOn)} · ${open ? "פתוחה לעריכה" : "נסגרה"}`}
+        description={`${formatDate(count.countedOn)} · ${inventoryKindLabel(count.kind)} · ${open ? "פתוחה לעריכה" : "נסגרה"}`}
       />
 
       <form action={saveInventoryCount.bind(null, count.id)} className="space-y-5">
@@ -37,6 +39,31 @@ export default async function InventoryCountDetailPage({
           <Field>
             <FieldLabel htmlFor="countedOn">תאריך</FieldLabel>
             <Input id="countedOn" name="countedOn" type="date" defaultValue={dateValue} disabled={!open} />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="kind">סוג ספירה</FieldLabel>
+            <select
+              id="kind"
+              name="kind"
+              defaultValue={count.kind}
+              disabled={!open}
+              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+            >
+              <option value={INVENTORY_KIND.START}>תחילת חודש</option>
+              <option value={INVENTORY_KIND.END}>סוף חודש</option>
+              <option value={INVENTORY_KIND.SPOT}>ספירה נקודתית</option>
+            </select>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="periodMonth">חודש תקן</FieldLabel>
+            <Input
+              id="periodMonth"
+              name="periodMonth"
+              type="month"
+              dir="ltr"
+              defaultValue={count.periodMonth ?? ""}
+              disabled={!open}
+            />
           </Field>
           <Field>
             <FieldLabel htmlFor="notes">הערות</FieldLabel>
@@ -76,7 +103,7 @@ export default async function InventoryCountDetailPage({
       {open ? (
         <form action={submitInventoryCount.bind(null, count.id)}>
           <Button type="submit" variant="outline">
-            סגירת ספירה
+            {count.kind === INVENTORY_KIND.END ? "סגירה והצעת תקנים" : "סגירת ספירה"}
           </Button>
         </form>
       ) : null}

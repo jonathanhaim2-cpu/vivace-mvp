@@ -2,8 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { INVENTORY_KIND, STANDARD_STATUS } from "@/lib/constants";
+import { monthKeyFromDate } from "@/lib/months";
+import { generateOrderStandardSuggestions } from "@/lib/order-standards";
 import { prisma } from "@/lib/prisma";
 import { getAppSession } from "@/lib/session";
+
+function readInventoryKind(raw: string, fallback: string) {
+  if (raw === INVENTORY_KIND.START || raw === INVENTORY_KIND.END || raw === INVENTORY_KIND.SPOT) return raw;
+  return fallback;
+}
 
 export async function createInventoryCount(formData: FormData) {
   const session = await getAppSession();
@@ -11,13 +19,18 @@ export async function createInventoryCount(formData: FormData) {
   if (!branchId) throw new Error("יש לבחור סניף");
   const countedOn = String(formData.get("countedOn") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim() || null;
+  const kind = readInventoryKind(String(formData.get("kind") ?? INVENTORY_KIND.SPOT), INVENTORY_KIND.SPOT);
+  const countedDate = countedOn ? new Date(`${countedOn}T12:00:00`) : new Date();
+  const periodMonth = String(formData.get("periodMonth") ?? "").trim() || monthKeyFromDate(countedDate);
   const products = await prisma.product.findMany({ select: { id: true } });
 
   const count = await prisma.inventoryCount.create({
     data: {
       branchId,
-      countedOn: countedOn ? new Date(`${countedOn}T12:00:00`) : new Date(),
+      countedOn: countedDate,
       status: "OPEN",
+      kind,
+      periodMonth,
       notes,
       lines: {
         create: products.map((product) => ({
@@ -42,13 +55,18 @@ export async function saveInventoryCount(countId: string, formData: FormData) {
 
   const notes = String(formData.get("notes") ?? "").trim() || null;
   const countedOn = String(formData.get("countedOn") ?? "").trim();
+  const kind = readInventoryKind(String(formData.get("kind") ?? count.kind), count.kind);
+  const countedDate = countedOn ? new Date(`${countedOn}T12:00:00`) : count.countedOn;
+  const periodMonth = String(formData.get("periodMonth") ?? "").trim() || count.periodMonth || monthKeyFromDate(countedDate);
 
   await prisma.$transaction([
     prisma.inventoryCount.update({
       where: { id: countId },
       data: {
         notes,
-        countedOn: countedOn ? new Date(`${countedOn}T12:00:00`) : count.countedOn,
+        kind,
+        periodMonth,
+        countedOn: countedDate,
       },
     }),
     ...count.lines.map((line) =>
@@ -64,10 +82,49 @@ export async function saveInventoryCount(countId: string, formData: FormData) {
 }
 
 export async function submitInventoryCount(countId: string) {
+  const count = await prisma.inventoryCount.findUnique({ where: { id: countId } });
+  if (!count) throw new Error("ספירה לא נמצאה");
   await prisma.inventoryCount.update({
     where: { id: countId },
     data: { status: "SUBMITTED" },
   });
+  if (count.kind === INVENTORY_KIND.END) {
+    await generateOrderStandardSuggestions(countId);
+  }
   revalidatePath(`/inventory/${countId}`);
+  revalidatePath("/inventory");
+  revalidatePath("/inventory/standards");
+  if (count.kind === INVENTORY_KIND.END) {
+    redirect("/inventory/standards");
+  }
+}
+
+export async function decideOrderStandard(id: string, formData: FormData) {
+  const decision = String(formData.get("decision") ?? "");
+  const suggestion = await prisma.orderStandardSuggestion.findUnique({
+    where: { id },
+    include: { product: true },
+  });
+  if (!suggestion) throw new Error("הצעת תקן לא נמצאה");
+  if (suggestion.status !== STANDARD_STATUS.PENDING) throw new Error("ההצעה כבר טופלה");
+
+  if (decision === "approve") {
+    await prisma.$transaction([
+      prisma.product.update({
+        where: { id: suggestion.productId },
+        data: { stockStandard: suggestion.suggestedStandard },
+      }),
+      prisma.orderStandardSuggestion.update({
+        where: { id },
+        data: { status: STANDARD_STATUS.APPROVED },
+      }),
+    ]);
+  } else {
+    await prisma.orderStandardSuggestion.update({
+      where: { id },
+      data: { status: STANDARD_STATUS.REJECTED },
+    });
+  }
+  revalidatePath("/inventory/standards");
   revalidatePath("/inventory");
 }

@@ -16,6 +16,7 @@ model Branch {
   inventoryCounts InventoryCount[]
   supplierLinks   SupplierBranch[]
   wasteEntries    WasteEntry[]
+  standardSuggestions OrderStandardSuggestion[]
 }
 
 model Supplier {
@@ -115,6 +116,7 @@ model Product {
   dishComponents         DishComponent[]
   priceListItems         PriceListItem[]
   wasteEntries           WasteEntry[]
+  standardSuggestions    OrderStandardSuggestion[]
 }
 
 model Order {
@@ -227,15 +229,17 @@ model InvoicePhoto {
 }
 
 model InventoryCount {
-  id        String               @id @default(cuid())
-  branchId  String
-  branch    Branch               @relation(fields: [branchId], references: [id])
-  countedOn DateTime
-  status    String
-  notes     String?
-  createdAt DateTime             @default(now())
-  updatedAt DateTime             @updatedAt
-  lines     InventoryCountLine[]
+  id          String               @id @default(cuid())
+  branchId    String
+  branch      Branch               @relation(fields: [branchId], references: [id])
+  countedOn   DateTime
+  status      String
+  kind        String               @default("SPOT")
+  periodMonth String?
+  notes       String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  lines       InventoryCountLine[]
 }
 
 model InventoryCountLine {
@@ -307,6 +311,28 @@ model ChatMessage {
 model AppSetting {
   key   String @id
   value String
+}
+
+model OrderStandardSuggestion {
+  id                String   @id @default(cuid())
+  branchId          String
+  branch            Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  productId         String
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  periodMonth       String
+  startCountId      String?
+  endCountId        String?
+  startQty          Float
+  orderedQty        Float
+  endQty            Float
+  wasteQty          Float
+  consumptionQty    Float
+  suggestedStandard Float
+  currentStandard   Float
+  status            String   @default("PENDING")
+  notes             String?
+  createdAt         DateTime @default(now())
+  @@unique([branchId, productId, periodMonth])
 }
 
 model SupplierApMonth {

@@ -37,6 +37,9 @@ export default async function WastePage({
   return (
     <div className="space-y-6">
       <PageHeader title="דוח פחת" description="רישום יומי/שבועי עם הערכת עלות ממחירון. אפשר לצרף הערת קול." />
+      <p className="text-sm text-muted-foreground">
+        פחת יומי ומכולת נרשמים כאן (stub ללא ML) ונכנסים לחישוב תקן אחרי ספירת סוף חודש.
+      </p>
       <ReportExportButtons report="waste" month={month} />
 
       <Card>
