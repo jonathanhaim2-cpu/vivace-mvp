@@ -1,5 +1,6 @@
 import { logout } from "@/actions/auth";
 import { createBranch } from "@/actions/branches";
+import { ForecastInputForm } from "@/components/dashboard/forecast-form";
 import { PageHeader } from "@/components/page-header";
 import { AiMissingBanner } from "@/components/ai-missing-banner";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { getAiRuntime } from "@/lib/ai";
 import { isAuthEnabled } from "@/lib/auth";
+import { getForecastTurnover } from "@/lib/dashboard";
 import { monthLabel } from "@/lib/months";
 import { getAppSession } from "@/lib/session";
 import Link from "next/link";
@@ -16,7 +18,7 @@ import { cn } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const [runtime, session] = await Promise.all([getAiRuntime(), getAppSession()]);
+  const [runtime, session, forecast] = await Promise.all([getAiRuntime(), getAppSession(), getForecastTurnover()]);
   const providerLabel =
     runtime.provider === "google" ? "Google Gemini Flash" : runtime.provider === "openai" ? "OpenAI" : "אין ספק";
 
@@ -28,6 +30,16 @@ export default async function SettingsPage() {
       />
 
       {runtime.reason === "no_key" ? <AiMissingBanner /> : null}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>מחזור מכירות חזוי</CardTitle>
+          <CardDescription>קלט חודשי לדשבורד מילוי קטגוריות. נשמר בהגדרה dashboard.forecastTurnoverIls.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ForecastInputForm forecast={forecast} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

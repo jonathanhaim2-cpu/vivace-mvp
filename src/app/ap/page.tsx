@@ -1,5 +1,6 @@
 import { approveSupplierPayment, requestKarteset, toggleExpenseFlags } from "@/actions/ap";
 import { PageHeader } from "@/components/page-header";
+import { ReportExportButtons } from "@/components/report-export-buttons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getNonProcurementChecklist, getSupplierApRows, payMethodLabel } from "@/lib/ap";
@@ -40,6 +41,7 @@ export default async function ApPage({
         <Button type="submit" size="sm" variant="outline">
           הצגה
         </Button>
+        <ReportExportButtons report="ap" month={month} />
       </form>
 
       <div className="space-y-3">

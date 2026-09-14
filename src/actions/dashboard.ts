@@ -18,15 +18,19 @@ export async function saveDashboardSettings(formData: FormData) {
     await saveRogueDeviationPercent(rogue);
   }
 
-  const parents = await prisma.productCategory.findMany({ where: { parentId: null } });
-  for (const parent of parents) {
-    const raw = String(formData.get(`target:${parent.id}`) ?? "").trim();
-    const value = raw ? Number(raw) : null;
-    await prisma.productCategory.update({
-      where: { id: parent.id },
-      data: { targetPercent: value != null && Number.isFinite(value) ? value : null },
-    });
+  const hasTargets = [...formData.keys()].some((key) => key.startsWith("target:"));
+  if (hasTargets) {
+    const parents = await prisma.productCategory.findMany({ where: { parentId: null } });
+    for (const parent of parents) {
+      const raw = String(formData.get(`target:${parent.id}`) ?? "").trim();
+      const value = raw ? Number(raw) : null;
+      await prisma.productCategory.update({
+        where: { id: parent.id },
+        data: { targetPercent: value != null && Number.isFinite(value) ? value : null },
+      });
+    }
   }
   revalidatePath("/");
   revalidatePath("/settings");
+  revalidatePath("/reports");
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AccountRollup } from "@/components/accounts/account-rollup";
 import { PageHeader } from "@/components/page-header";
+import { ReportExportButtons } from "@/components/report-export-buttons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { buttonVariants } from "@/components/ui/button";
 import { getAccountRollup } from "@/lib/accounts";
@@ -41,6 +42,7 @@ export default async function ReportsPage({
         <button type="submit" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
           רענון
         </button>
+        <ReportExportButtons report="monthly" month={month} />
       </form>
 
       <Alert>

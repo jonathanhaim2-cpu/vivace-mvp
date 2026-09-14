@@ -60,7 +60,7 @@ export function AppShell({
 
   return (
     <div className="min-h-full bg-background">
-      <aside className="fixed inset-y-0 start-0 z-30 hidden w-64 flex-col bg-sidebar text-sidebar-foreground lg:flex">
+      <aside className="fixed inset-y-0 start-0 z-30 hidden w-64 flex-col bg-sidebar text-sidebar-foreground print:hidden lg:flex">
         <div className="border-b border-sidebar-border px-4 py-4">
           <Link href="/">
             <BrandLogo variant="wb" />
@@ -99,7 +99,7 @@ export function AppShell({
         </div>
       </aside>
 
-      <header className="sticky top-0 z-20 border-b border-border bg-[var(--color-cream)] text-foreground lg:ms-64">
+      <header className="sticky top-0 z-20 border-b border-border bg-[var(--color-cream)] text-foreground print:hidden lg:ms-64">
         <div className="flex items-center justify-between gap-3 px-4 py-2.5">
           <div className="lg:hidden">
             <Link href="/">
@@ -140,7 +140,7 @@ export function AppShell({
         <div className="mx-auto w-full max-w-6xl px-4 py-6 pb-28 lg:pb-10">{children}</div>
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-[var(--color-cream)]/95 backdrop-blur lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-[var(--color-cream)]/95 backdrop-blur print:hidden lg:hidden">
         <div className="flex overflow-x-auto">
           {NAV.map((item) => {
             const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -161,7 +161,9 @@ export function AppShell({
           })}
         </div>
       </nav>
-      <AppChat messages={chatMessages} aiAvailable={aiAvailable} />
+      <div className="print:hidden">
+        <AppChat messages={chatMessages} aiAvailable={aiAvailable} />
+      </div>
     </div>
   );
 }

@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
+import { ReportExportButtons } from "@/components/report-export-buttons";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAnomalies } from "@/lib/dashboard";
+import { monthKeyFromDate } from "@/lib/months";
 import { getAppSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +49,7 @@ export default async function AnomaliesPage({
         title="חריגות מחיר ומסמך"
         description="סינון לפי סוג וספק. אישור מחיר נשאר במשרד הרשת."
       />
+      <ReportExportButtons report="anomalies" month={monthKeyFromDate()} />
 
       <div className="flex flex-wrap gap-2 text-xs">
         {TYPES.map((item) => (

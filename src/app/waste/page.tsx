@@ -1,5 +1,6 @@
 import { createWasteEntry, deleteWasteEntry } from "@/actions/waste";
 import { EmptyState, PageHeader } from "@/components/page-header";
+import { ReportExportButtons } from "@/components/report-export-buttons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
@@ -36,6 +37,7 @@ export default async function WastePage({
   return (
     <div className="space-y-6">
       <PageHeader title="דוח פחת" description="רישום יומי/שבועי עם הערכת עלות ממחירון. אפשר לצרף הערת קול." />
+      <ReportExportButtons report="waste" month={month} />
 
       <Card>
         <CardHeader>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createRecurringLine, deleteRecurringLine } from "@/actions/recurring";
 import { EmptyState, PageHeader } from "@/components/page-header";
+import { ReportExportButtons } from "@/components/report-export-buttons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +9,7 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { computeDishCost, foodCostPercent, hierarchicalFoodCost } from "@/lib/foodcost";
 import { formatIls } from "@/lib/format";
+import { monthKeyFromDate } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +42,7 @@ export default async function FoodCostPage() {
         description="עלות תיאורטית ממחירון הספקים. מנות ביניים בלי מחיר מכירה. רולאפ: סה״כ → מחלקה → תת־קטגוריה → מנה."
         action={{ href: "/foodcost/new", label: "מנה חדשה" }}
       />
+      <ReportExportButtons report="foodcost" month={monthKeyFromDate()} />
 
       <Alert>
         <AlertTitle>TODO · ייבוא מכירות מ-Tabit</AlertTitle>

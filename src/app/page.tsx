@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { saveDashboardSettings } from "@/actions/dashboard";
 import { ClockTime } from "@/components/clock-time";
+import { ForecastInputForm } from "@/components/dashboard/forecast-form";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { COMPANY } from "@/lib/constants";
@@ -92,6 +93,7 @@ export default async function HomePage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            <ForecastInputForm forecast={forecast} compact />
             <div className="space-y-2">
               {fill.map((row) => {
                 const fillPct =
@@ -120,19 +122,9 @@ export default async function HomePage() {
               })}
             </div>
             <details className="rounded-lg border bg-muted/30 p-3 text-sm">
-              <summary className="cursor-pointer text-primary">עריכת מחזור ויעדים</summary>
+              <summary className="cursor-pointer text-primary">עריכת יעדי קטגוריה וסף סורר</summary>
               <form action={saveDashboardSettings} className="mt-3 grid gap-2 sm:grid-cols-2">
-                <label className="space-y-1 sm:col-span-2">
-                  <span className="text-xs text-muted-foreground">מחזור חזוי לחודש (₪)</span>
-                  <input
-                    name="forecastTurnoverIls"
-                    type="number"
-                    min={0}
-                    step="100"
-                    defaultValue={forecast}
-                    className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
-                  />
-                </label>
+                <input type="hidden" name="forecastTurnoverIls" value={forecast} />
                 <label className="space-y-1 sm:col-span-2">
                   <span className="text-xs text-muted-foreground">סף סניף סורר (נקודות אחוז מעל/מתחת ליעד)</span>
                   <input
