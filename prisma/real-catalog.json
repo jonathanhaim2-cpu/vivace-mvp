@@ -1,9 +1,17 @@
 {
-  "branch": {
-    "id": "branch_pilot",
-    "name": "סניף פיילוט",
-    "address": ""
-  },
+  "whatsappPhone": "0526408537",
+  "branches": [
+    {
+      "id": "branch_beit_shemesh",
+      "name": "סניף בית שמש",
+      "address": "בית שמש"
+    },
+    {
+      "id": "branch_kiryat_yearim",
+      "name": "סניף קרית יערים",
+      "address": "קרית יערים"
+    }
+  ],
   "suppliers": [
     {
       "id": "sup_cohen",

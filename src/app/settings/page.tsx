@@ -45,7 +45,7 @@ export default async function SettingsPage() {
         <CardHeader>
           <CardTitle>סניפים</CardTitle>
           <CardDescription>
-            ה-seed לא יוצר סניפי דמו. הוסיפו כאן סניף אמיתי לפני הזמנות, מלאי ופחת.
+            סניפי הרשת: בית שמש וקרית יערים. אפשר להוסיף סניף נוסף כאן.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -64,7 +64,7 @@ export default async function SettingsPage() {
           <form action={createBranch} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
             <Field>
               <FieldLabel htmlFor="name">שם סניף</FieldLabel>
-              <Input id="name" name="name" required placeholder="למשל: הרצליה" />
+              <Input id="name" name="name" required placeholder="למשל: בית שמש" />
             </Field>
             <Field>
               <FieldLabel htmlFor="address">כתובת (אופציונלי)</FieldLabel>

@@ -4,7 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import { seedChartOfAccounts } from "../src/lib/accounts";
 import { seedProductCategories } from "../src/lib/categories";
 import { DEMO_IDS, seedDemo } from "./seed-demo";
-import { seedRealCatalog } from "./seed-real";
+import { ROI_WHATSAPP_PHONE, routeAllSupplierPhones, seedRealCatalog } from "./seed-real";
 
 const prisma = new PrismaClient();
 
@@ -131,9 +131,11 @@ async function main() {
   if (realEnabled()) {
     await seedRealCatalog(prisma);
     console.log("Vivac'e real catalog seeded (suppliers + products from Zest exports).");
-    return;
+  } else {
+    console.log("Vivac'e structural seed ready (chart + categories + settings). Demo catalog skipped.");
   }
-  console.log("Vivac'e structural seed ready (chart + categories + settings). Demo catalog skipped.");
+  // Always overwrite supplier phones on the persistent SQLite volume (upsert, no wipe).
+  await routeAllSupplierPhones(prisma, ROI_WHATSAPP_PHONE);
 }
 
 main()

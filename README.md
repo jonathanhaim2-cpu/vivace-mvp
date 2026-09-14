@@ -20,7 +20,7 @@ npm install
 npm run dev
 ```
 
-Serves [http://127.0.0.1:43145](http://127.0.0.1:43145). `predev` generates Prisma Client, pushes SQLite, and runs the **structural** seed (chart of accounts, empty category tree, tiny settings). No demo catalog.
+Serves [http://127.0.0.1:43145](http://127.0.0.1:43145). `predev` generates Prisma Client, pushes SQLite, and seeds the real catalog (two live branches, Roi WhatsApp on every supplier).
 
 Copy `.env.example` → `.env`. With no `APP_PASSWORD`, the app stays open for local work.
 
@@ -111,7 +111,7 @@ npm install
 npm run dev
 ```
 
-פורט **43145**. ברירת המחדל: כרטיסי הנה״ח, עץ קטגוריות ריק, והגדרות מינימליות. אין ספקי דמו, מוצרים או הזמנות. סניף אמיתי מוסיפים ב**הגדרות**.
+פורט **43145**. ברירת המחדל: כרטיסי הנה״ח, עץ קטגוריות, סניף בית שמש וסניף קרית יערים, וטלפון וואטסאפ של רועי על כל הספקים.
 
 לשיתוף עם רועי: ראו `DEPLOY.md` — סיסמה ב-`APP_PASSWORD`, כתובת HTTPS, ומפתח AI אופציונלי.
 

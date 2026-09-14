@@ -56,7 +56,7 @@ export default async function HomePage() {
           href="/settings"
           className="block rounded-xl border border-dashed bg-card px-4 py-3 text-sm"
         >
-          אין סניפים במערכת. הוסיפו סניף אמיתי בהגדרות כדי להתחיל הזמנות, מלאי ופחת.
+          אין סניפים במערכת. הוסיפו סניף בהגדרות כדי להתחיל הזמנות, מלאי ופחת.
         </Link>
       ) : null}
 

@@ -10,6 +10,9 @@ export const COMPANY = {
   accountantEmail: "accountant@vivace.example",
 } as const;
 
+/** Roi's mobile — every supplier WhatsApp/order goes here until per-supplier numbers are set. */
+export const ROI_WHATSAPP_PHONE = "0526408537";
+
 export const WEEKDAYS = [
   { value: 0, label: "ראשון" },
   { value: 1, label: "שני" },

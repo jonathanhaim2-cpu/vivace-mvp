@@ -101,7 +101,7 @@ export function SupplierForm({
               name="whatsappPhone"
               required
               defaultValue={supplier?.whatsappPhone}
-              placeholder="0501234567"
+              placeholder="0526408537"
             />
           </Field>
           <Field>
