@@ -154,8 +154,35 @@ export function nowInIsrael() {
   };
 }
 
+/** LTR mark so "14:00" does not render as "00:14" in Hebrew RTL. */
+const LRM = "\u200E";
+
+export function normalizeClockTime(raw: string | null | undefined) {
+  const trimmed = String(raw ?? "").trim();
+  const match = trimmed.match(/^(\d{1,2})[:.hH](\d{2})$/);
+  if (!match) {
+    const compact = trimmed.match(/^(\d{1,2})(\d{2})$/);
+    if (!compact) return "14:00";
+    const h = Number(compact[1]);
+    const m = Number(compact[2]);
+    if (h > 23 || m > 59) return "14:00";
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  }
+  const h = Number(match[1]);
+  const m = Number(match[2]);
+  if (Number.isNaN(h) || Number.isNaN(m) || h > 23 || m > 59) return "14:00";
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+/** Display-safe HH:MM (bidi-isolated) for RTL text. */
+export function formatClockTime(raw: string | null | undefined) {
+  const value = normalizeClockTime(raw);
+  return `${LRM}${value}${LRM}`;
+}
+
 export function parseCutoffMinutes(hhmm: string) {
-  const [h, m] = hhmm.split(":").map(Number);
+  const normalized = normalizeClockTime(hhmm);
+  const [h, m] = normalized.split(":").map(Number);
   if (Number.isNaN(h) || Number.isNaN(m)) return 14 * 60;
   return h * 60 + m;
 }
@@ -199,10 +226,12 @@ export function nextDeliveryInfo(deliveryDays: number[], cutoffTime: string) {
   const nextDay = (now.day + (openToday ? 0 : daysUntil)) % 7;
   const nextDayLabel = WEEKDAYS.find((w) => w.value === nextDay)?.label ?? "—";
 
+  const clock = formatClockTime(cutoffTime);
+
   if (openToday) {
     return {
       open: true,
-      label: `חלון פתוח עד ${cutoffTime} · משלוח היום`,
+      label: `חלון פתוח עד ${clock} · משלוח היום`,
       daysUntil: Math.max(1, typicalGapDays(unique)),
       nextDayLabel,
     };
@@ -211,7 +240,7 @@ export function nextDeliveryInfo(deliveryDays: number[], cutoffTime: string) {
   if (todayIsDelivery) {
     return {
       open: false,
-      label: `נסגר להיום (${cutoffTime}) · המשלוח הבא: ${nextDayLabel}`,
+      label: `נסגר להיום (${clock}) · המשלוח הבא: ${nextDayLabel}`,
       daysUntil,
       nextDayLabel,
     };
@@ -219,7 +248,7 @@ export function nextDeliveryInfo(deliveryDays: number[], cutoffTime: string) {
 
   return {
     open: true,
-    label: `הזמנה למשלוח ביום ${nextDayLabel} · סגירה ב-${cutoffTime}`,
+    label: `הזמנה למשלוח ביום ${nextDayLabel} · סגירה ב-${clock}`,
     daysUntil,
     nextDayLabel,
   };

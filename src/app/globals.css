@@ -134,4 +134,26 @@
   html {
     @apply font-sans;
   }
+  /* Native time/date widgets reverse HH:MM in RTL; keep them LTR. */
+  input[type="time"],
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="week"],
+  input[type="month"] {
+    direction: ltr;
+    unicode-bidi: isolate;
+    text-align: start;
+  }
+}
+
+@media print {
+  aside,
+  header,
+  nav,
+  [data-slot="app-chat"] {
+    display: none !important;
+  }
+  main {
+    margin: 0 !important;
+  }
 }

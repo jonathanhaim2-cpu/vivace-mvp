@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { createOrder } from "@/actions/orders";
+import { ClockTime } from "@/components/clock-time";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -109,7 +110,7 @@ export function OrderWizard({
                 <CardContent className="space-y-1 text-sm">
                   <p>{formatDeliveryDays(supplier.deliveryDays) || "אין ימי אספקה"}</p>
                   <p className={info.open ? "text-primary" : "text-destructive"}>{info.label}</p>
-                  {supplier.driverName ? <p className="text-muted-foreground">נהג: {supplier.driverName}</p> : null}
+                  {supplier.driverName ? <p className="text-muted-foreground">מפיץ: {supplier.driverName}</p> : null}
                 </CardContent>
               </Card>
             </Link>
@@ -140,7 +141,8 @@ export function OrderWizard({
         <CardContent className="space-y-2 text-sm">
           <p className={windowInfo?.open ? "text-primary" : "text-destructive"}>{windowInfo?.label}</p>
           <p className="text-muted-foreground">
-            תזכורת למנהל הסניף {selected.reminderHoursBefore} שעות לפני {selected.orderCutoffTime} (תצוגה בלבד ב-MVP).
+            תזכורת למנהל הסניף {selected.reminderHoursBefore} שעות לפני{" "}
+            <ClockTime value={selected.orderCutoffTime} /> (תצוגה בלבד ב-MVP).
           </p>
           {selected.weeklyBudgetIls != null ? (
             <p>
@@ -262,7 +264,7 @@ export function OrderWizard({
           <p className="text-base font-medium">סה״כ משוער: {formatIls(total)}</p>
           <div>
             <label htmlFor="notes" className="mb-1 block text-sm font-medium">
-              הערות לנהג / מפיץ
+              הערות למפיץ
             </label>
             <Textarea
               id="notes"

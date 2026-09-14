@@ -68,7 +68,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           </ul>
           <p className="font-medium">סה״כ משוער: {formatIls(total)}</p>
           <p className="text-sm text-muted-foreground">
-            הערות לנהג: {order.notesForDriver || "אין"}
+            הערות למפיץ: {order.notesForDriver || "אין"}
           </p>
           <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs whitespace-pre-wrap">{message}</pre>
           <div className="flex flex-wrap gap-2">

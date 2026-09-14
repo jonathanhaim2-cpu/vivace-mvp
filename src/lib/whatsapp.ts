@@ -52,7 +52,7 @@ export function buildOrderWhatsAppText(order: OrderForMessage) {
     "פריטים:",
     ...lines,
     "",
-    order.notesForDriver ? `הערות לנהג/מפיץ: ${order.notesForDriver}` : "הערות לנהג/מפיץ: אין",
+    order.notesForDriver ? `הערות למפיץ: ${order.notesForDriver}` : "הערות למפיץ: אין",
     `סה״כ משוער: ${formatIls(total)}`,
     `עוסק מורשה ${COMPANY.taxId}`,
   ].join("\n");

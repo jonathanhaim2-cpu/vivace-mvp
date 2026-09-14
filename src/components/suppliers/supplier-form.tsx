@@ -27,8 +27,6 @@ type SupplierValues = {
   paymentMethod: string | null;
   accountingPhone: string | null;
   accountingEmail: string | null;
-  partnerName: string | null;
-  partnerPercent: number | null;
   plantsCouncilUrl: string | null;
   plantsCouncilDiscountPct: number | null;
   branchLinks?: { branchId: string }[];
@@ -88,7 +86,7 @@ export function SupplierForm({
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor="driverName">שם נהג</FieldLabel>
+            <FieldLabel htmlFor="driverName">שם מפיץ</FieldLabel>
             <Input id="driverName" name="driverName" defaultValue={supplier?.driverName ?? ""} />
           </Field>
           <Field>
@@ -112,6 +110,7 @@ export function SupplierForm({
               id="orderCutoffTime"
               name="orderCutoffTime"
               type="time"
+              dir="ltr"
               required
               defaultValue={supplier?.orderCutoffTime ?? "14:00"}
             />
@@ -173,7 +172,7 @@ export function SupplierForm({
       </FieldGroup>
 
       <details className="rounded-xl border bg-card p-4" open>
-        <summary className="cursor-pointer font-medium">כספים, הנה״ח ושותפות</summary>
+        <summary className="cursor-pointer font-medium">כספים והנה״ח</summary>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <Field>
             <FieldLabel htmlFor="paymentTerms">תנאי תשלום</FieldLabel>
@@ -218,22 +217,6 @@ export function SupplierForm({
               name="accountingEmail"
               type="email"
               defaultValue={supplier?.accountingEmail ?? ""}
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="partnerName">שם שותף / בעלות</FieldLabel>
-            <Input id="partnerName" name="partnerName" defaultValue={supplier?.partnerName ?? ""} />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="partnerPercent">אחוז שותפות</FieldLabel>
-            <Input
-              id="partnerPercent"
-              name="partnerPercent"
-              type="number"
-              min={0}
-              max={100}
-              step="0.1"
-              defaultValue={supplier?.partnerPercent ?? ""}
             />
           </Field>
         </div>

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { DOCUMENT_TYPES, PAYMENT_METHODS, PAYMENT_TERMS, WEEKDAYS } from "@/lib/constants";
 import { ensurePriceLists } from "@/lib/catalog";
+import { normalizeClockTime } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
 function readDays(formData: FormData) {
@@ -59,7 +60,7 @@ function readSupplierInput(formData: FormData) {
     driverName: String(formData.get("driverName") ?? "").trim() || null,
     documentType,
     deliveryDays: readDays(formData),
-    orderCutoffTime,
+    orderCutoffTime: normalizeClockTime(orderCutoffTime),
     reminderHoursBefore: Number.isFinite(reminderHoursBefore) ? reminderHoursBefore : 2,
     weeklyBudgetIls: weeklyBudgetRaw ? Number(weeklyBudgetRaw) : null,
     notes: String(formData.get("notes") ?? "").trim() || null,
@@ -69,8 +70,6 @@ function readSupplierInput(formData: FormData) {
     paymentMethod: paymentMethod || null,
     accountingPhone: String(formData.get("accountingPhone") ?? "").trim() || null,
     accountingEmail: String(formData.get("accountingEmail") ?? "").trim() || null,
-    partnerName: String(formData.get("partnerName") ?? "").trim() || null,
-    partnerPercent: optionalFloat(formData.get("partnerPercent")),
     plantsCouncilUrl: String(formData.get("plantsCouncilUrl") ?? "").trim() || null,
     plantsCouncilDiscountPct: optionalFloat(formData.get("plantsCouncilDiscountPct")),
   };

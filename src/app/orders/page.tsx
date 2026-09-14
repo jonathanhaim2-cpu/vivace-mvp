@@ -23,7 +23,7 @@ export default async function OrdersPage() {
     <div>
       <PageHeader
         title="רכש · הזמנות"
-        description="הזמנה מספק, סיכום לנהג, שליחה בוואטסאפ וקליטה מול חשבונית."
+        description="הזמנה מספק, סיכום למפיץ, שליחה בוואטסאפ וקליטה מול חשבונית."
         action={{ href: "/orders/new", label: "הזמנה חדשה" }}
       />
       {orders.length === 0 ? (

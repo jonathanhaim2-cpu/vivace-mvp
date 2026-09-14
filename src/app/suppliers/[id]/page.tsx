@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { ProductImportForm } from "@/components/products/product-import-form";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ClockTime } from "@/components/clock-time";
 import { categoryPathLabel } from "@/lib/categories";
 import { supplierVisibleToBranch } from "@/lib/catalog";
 import { PAYMENT_METHODS, PAYMENT_TERMS } from "@/lib/constants";
@@ -88,9 +89,11 @@ export default async function SupplierDetailPage({
         <CardContent className="grid gap-2 text-sm sm:grid-cols-2">
           <p>סוכן: {supplier.agentName || "—"} {supplier.agentPhone ? `· ${supplier.agentPhone}` : ""}</p>
           <p>וואטסאפ הזמנות: {supplier.whatsappPhone}</p>
-          <p>נהג: {supplier.driverName || "—"}</p>
+          <p>מפיץ: {supplier.driverName || "—"}</p>
           <p>ימי אספקה: {formatDeliveryDays(supplier.deliveryDays) || "—"}</p>
-          <p>סגירת הזמנה: {supplier.orderCutoffTime}</p>
+          <p>
+            סגירת הזמנה: <ClockTime value={supplier.orderCutoffTime} />
+          </p>
           <p>תקציב שבועי: {supplier.weeklyBudgetIls != null ? formatIls(supplier.weeklyBudgetIls) : "לא הוגדר"}</p>
           <p>קטגוריית ברירת מחדל: {categoryPathLabel(supplier.defaultCategory)}</p>
           <p>
@@ -102,10 +105,6 @@ export default async function SupplierDetailPage({
           <p>תנאי תשלום: {terms ?? "לא הוגדר"}</p>
           <p>אמצעי תשלום: {method ?? "לא הוגדר"}</p>
           <p>הנה״ח: {[supplier.accountingPhone, supplier.accountingEmail].filter(Boolean).join(" · ") || "—"}</p>
-          <p>
-            שותפות: {supplier.partnerName || "—"}
-            {supplier.partnerPercent != null ? ` · ${supplier.partnerPercent}%` : ""}
-          </p>
           {supplier.plantsCouncilUrl || supplier.plantsCouncilDiscountPct != null ? (
             <p className="sm:col-span-2">
               {PLANTS_COUNCIL.nameHe}:{" "}

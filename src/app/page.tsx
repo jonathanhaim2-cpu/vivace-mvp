@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { saveDashboardSettings } from "@/actions/dashboard";
+import { ClockTime } from "@/components/clock-time";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { COMPANY } from "@/lib/constants";
@@ -233,7 +234,7 @@ export default async function HomePage() {
                   href={`/orders/new?supplierId=${supplier.id}`}
                   className="block hover:underline"
                 >
-                  {supplier.name} · סגירה {supplier.orderCutoffTime}
+                  {supplier.name} · סגירה <ClockTime value={supplier.orderCutoffTime} />
                 </Link>
               ))
             )}
