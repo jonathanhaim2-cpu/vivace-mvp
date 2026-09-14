@@ -7,9 +7,9 @@ import { ensurePriceLists } from "@/lib/catalog";
 import { normalizeClockTime } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
-function readDays(formData: FormData) {
+function readDays(formData: FormData, fieldName = "deliveryDay") {
   const selected = formData
-    .getAll("deliveryDay")
+    .getAll(fieldName)
     .map((value) => Number(value))
     .filter((n) => WEEKDAYS.some((d) => d.value === n));
   return JSON.stringify(selected);
@@ -58,11 +58,15 @@ function readSupplierInput(formData: FormData) {
     agentPhone: String(formData.get("agentPhone") ?? "").trim() || null,
     whatsappPhone,
     driverName: String(formData.get("driverName") ?? "").trim() || null,
+    address: String(formData.get("address") ?? "").trim() || null,
+    deliveryPointNumber: String(formData.get("deliveryPointNumber") ?? "").trim() || null,
     documentType,
-    deliveryDays: readDays(formData),
+    deliveryDays: readDays(formData, "deliveryDay"),
+    orderDays: readDays(formData, "orderDay"),
     orderCutoffTime: normalizeClockTime(orderCutoffTime),
     reminderHoursBefore: Number.isFinite(reminderHoursBefore) ? reminderHoursBefore : 2,
     weeklyBudgetIls: weeklyBudgetRaw ? Number(weeklyBudgetRaw) : null,
+    minimumOrderIls: optionalFloat(formData.get("minimumOrderIls")),
     notes: String(formData.get("notes") ?? "").trim() || null,
     defaultCategoryId: String(formData.get("defaultCategoryId") ?? "").trim() || null,
     active: formData.getAll("active").some((value) => value === "on" || value === "true" || value === "1"),

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ClockTime } from "@/components/clock-time";
 import { listManagedSuppliers } from "@/lib/catalog";
 import { PAYMENT_METHODS, PAYMENT_TERMS } from "@/lib/constants";
-import { documentTypeLabel, formatDeliveryDays, nextDeliveryInfo, parseDeliveryDays } from "@/lib/format";
+import { documentTypeLabel, formatDeliveryDays, formatWeekdays, nextDeliveryInfo, parseDeliveryDays, resolveOrderDays } from "@/lib/format";
 import { getAppSession } from "@/lib/session";
 
 export default async function SuppliersPage() {
@@ -35,7 +36,11 @@ export default async function SuppliersPage() {
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {suppliers.map((supplier) => {
-            const info = nextDeliveryInfo(parseDeliveryDays(supplier.deliveryDays), supplier.orderCutoffTime);
+            const info = nextDeliveryInfo(
+              parseDeliveryDays(supplier.deliveryDays),
+              supplier.orderCutoffTime,
+              resolveOrderDays(supplier.orderDays, supplier.deliveryDays),
+            );
             const terms = PAYMENT_TERMS.find((t) => t.value === supplier.paymentTerms)?.label;
             const method = PAYMENT_METHODS.find((t) => t.value === supplier.paymentMethod)?.label;
             return (
@@ -54,7 +59,11 @@ export default async function SuppliersPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-1 text-sm">
-                    <p>{formatDeliveryDays(supplier.deliveryDays) || "לא הוגדרו ימי אספקה"}</p>
+                    <p>אספקה: {formatDeliveryDays(supplier.deliveryDays) || "לא הוגדרו ימי אספקה"}</p>
+                    <p className="text-muted-foreground">
+                      הזמנה: {formatWeekdays(resolveOrderDays(supplier.orderDays, supplier.deliveryDays)) || "—"} · עד{" "}
+                      <ClockTime value={supplier.orderCutoffTime} />
+                    </p>
                     <p className="text-muted-foreground">{info.label}</p>
                     <p className="text-muted-foreground">
                       {supplier._count.products} מוצרים · {supplier._count.orders} הזמנות

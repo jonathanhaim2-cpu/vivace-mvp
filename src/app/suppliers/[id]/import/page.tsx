@@ -12,7 +12,7 @@ export default async function ImportProductsPage({ params }: { params: Promise<{
     <div className="max-w-xl space-y-4">
       <PageHeader
         title={`ייבוא מחירון · ${supplier.name}`}
-        description="Excel או CSV. שורות קיימות לפי מק״ט (או שם) מתעדכנות; חדשות נוצרות תחת הספק."
+        description="Excel או CSV. שורות קיימות לפי מק״ט (או שם) מתעדכנות; חדשות נוצרות תחת הספק. כותרות Zest (תיאור, מק״ט, מחיר) נתמכות גם אם אינן בשורה הראשונה."
       />
       <ProductImportForm supplierId={supplier.id} />
     </div>

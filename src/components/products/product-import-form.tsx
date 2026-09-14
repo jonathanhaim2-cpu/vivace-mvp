@@ -10,7 +10,7 @@ export function ProductImportForm({ supplierId }: { supplierId: string }) {
         <FieldLabel htmlFor="file">ייבוא מחירון Excel / CSV</FieldLabel>
         <Input id="file" name="file" type="file" accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required />
         <FieldDescription>
-          עמודות בסגנון Zest: name / שם, sku / מק״ט, price / מחיר, discount / הנחה. אופציונלי: vat, carton, bags.
+          עמודות בסגנון Zest: תיאור / שם / name, מק״ט / קוד / sku, מחיר / price, הנחה. הכותרת יכולה להיות לא בשורה הראשונה.
         </FieldDescription>
       </Field>
       <Button type="submit" variant="outline">

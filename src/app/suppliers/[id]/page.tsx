@@ -15,8 +15,10 @@ import {
   documentTypeLabel,
   formatDeliveryDays,
   formatIls,
+  formatWeekdays,
   nextDeliveryInfo,
   parseDeliveryDays,
+  resolveOrderDays,
   suggestOrderQty,
 } from "@/lib/format";
 import { PLANTS_COUNCIL } from "@/lib/plants-council";
@@ -48,7 +50,8 @@ export default async function SupplierDetailPage({
   if (!session.isNetwork && !supplierVisibleToBranch(supplier, session.branchId)) notFound();
 
   const days = parseDeliveryDays(supplier.deliveryDays);
-  const windowInfo = nextDeliveryInfo(days, supplier.orderCutoffTime);
+  const orderDays = resolveOrderDays(supplier.orderDays, supplier.deliveryDays);
+  const windowInfo = nextDeliveryInfo(days, supplier.orderCutoffTime, orderDays);
   const terms = PAYMENT_TERMS.find((t) => t.value === supplier.paymentTerms)?.label;
   const method = PAYMENT_METHODS.find((t) => t.value === supplier.paymentMethod)?.label;
 
@@ -90,7 +93,10 @@ export default async function SupplierDetailPage({
           <p>סוכן: {supplier.agentName || "—"} {supplier.agentPhone ? `· ${supplier.agentPhone}` : ""}</p>
           <p>וואטסאפ הזמנות: {supplier.whatsappPhone}</p>
           <p>מפיץ: {supplier.driverName || "—"}</p>
+          <p>כתובת: {supplier.address || "—"}</p>
+          <p>נקודת חלוקה: {supplier.deliveryPointNumber || "—"}</p>
           <p>ימי אספקה: {formatDeliveryDays(supplier.deliveryDays) || "—"}</p>
+          <p>ימי הזמנה: {formatWeekdays(orderDays) || "—"}</p>
           <p>
             סגירת הזמנה: <ClockTime value={supplier.orderCutoffTime} />
           </p>

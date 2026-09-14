@@ -44,11 +44,24 @@ export function parseDeliveryDays(raw: string): number[] {
   }
 }
 
-export function formatDeliveryDays(raw: string) {
-  return parseDeliveryDays(raw)
+export function parseWeekdays(raw: string | null | undefined): number[] {
+  return parseDeliveryDays(raw ?? "[]");
+}
+
+export function resolveOrderDays(orderDaysRaw: string | null | undefined, deliveryDaysRaw: string) {
+  const orderDays = parseWeekdays(orderDaysRaw);
+  return orderDays.length > 0 ? orderDays : parseDeliveryDays(deliveryDaysRaw);
+}
+
+export function formatWeekdays(days: number[]) {
+  return days
     .map((d) => WEEKDAYS.find((w) => w.value === d)?.label)
     .filter(Boolean)
     .join(", ");
+}
+
+export function formatDeliveryDays(raw: string) {
+  return formatWeekdays(parseDeliveryDays(raw));
 }
 
 export function documentTypeLabel(value: string | null | undefined) {
@@ -206,41 +219,46 @@ export function daysUntilNextDelivery(deliveryDays: number[], from = nowInIsrael
   return 7;
 }
 
-export function nextDeliveryInfo(deliveryDays: number[], cutoffTime: string) {
+export function nextDeliveryInfo(deliveryDays: number[], cutoffTime: string, orderDays?: number[]) {
   const now = nowInIsrael();
-  const unique = [...new Set(deliveryDays)].sort((a, b) => a - b);
+  const uniqueDelivery = [...new Set(deliveryDays)].sort((a, b) => a - b);
+  const uniqueOrder = [...new Set(orderDays && orderDays.length > 0 ? orderDays : deliveryDays)].sort(
+    (a, b) => a - b,
+  );
   const cutoff = parseCutoffMinutes(cutoffTime);
+  const clock = formatClockTime(cutoffTime);
+  const orderLabel = formatWeekdays(uniqueOrder);
+  const deliveryLabel = formatWeekdays(uniqueDelivery);
 
-  if (unique.length === 0) {
+  if (uniqueDelivery.length === 0 && uniqueOrder.length === 0) {
     return {
       open: true,
-      label: "אין ימי אספקה מוגדרים",
+      label: "אין ימי הזמנה או אספקה מוגדרים",
       daysUntil: 7,
       nextDayLabel: "—",
     };
   }
 
-  const todayIsDelivery = unique.includes(now.day);
-  const openToday = todayIsDelivery && now.minutes <= cutoff;
-  const daysUntil = daysUntilNextDelivery(unique, now);
+  const todayIsOrderDay = uniqueOrder.includes(now.day);
+  const openToday = todayIsOrderDay && now.minutes <= cutoff;
+  const schedule = uniqueDelivery.length > 0 ? uniqueDelivery : uniqueOrder;
+  const daysUntil = daysUntilNextDelivery(schedule, now);
   const nextDay = (now.day + (openToday ? 0 : daysUntil)) % 7;
   const nextDayLabel = WEEKDAYS.find((w) => w.value === nextDay)?.label ?? "—";
-
-  const clock = formatClockTime(cutoffTime);
 
   if (openToday) {
     return {
       open: true,
-      label: `חלון פתוח עד ${clock} · משלוח היום`,
-      daysUntil: Math.max(1, typicalGapDays(unique)),
+      label: `חלון הזמנה פתוח עד ${clock} · ימי הזמנה: ${orderLabel || "—"} · אספקה: ${deliveryLabel || nextDayLabel}`,
+      daysUntil: Math.max(1, typicalGapDays(schedule)),
       nextDayLabel,
     };
   }
 
-  if (todayIsDelivery) {
+  if (todayIsOrderDay) {
     return {
       open: false,
-      label: `נסגר להיום (${clock}) · המשלוח הבא: ${nextDayLabel}`,
+      label: `נסגר להיום (${clock}) · ימי הזמנה: ${orderLabel || "—"} · אספקה: ${deliveryLabel || nextDayLabel}`,
       daysUntil,
       nextDayLabel,
     };
@@ -248,15 +266,20 @@ export function nextDeliveryInfo(deliveryDays: number[], cutoffTime: string) {
 
   return {
     open: true,
-    label: `הזמנה למשלוח ביום ${nextDayLabel} · סגירה ב-${clock}`,
+    label: `הזמנה למשלוח ביום ${nextDayLabel} · סגירה ב-${clock} · ימי הזמנה: ${orderLabel || "—"} · אספקה: ${deliveryLabel || "—"}`,
     daysUntil,
     nextDayLabel,
   };
 }
 
-export function suggestOrderQty(stockStandard: number, deliveryDays: number[], cutoffTime: string) {
-  const window = nextDeliveryInfo(deliveryDays, cutoffTime);
-  const gap = typicalGapDays(deliveryDays);
+export function suggestOrderQty(
+  stockStandard: number,
+  deliveryDays: number[],
+  cutoffTime: string,
+  orderDays?: number[],
+) {
+  const window = nextDeliveryInfo(deliveryDays, cutoffTime, orderDays);
+  const gap = typicalGapDays(deliveryDays.length > 0 ? deliveryDays : orderDays ?? []);
   const factor = Math.max(1, window.daysUntil / gap);
   return Math.max(1, Math.ceil(stockStandard * factor));
 }

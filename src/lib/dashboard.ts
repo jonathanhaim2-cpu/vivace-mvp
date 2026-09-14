@@ -1,4 +1,4 @@
-import { nowInIsrael, nextDeliveryInfo, parseDeliveryDays } from "@/lib/format";
+import { nowInIsrael, nextDeliveryInfo, parseDeliveryDays, parseWeekdays } from "@/lib/format";
 import { monthKeyFromDate, monthRangeUtc } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { RECEIPT_STATUSES } from "@/lib/constants";
@@ -175,7 +175,11 @@ export async function getOrdersToPlaceToday(branchId?: string | null, isNetwork 
     ).map((o) => o.supplierId),
   );
   return visible.filter((supplier) => {
-    const info = nextDeliveryInfo(parseDeliveryDays(supplier.deliveryDays), supplier.orderCutoffTime);
+    const info = nextDeliveryInfo(
+      parseDeliveryDays(supplier.deliveryDays),
+      supplier.orderCutoffTime,
+      parseWeekdays(supplier.orderDays),
+    );
     return info.open && !openIds.has(supplier.id);
   });
 }

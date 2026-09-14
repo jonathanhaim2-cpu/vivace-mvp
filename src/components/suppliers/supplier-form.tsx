@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CategorySelect } from "@/components/categories/category-select";
 import { DOCUMENT_TYPES, PAYMENT_METHODS, PAYMENT_TERMS, WEEKDAYS } from "@/lib/constants";
-import { parseDeliveryDays } from "@/lib/format";
+import { parseDeliveryDays, parseWeekdays } from "@/lib/format";
 import { PLANTS_COUNCIL } from "@/lib/plants-council";
 
 type SupplierValues = {
@@ -15,11 +15,15 @@ type SupplierValues = {
   agentPhone: string | null;
   whatsappPhone: string;
   driverName: string | null;
+  address?: string | null;
+  deliveryPointNumber?: string | null;
   documentType: string;
   deliveryDays: string;
+  orderDays?: string | null;
   orderCutoffTime: string;
   reminderHoursBefore: number;
   weeklyBudgetIls: number | null;
+  minimumOrderIls?: number | null;
   notes: string | null;
   defaultCategoryId: string | null;
   active: boolean;
@@ -43,6 +47,7 @@ export function SupplierForm({
 }) {
   const action = supplier ? updateSupplier.bind(null, supplier.id) : createSupplier;
   const days = supplier ? parseDeliveryDays(supplier.deliveryDays) : [0, 2, 4];
+  const orderDays = supplier ? parseWeekdays(supplier.orderDays) : days;
   const selectedBranches = new Set(supplier?.branchLinks?.map((link) => link.branchId) ?? branches.map((b) => b.id));
 
   return (
@@ -56,6 +61,19 @@ export function SupplierForm({
           <Field>
             <FieldLabel htmlFor="taxId">ח.פ. / עוסק מורשה</FieldLabel>
             <Input id="taxId" name="taxId" defaultValue={supplier?.taxId ?? ""} placeholder="520004078" />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="address">כתובת הספק</FieldLabel>
+            <Input id="address" name="address" defaultValue={supplier?.address ?? ""} placeholder="רחוב, עיר" />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="deliveryPointNumber">מספר נקודת חלוקה (כפי שהספק מכיר את המסעדה)</FieldLabel>
+            <Input
+              id="deliveryPointNumber"
+              name="deliveryPointNumber"
+              defaultValue={supplier?.deliveryPointNumber ?? ""}
+              placeholder="אופציונלי"
+            />
           </Field>
           <label className="flex items-center gap-2 text-sm sm:col-span-2">
             <input type="hidden" name="active" value="false" />
@@ -137,6 +155,18 @@ export function SupplierForm({
               defaultValue={supplier?.weeklyBudgetIls ?? ""}
             />
           </Field>
+          <Field>
+            <FieldLabel htmlFor="minimumOrderIls">מינימום הזמנה (₪, אופציונלי)</FieldLabel>
+            <Input
+              id="minimumOrderIls"
+              name="minimumOrderIls"
+              type="number"
+              min={0}
+              step="0.01"
+              defaultValue={supplier?.minimumOrderIls ?? ""}
+            />
+            <FieldDescription>אפשר לשלוח בכל זאת גם מתחת למינימום, כהזמנה נפרדת או מיזוג.</FieldDescription>
+          </Field>
         </div>
 
         <Field>
@@ -157,6 +187,30 @@ export function SupplierForm({
               </label>
             ))}
           </div>
+          <FieldDescription>מתי הסחורה מגיעה למסעדה.</FieldDescription>
+        </Field>
+
+        <Field>
+          <FieldLabel>ימי הזמנה + שעת סגירה</FieldLabel>
+          <div className="flex flex-wrap gap-2">
+            {WEEKDAYS.map((day) => (
+              <label
+                key={`order-${day.value}`}
+                className="inline-flex items-center gap-2 rounded-lg border bg-card px-3 py-1.5 text-sm"
+              >
+                <input
+                  type="checkbox"
+                  name="orderDay"
+                  value={day.value}
+                  defaultChecked={orderDays.includes(day.value)}
+                />
+                {day.label}
+              </label>
+            ))}
+          </div>
+          <FieldDescription>
+            מתי אפשר להזמין. שעת הסגירה למעלה חלה על ימי ההזמנה. אם לא נבחרו ימים — משתמשים בימי האספקה.
+          </FieldDescription>
         </Field>
 
         <Field>

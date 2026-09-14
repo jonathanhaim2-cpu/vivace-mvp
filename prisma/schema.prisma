@@ -26,11 +26,15 @@ model Supplier {
   agentPhone               String?
   whatsappPhone            String
   driverName               String?
+  address                  String?
+  deliveryPointNumber      String?
   documentType             String
   deliveryDays             String
+  orderDays                String    @default("[]")
   orderCutoffTime          String
   reminderHoursBefore      Int       @default(2)
   weeklyBudgetIls          Float?
+  minimumOrderIls          Float?
   notes                    String?
   defaultCategoryId        String?
   defaultCategory          ProductCategory? @relation(fields: [defaultCategoryId], references: [id])

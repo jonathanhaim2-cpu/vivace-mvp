@@ -56,6 +56,18 @@ export default async function NewOrderPage({
     (sum, line) => sum + lineTotal(line.qty, line.unitPrice, line.discountPercent),
     0,
   );
+  const openOrder = allowedSupplier
+    ? await prisma.order.findFirst({
+        where: {
+          supplierId: allowedSupplier,
+          branchId: session.branchId,
+          status: { in: ["CONFIRMED", "SENT"] },
+          receipt: null,
+        },
+        include: { _count: { select: { lines: true } } },
+        orderBy: { createdAt: "desc" },
+      })
+    : null;
 
   return (
     <div>
@@ -70,6 +82,11 @@ export default async function NewOrderPage({
         branchId={session.branchId}
         branchName={session.branch?.name ?? "סניף"}
         weeklySpent={weeklySpent}
+        openOrder={
+          openOrder
+            ? { id: openOrder.id, status: openOrder.status, lineCount: openOrder._count.lines }
+            : null
+        }
       />
     </div>
   );
