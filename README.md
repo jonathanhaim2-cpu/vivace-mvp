@@ -31,7 +31,7 @@ DATABASE_URL="file:./dev.db"
 Reset: `npm run db:reset`  
 Optional old demo catalog: `SEED_DEMO=true npm run db:reset`  
 Invoice catalog merge (17 suppliers): 2026-09-09.  
-Roi feedback ship (RTL, orders, reports, תקן): 2026-09-14.  
+Roi feedback ship (RTL, orders, reports, תקן): 2026-09-14. Railway webhook kick.  
 Production-style: `npm run build && npm run start:prod`
 
 ### Remote login
