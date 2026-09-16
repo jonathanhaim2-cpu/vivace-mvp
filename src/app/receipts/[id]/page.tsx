@@ -15,6 +15,8 @@ import { prisma } from "@/lib/prisma";
 import { getAppSession } from "@/lib/session";
 import { publicFileUrl } from "@/lib/uploads";
 import { buildCreditWhatsAppText, buildWhatsAppUrl } from "@/lib/whatsapp";
+import { resolveSupplierForBranch } from "@/lib/supplier-branch";
+import { getSendToSuppliersEnabled, resolveOrderWhatsAppPhone } from "@/lib/whatsapp-routing";
 import { cn } from "@/lib/utils";
 
 export default async function ReceiptDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -24,12 +26,19 @@ export default async function ReceiptDetailPage({ params }: { params: Promise<{ 
     where: { id },
     include: {
       photos: true,
-      order: { include: { supplier: true, branch: true } },
+      order: { include: { supplier: { include: { branchLinks: true } }, branch: true } },
       lines: { include: { orderLine: { include: { product: true } } } },
       exceptionalItems: { where: { status: "OPEN" }, orderBy: { createdAt: "desc" } },
     },
   });
   if (!receipt) notFound();
+
+  const sendToSuppliers = await getSendToSuppliersEnabled();
+  const resolvedSupplier = resolveSupplierForBranch(receipt.order.supplier, receipt.order.branchId);
+  const creditWhatsAppPhone = resolveOrderWhatsAppPhone({
+    sendToSuppliers,
+    supplierPhone: resolvedSupplier.whatsappPhone,
+  });
 
   const mailto = `mailto:${COMPANY.accountantEmail}?subject=${encodeURIComponent(
     `חשבוניות ${COMPANY.name} · ${receipt.order.supplier.name} · ${receipt.order.branch.name}`,
@@ -77,7 +86,7 @@ export default async function ReceiptDetailPage({ params }: { params: Promise<{ 
               const creditHref =
                 item.kind === EXCEPTION_KIND.CREDIT_REQUEST
                   ? buildWhatsAppUrl(
-                      receipt.order.supplier.whatsappPhone,
+                      creditWhatsAppPhone,
                       buildCreditWhatsAppText({
                         branch: receipt.order.branch,
                         supplierName: receipt.order.supplier.name,

@@ -4,6 +4,8 @@ import { listOrderableSuppliers } from "@/lib/catalog";
 import { lineTotal, startOfIsraelWeek } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { getAppSession } from "@/lib/session";
+import { resolveSupplierForBranch } from "@/lib/supplier-branch";
+import { getSendToSuppliersEnabled, resolveOrderWhatsAppPhone } from "@/lib/whatsapp-routing";
 
 export default async function NewOrderPage({
   searchParams,
@@ -11,7 +13,7 @@ export default async function NewOrderPage({
   searchParams: Promise<{ supplierId?: string }>;
 }) {
   const { supplierId } = await searchParams;
-  const session = await getAppSession();
+  const [session, sendToSuppliers] = await Promise.all([getAppSession(), getSendToSuppliersEnabled()]);
   if (!session.branchId) {
     return (
       <EmptyState
@@ -22,7 +24,19 @@ export default async function NewOrderPage({
     );
   }
 
-  const suppliers = await listOrderableSuppliers({ role: session.role, branchId: session.branchId });
+  const suppliers = (await listOrderableSuppliers({ role: session.role, branchId: session.branchId })).map(
+    (supplier) => {
+      const resolved = resolveSupplierForBranch(supplier, session.branchId);
+      return {
+        ...resolved,
+        catalogPhone: resolved.whatsappPhone,
+        whatsappPhone: resolveOrderWhatsAppPhone({
+          sendToSuppliers,
+          supplierPhone: resolved.whatsappPhone,
+        }),
+      };
+    },
+  );
   const allowedSupplier = supplierId && suppliers.some((item) => item.id === supplierId) ? supplierId : undefined;
   const productsRaw = allowedSupplier
     ? await prisma.product.findMany({
@@ -92,6 +106,7 @@ export default async function NewOrderPage({
             : null
         }
         weeklySpent={weeklySpent}
+        sendToSuppliers={sendToSuppliers}
         openOrder={
           openOrder
             ? { id: openOrder.id, status: openOrder.status, lineCount: openOrder._count.lines }

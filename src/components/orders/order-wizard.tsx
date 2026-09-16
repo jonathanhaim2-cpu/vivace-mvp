@@ -31,6 +31,7 @@ import {
   resolveOrderDays,
   suggestOrderQty,
 } from "@/lib/format";
+import { RoiTestModeBadge } from "@/components/orders/send-to-suppliers-toggle";
 import { cn } from "@/lib/utils";
 
 type Supplier = {
@@ -72,6 +73,7 @@ export function OrderWizard({
   branchName,
   branch,
   weeklySpent,
+  sendToSuppliers = false,
   openOrder = null,
 }: {
   suppliers: Supplier[];
@@ -81,6 +83,7 @@ export function OrderWizard({
   branchName: string;
   branch?: { name: string; address?: string | null; phone?: string | null; contactName?: string | null } | null;
   weeklySpent: number;
+  sendToSuppliers?: boolean;
   openOrder?: OpenOrder;
 }) {
   const selected = suppliers.find((s) => s.id === selectedSupplierId) ?? null;
@@ -217,9 +220,11 @@ export function OrderWizard({
           <CardTitle>{selected.name}</CardTitle>
           <CardDescription>
             הזמנה עבור {branchName} · וואטסאפ {selected.whatsappPhone}
+            {sendToSuppliers ? "" : " · מצב בדיקה"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
+          {!sendToSuppliers ? <RoiTestModeBadge /> : null}
           <p className={windowInfo?.open ? "text-primary" : "text-destructive"}>{windowInfo?.label}</p>
           {nextOrder ? <NextOrderNotice info={nextOrder} /> : null}
           <p>

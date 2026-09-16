@@ -11,7 +11,7 @@ export const COMPANY = {
   phone: "0526408537",
 } as const;
 
-/** Roi's mobile — every supplier WhatsApp/order goes here until per-supplier numbers are set. */
+/** Roi's mobile — WhatsApp target while «שליחה לספקים» is off (test mode). */
 export const ROI_WHATSAPP_PHONE = "0526408537";
 
 export const WEEKDAYS = [

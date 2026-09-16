@@ -23,6 +23,7 @@ import { COMPANY } from "@/lib/constants";
 import type { Role } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { CutoffReminderBanner } from "@/components/cutoff-reminder-banner";
+import { SendToSuppliersToggle } from "@/components/orders/send-to-suppliers-toggle";
 import type { DueCutoffReminder } from "@/lib/reminders";
 
 const NAV = [
@@ -47,6 +48,7 @@ export function AppShell({
   aiAvailable,
   chatMessages,
   dueReminders = [],
+  sendToSuppliers = false,
 }: {
   children: React.ReactNode;
   role: Role;
@@ -56,6 +58,7 @@ export function AppShell({
   aiAvailable: boolean;
   chatMessages: { id: string; role: string; content: string }[];
   dueReminders?: DueCutoffReminder[];
+  sendToSuppliers?: boolean;
 }) {
   const pathname = usePathname();
 
@@ -123,6 +126,7 @@ export function AppShell({
             {role === "network" ? "תצוגת משרד הרשת" : "תצוגת מנהל סניף"}
           </div>
           <div className="flex items-center gap-2">
+            <SendToSuppliersToggle enabled={sendToSuppliers} compact />
             <ThemeToggle compact />
             <Link
               href="/settings"

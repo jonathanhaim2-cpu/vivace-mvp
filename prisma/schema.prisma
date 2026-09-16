@@ -65,10 +65,22 @@ model Supplier {
 }
 
 model SupplierBranch {
-  supplierId String
-  branchId   String
-  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  branch     Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  supplierId          String
+  branchId            String
+  whatsappPhone       String?
+  agentName           String?
+  agentPhone          String?
+  accountingPhone     String?
+  accountingEmail     String?
+  taxId               String?
+  address             String?
+  deliveryPointNumber String?
+  deliveryDays        String?
+  orderDays           String?
+  orderCutoffTime     String?
+  notes               String?
+  supplier            Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  branch              Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
   @@id([supplierId, branchId])
 }
 

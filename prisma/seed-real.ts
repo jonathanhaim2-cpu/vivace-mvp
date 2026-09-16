@@ -3,6 +3,12 @@ import path from "node:path";
 import type { PrismaClient } from "@prisma/client";
 import { COMPANY, ROI_WHATSAPP_PHONE } from "../src/lib/constants";
 import { ensurePriceLists, syncProductPriceLists } from "../src/lib/catalog";
+import {
+  displaySupplierName,
+  REAL_SUPPLIER_DETAILS,
+  type SupplierBranchOverlay,
+  type SupplierOverlay,
+} from "../src/lib/supplier-details";
 
 export { ROI_WHATSAPP_PHONE };
 
@@ -42,7 +48,7 @@ export const PRODUCTION_BRANCHES: CatalogBranch[] = [
   {
     id: "branch_beit_shemesh",
     name: "סניף בית שמש",
-    address: "בית שמש",
+    address: "נחל קטלב 2, בית שמש",
     phone: ROI_WHATSAPP_PHONE,
     contactName: COMPANY.owner,
   },
@@ -124,6 +130,12 @@ function resolveSeedAddress(branch: CatalogBranch, existingAddress?: string | nu
     if (!current || current === "קרית יערים") return "יצחק 27, קרית יערים";
     return current;
   }
+  if (branch.id === "branch_beit_shemesh") {
+    if (current.includes("נחל קטלב 2")) return current;
+    if (incoming.includes("נחל קטלב 2")) return incoming;
+    if (!current || current === "בית שמש") return "נחל קטלב 2, בית שמש";
+    return current;
+  }
   return incoming || current || null;
 }
 
@@ -170,76 +182,112 @@ async function ensureProductionBranches(client: PrismaClient, branches: CatalogB
   }
 }
 
+function jsonDays(days: number[] | undefined) {
+  if (!days) return undefined;
+  return JSON.stringify(days);
+}
+
+function overlayBranchLinkData(overlay: SupplierBranchOverlay | undefined) {
+  if (!overlay) return {};
+  return {
+    whatsappPhone: overlay.whatsappPhone ?? null,
+    agentName: overlay.agentName ?? null,
+    agentPhone: overlay.agentPhone ?? null,
+    accountingPhone: overlay.accountingPhone ?? null,
+    accountingEmail: overlay.accountingEmail ?? null,
+    taxId: overlay.taxId ?? null,
+    address: overlay.address ?? null,
+    deliveryPointNumber: overlay.deliveryPointNumber ?? null,
+    deliveryDays: jsonDays(overlay.deliveryDays) ?? null,
+    orderDays: jsonDays(overlay.orderDays) ?? null,
+    orderCutoffTime: overlay.orderCutoffTime ?? null,
+    notes: overlay.notes ?? null,
+  };
+}
+
 async function linkSupplierToBranches(
   client: PrismaClient,
   supplierId: string,
-  branches: CatalogBranch[],
+  branchIds: string[],
+  overlay: SupplierOverlay | undefined,
 ) {
-  for (const branch of branches) {
+  await client.supplierBranch.deleteMany({
+    where: { supplierId, branchId: { notIn: branchIds } },
+  });
+  for (const branchId of branchIds) {
+    const extras = overlayBranchLinkData(overlay?.branchOverrides?.[branchId]);
     await client.supplierBranch.upsert({
-      where: { supplierId_branchId: { supplierId, branchId: branch.id } },
-      update: {},
-      create: { supplierId, branchId: branch.id },
+      where: { supplierId_branchId: { supplierId, branchId } },
+      update: extras,
+      create: { supplierId, branchId, ...extras },
     });
   }
-}
-
-/** Overwrites every supplier phone on each db:ready so production SQLite picks up Roi's number. */
-export async function routeAllSupplierPhones(client: PrismaClient, phone = ROI_WHATSAPP_PHONE) {
-  const result = await client.supplier.updateMany({
-    data: {
-      whatsappPhone: phone,
-      agentPhone: phone,
-      accountingPhone: phone,
-    },
-  });
-  console.log(`Supplier phones routed to Roi ${phone} (${result.count} rows).`);
-  return result.count;
 }
 
 export async function seedRealCatalog(client: PrismaClient) {
   const file = path.join(process.cwd(), "prisma", "real-catalog.json");
   const data = JSON.parse(readFileSync(file, "utf8")) as RealCatalog;
-  const phone = data.whatsappPhone?.trim() || ROI_WHATSAPP_PHONE;
   const branches = resolveCatalogBranches(data);
 
   await ensureProductionBranches(client, branches);
 
   for (const supplier of data.suppliers) {
+    const overlay = REAL_SUPPLIER_DETAILS[supplier.id];
     const defaultCategoryId = await categoryIdByHint(client, supplier.catHint);
-    const supplierPhone = supplier.whatsappPhone?.trim() || phone;
+    const existingSupplier = await client.supplier.findUnique({ where: { id: supplier.id } });
+    const name = displaySupplierName(supplier.id, supplier.name);
+    const overlayPhone = overlay?.whatsappPhone?.trim() || supplier.whatsappPhone?.trim() || "";
+    const existingPhone = existingSupplier?.whatsappPhone?.trim() || "";
+    const supplierPhone = overlayPhone || existingPhone || ROI_WHATSAPP_PHONE;
+    const documentType =
+      overlay?.documentType ?? (supplier.slug === "produce" ? "DELIVERY_NOTE" : "TAX_INVOICE");
+    const plantsCouncilRelevant = overlay?.plantsCouncilRelevant ?? supplier.slug === "produce";
+    const plantsCouncilUrl = plantsCouncilRelevant
+      ? (overlay?.plantsCouncilUrl ?? "https://www.plants.org.il/")
+      : null;
+    const plantsCouncilDiscountPct = plantsCouncilRelevant
+      ? (overlay?.plantsCouncilDiscountPct ?? 10)
+      : null;
+    const deliveryDays = jsonDays(overlay?.deliveryDays) ?? existingSupplier?.deliveryDays ?? JSON.stringify([0, 1, 2, 3, 4]);
+    const orderDays = jsonDays(overlay?.orderDays) ?? existingSupplier?.orderDays ?? "[]";
+    const orderCutoffTime = overlay?.orderCutoffTime ?? existingSupplier?.orderCutoffTime ?? "14:00";
+
+    const shared = {
+      name,
+      active: true,
+      defaultCategoryId,
+      documentType,
+      taxId: overlay?.taxId ?? existingSupplier?.taxId ?? null,
+      agentName: overlay?.agentName ?? existingSupplier?.agentName ?? null,
+      agentPhone: overlay?.agentPhone ?? (overlayPhone || existingSupplier?.agentPhone || null),
+      whatsappPhone: supplierPhone,
+      accountingPhone: overlay?.accountingPhone ?? existingSupplier?.accountingPhone ?? null,
+      accountingEmail: overlay?.accountingEmail ?? existingSupplier?.accountingEmail ?? null,
+      address: overlay?.address ?? existingSupplier?.address ?? null,
+      deliveryPointNumber: overlay?.deliveryPointNumber ?? existingSupplier?.deliveryPointNumber ?? null,
+      deliveryDays,
+      orderDays,
+      orderCutoffTime,
+      notes: overlay?.notes ?? existingSupplier?.notes ?? null,
+      plantsCouncilUrl,
+      plantsCouncilDiscountPct,
+      plantsCouncilRelevant,
+    };
+
     await client.supplier.upsert({
       where: { id: supplier.id },
-      update: {
-        name: supplier.name,
-        active: true,
-        whatsappPhone: supplierPhone,
-        agentPhone: supplierPhone,
-        accountingPhone: supplierPhone,
-        defaultCategoryId,
-        documentType: supplier.slug === "produce" ? "DELIVERY_NOTE" : "TAX_INVOICE",
-        plantsCouncilUrl: supplier.slug === "produce" ? "https://www.plants.org.il/" : null,
-        plantsCouncilDiscountPct: supplier.slug === "produce" ? 10 : null,
-        plantsCouncilRelevant: supplier.slug === "produce",
-      },
+      update: shared,
       create: {
         id: supplier.id,
-        name: supplier.name,
-        active: true,
-        whatsappPhone: supplierPhone,
-        agentPhone: supplierPhone,
-        accountingPhone: supplierPhone,
-        defaultCategoryId,
-        documentType: supplier.slug === "produce" ? "DELIVERY_NOTE" : "TAX_INVOICE",
-        deliveryDays: JSON.stringify([0, 1, 2, 3, 4]),
-        orderCutoffTime: "14:00",
         reminderHoursBefore: 2,
-        plantsCouncilUrl: supplier.slug === "produce" ? "https://www.plants.org.il/" : null,
-        plantsCouncilDiscountPct: supplier.slug === "produce" ? 10 : null,
-        plantsCouncilRelevant: supplier.slug === "produce",
+        ...shared,
       },
     });
-    await linkSupplierToBranches(client, supplier.id, branches);
+
+    const branchIds = overlay?.branchIds?.length
+      ? overlay.branchIds
+      : branches.map((branch) => branch.id);
+    await linkSupplierToBranches(client, supplier.id, branchIds, overlay);
     await ensurePriceLists(supplier.id);
 
     for (const product of supplier.products) {

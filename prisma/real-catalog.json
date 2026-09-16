@@ -1,10 +1,9 @@
 {
-  "whatsappPhone": "0526408537",
   "branches": [
     {
       "id": "branch_beit_shemesh",
       "name": "סניף בית שמש",
-      "address": "בית שמש",
+      "address": "נחל קטלב 2, בית שמש",
       "phone": "0526408537",
       "contactName": "רועי"
     },
@@ -19,7 +18,7 @@
   "suppliers": [
     {
       "id": "sup_cohen",
-      "name": "קרית יערים",
+      "name": "אחים כהן ד.א יבוא ושיווק מזון בע״מ",
       "slug": "cohen",
       "catHint": "רטבים ויבשים",
       "products": [
@@ -737,7 +736,7 @@
     },
     {
       "id": "sup_alcohol",
-      "name": "אלכוהול",
+      "name": "ibbls",
       "slug": "alcohol",
       "catHint": "משקאות",
       "products": [
@@ -865,7 +864,7 @@
     },
     {
       "id": "sup_coffee",
-      "name": "דרים טעמים",
+      "name": "דרים טעמים בע״מ",
       "slug": "coffee",
       "catHint": "משקאות",
       "products": [
@@ -961,7 +960,7 @@
     },
     {
       "id": "sup_icecream",
-      "name": "מוצרי איכות אמריקאיים בע\"מ",
+      "name": "מוצרי איכות אמריקאיים בע״מ",
       "slug": "icecream",
       "catHint": "גלידות וקינוחים",
       "products": [
@@ -1059,7 +1058,7 @@
     },
     {
       "id": "sup_softdrinks",
-      "name": "vivac'e קרית יערים",
+      "name": "החברה המרכזית קוקה קולה",
       "slug": "softdrinks",
       "catHint": "משקאות",
       "products": [
@@ -1217,7 +1216,7 @@
     },
     {
       "id": "sup_cheese",
-      "name": "vivac'e_42869",
+      "name": "מחלבות גד ו/או שי עד",
       "slug": "cheese",
       "catHint": "גבינות ומוצרי חלב",
       "products": [
@@ -1595,7 +1594,7 @@
     },
     {
       "id": "sup_dry_kitchen",
-      "name": "vivac'e_42893",
+      "name": "י.שבי שיווק מזון בע״מ",
       "slug": "dry-kitchen",
       "catHint": "רטבים ויבשים",
       "products": [
@@ -1913,7 +1912,7 @@
     },
     {
       "id": "sup_produce",
-      "name": "vivac'e_71319",
+      "name": "גלילה תוצרת חקלאית בע״מ",
       "slug": "produce",
       "catHint": "ירקות ופירות",
       "products": [
@@ -2191,7 +2190,7 @@
     },
     {
       "id": "sup_tapuza",
-      "name": "vivac'e_72014",
+      "name": "גרופר אורגני בע״מ",
       "slug": "tapuza",
       "catHint": "משקאות",
       "products": [
@@ -2259,7 +2258,7 @@
     },
     {
       "id": "sup_semory",
-      "name": "סמורי בע\"מ",
+      "name": "סמורי בע״מ",
       "slug": "semory",
       "catHint": "כלים",
       "products": [
@@ -2897,7 +2896,7 @@
     },
     {
       "id": "sup_yarden",
-      "name": "שוק ירדן רם בע\"מ",
+      "name": "שיווק ירדן בע״מ",
       "slug": "yarden",
       "catHint": "פסטות",
       "products": [
@@ -2945,7 +2944,7 @@
     },
     {
       "id": "sup_shabi",
-      "name": "י. שבי שיווק מזון בע\"מ",
+      "name": "י.שבי שיווק מזון בע״מ",
       "slug": "shabi",
       "catHint": "רטבים ויבשים",
       "products": [
@@ -3273,7 +3272,7 @@
     },
     {
       "id": "sup_flour",
-      "name": "קמח מלכים בע\"מ",
+      "name": "קמח מלכים בע״מ",
       "slug": "flour",
       "catHint": "פסטות",
       "products": [
@@ -3291,7 +3290,7 @@
     },
     {
       "id": "sup_sweet",
-      "name": "מתוק וטעים בע\"מ",
+      "name": "מתוק וטעים בע״מ",
       "slug": "sweet",
       "catHint": "שונות",
       "products": [
@@ -3329,7 +3328,7 @@
     },
     {
       "id": "sup_shiny",
-      "name": "מ.א ייצור ויבוא ממחטות בע\"מ",
+      "name": "סמורי",
       "slug": "shiny",
       "catHint": "כלים",
       "products": [
@@ -3347,7 +3346,7 @@
     },
     {
       "id": "sup_milano",
-      "name": "דרום מעלים בע\"מ",
+      "name": "דרום מעלים בע״מ",
       "slug": "milano",
       "catHint": "רטבים ויבשים",
       "products": [

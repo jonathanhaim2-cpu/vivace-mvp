@@ -20,7 +20,7 @@ npm install
 npm run dev
 ```
 
-Serves [http://127.0.0.1:43145](http://127.0.0.1:43145). `predev` generates Prisma Client, pushes SQLite, and seeds the real catalog (two live branches, Roi WhatsApp on every supplier).
+Serves [http://127.0.0.1:43145](http://127.0.0.1:43145). `predev` generates Prisma Client, pushes SQLite, and seeds the real catalog (two live branches, real supplier names/phones). WhatsApp still goes to Roi until **שליחה לספקים** is turned on.
 
 Copy `.env.example` → `.env`. With no `APP_PASSWORD`, the app stays open for local work.
 
@@ -111,7 +111,7 @@ npm install
 npm run dev
 ```
 
-פורט **43145**. ברירת המחדל: כרטיסי הנה״ח, עץ קטגוריות, סניף בית שמש וסניף קרית יערים, וטלפון וואטסאפ של רועי על כל הספקים.
+פורט **43145**. ברירת המחדל: כרטיסי הנה״ח, עץ קטגוריות, סניף בית שמש (נחל קטלב 2) וסניף קרית יערים (יצחק 27). מספרי וואטסאפ אמיתיים נשמרים אצל הספק; ברירת המחדל של **שליחה לספקים** כבויה ולכן ההודעות נשלחות לרועי.
 
 לשיתוף עם רועי: ראו `DEPLOY.md` — סיסמה ב-`APP_PASSWORD`, כתובת HTTPS, ומפתח AI אופציונלי.
 

@@ -18,7 +18,7 @@ type OrderForMessage = {
   createdAt: Date;
   notesForDriver: string | null;
   branch: OrderHeaderBranch;
-  supplier: { name: string };
+  supplier: { name: string; deliveryPointNumber?: string | null };
   lines: {
     qty: number;
     unitPrice: number;
@@ -49,6 +49,9 @@ export function buildOrderWhatsAppText(order: OrderForMessage) {
     ...buildOrderHeaderLines(order.branch),
     "",
     `ספק: ${order.supplier.name}`,
+    order.supplier.deliveryPointNumber
+      ? `נקודת מכירה: ${order.supplier.deliveryPointNumber}`
+      : null,
     `תאריך: ${formatDate(order.createdAt)}`,
     "",
     "פריטים:",
@@ -56,7 +59,9 @@ export function buildOrderWhatsAppText(order: OrderForMessage) {
     "",
     order.notesForDriver ? `הערות למפיץ: ${order.notesForDriver}` : "הערות למפיץ: אין",
     `סה״כ משוער: ${formatIls(total)}`,
-  ].join("\n");
+  ]
+    .filter((line): line is string => line != null)
+    .join("\n");
 }
 
 export function buildCreditWhatsAppText(input: {
