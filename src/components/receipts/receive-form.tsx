@@ -314,7 +314,7 @@ export function ReceiveForm({
         </Field>
 
         <Field>
-          <FieldLabel htmlFor="accountId">כרטיס הנה״ח (בן)</FieldLabel>
+          <FieldLabel htmlFor="accountId">קטגוריה</FieldLabel>
           <GroupedAccountSelect id="accountId" defaultValue={DEFAULT_EXPENSE_LEAF_ID} kinds={["EXPENSE"]} />
         </Field>
 

@@ -33,7 +33,7 @@ export async function buildReportTable(kind: ReportKind, month: string): Promise
     return {
       title: `דוח תחילת חודש · ${label}`,
       filename: `vivace-monthly-${month}.xlsx`,
-      sheets: [sheet("דוח חודשי", ["סוג", "אב", "בן", "סכום ₪", "מסמכים"], rows)],
+      sheets: [sheet("דוח חודשי", ["סוג", "אב", "קטגוריה", "סכום ₪", "מסמכים"], rows)],
     };
   }
 

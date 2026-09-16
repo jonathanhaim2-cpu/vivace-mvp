@@ -30,7 +30,7 @@ export default function MailConnectionPage() {
         <CardContent className="space-y-2 text-sm leading-6">
           <p>1. מנהל הרשת מאשר גישה לקריאה בלבד לתיקיית «חשבוניות».</p>
           <p>2. כל קובץ מצורף (PDF / תמונה) נכנס לתור הסיווג כמו ייבוא מתיקייה.</p>
-          <p>3. אחרי שיבוץ לכרטיס בן אפשר לכלול אותו בחבילת החודש לרואה החשבון.</p>
+          <p>3. אחרי שיבוץ לקטגוריה אפשר לכלול אותו בחבילת החודש לרואה החשבון.</p>
           <p className="text-muted-foreground">דגל FEATURE_IMAP לא פעיל ב-MVP הזה בכוונה — בלי מחצית מחבר.</p>
         </CardContent>
       </Card>

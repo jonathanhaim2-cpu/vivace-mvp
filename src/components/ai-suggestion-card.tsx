@@ -98,13 +98,13 @@ export function AiSuggestionCard({
         ) : null}
         {suggestedAccount ? (
           <div className="flex justify-between gap-2">
-            <dt className="text-muted-foreground">כרטיס</dt>
+            <dt className="text-muted-foreground">קטגוריה</dt>
             <dd>
               {suggestedAccount.parentName} · {suggestedAccount.code} {suggestedAccount.name}
             </dd>
           </div>
         ) : (
-          <p className="text-muted-foreground">לא זוהה כרטיס מתאים.</p>
+          <p className="text-muted-foreground">לא זוהתה קטגוריה מתאימה.</p>
         )}
       </dl>
       {reason ? <p className="text-xs text-muted-foreground">{reason}</p> : null}

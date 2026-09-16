@@ -29,7 +29,7 @@ export async function GET(request: Request) {
 
   for (const photo of photos) {
     const parent = photo.account?.parent?.name ?? "ללא-אב";
-    const leaf = photo.account?.name ?? "ללא-כרטיס";
+    const leaf = photo.account?.name ?? "ללא-קטגוריה";
     const folder = `${sanitize(parent)}/${sanitize(leaf)}`;
     try {
       const bytes = await readFile(path.join(UPLOAD_DIR, photo.fileName));

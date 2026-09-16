@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { assertLeafAccount } from "@/lib/accounts";
 import { analyzeStoredPhoto } from "@/lib/analyze-photo";
-import { monthKeyFromDate } from "@/lib/months";
+import { monthKeyFromDate, resolvedPeriodMonth } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { saveUpload } from "@/lib/uploads";
 import { requirePermission } from "@/lib/access";
@@ -12,6 +12,11 @@ import { requirePermission } from "@/lib/access";
 function readMonth(formData: FormData) {
   const raw = String(formData.get("periodMonth") ?? "").trim();
   return /^\d{4}-\d{2}$/.test(raw) ? raw : monthKeyFromDate();
+}
+
+function readOptionalMonth(formData: FormData) {
+  const raw = String(formData.get("periodMonth") ?? "").trim();
+  return /^\d{4}-\d{2}$/.test(raw) ? raw : null;
 }
 
 async function optionalLeaf(formData: FormData) {
@@ -80,6 +85,7 @@ export async function confirmAiSuggestion(photoId: string) {
     throw new Error("אין הצעת AI לאישור");
   }
   await assertLeafAccount(photo.aiAccountId);
+  const periodMonth = resolvedPeriodMonth(photo.periodMonth, photo.aiInvoiceDate);
   await prisma.invoicePhoto.update({
     where: { id: photoId },
     data: {
@@ -87,6 +93,7 @@ export async function confirmAiSuggestion(photoId: string) {
       classifiedAt: new Date(),
       aiStatus: "CONFIRMED",
       amountIls: photo.amountIls ?? photo.aiTotalIls,
+      ...(periodMonth ? { periodMonth } : {}),
     },
   });
   revalidatePath("/invoices");
@@ -106,9 +113,10 @@ export async function importInboxFiles(formData: FormData) {
   if (files.length === 0) {
     throw new Error("יש לבחור לפחות קובץ אחד לייבוא");
   }
-  const periodMonth = readMonth(formData);
+  const periodMonth = readOptionalMonth(formData);
   const defaultAccount = await optionalLeaf(formData);
 
+  const createdIds: string[] = [];
   for (const file of files) {
     const saved = await saveUpload(file);
     const created = await prisma.invoicePhoto.create({
@@ -122,7 +130,11 @@ export async function importInboxFiles(formData: FormData) {
         classifiedAt: defaultAccount ? new Date() : null,
       },
     });
-    await analyzeStoredPhoto(created.id);
+    createdIds.push(created.id);
+  }
+
+  for (const id of createdIds) {
+    await analyzeStoredPhoto(id);
   }
 
   revalidatePath("/invoices");

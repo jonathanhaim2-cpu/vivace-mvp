@@ -108,12 +108,12 @@ function chartPrompt() {
 function buildPrompt() {
   return `אתה מנתח חשבוניות למסעדת Vivac'e / ויואצ'ה (עוסק מורשה 204754121) בישראל.
 חלץ מהמסמך: שם ספק, תאריך חשבונית, סכום כולל בשקלים אם נראה.
-הצע את כרטיס הנה״ח הבן (LEAF) המתאים ביותר. אסור לבחור קטגוריית אב.
+הצע את הקטגוריה (LEAF בכרטסת) המתאימה ביותר. אסור לבחור קטגוריית אב.
 החזר JSON בלבד במבנה:
 {"supplierName":"","invoiceDate":"YYYY-MM-DD או ריק","totalIls":0,"accountId":"acc_...","confidence":0.0,"reason":"משפט קצר בעברית"}
 confidence בין 0 ל-1. אם לא בטוח — confidence נמוך מ-0.55.
 
-כרטיסים מותרים (רק מזהי הבנים):
+קטגוריות מותרות (רק מזהי עלים):
 ${chartPrompt()}`;
 }
 
@@ -223,7 +223,7 @@ export async function analyzeReceiptLines(input: {
 
 async function callGemini(prompt: string, b64: string, mime: string) {
   const key = geminiKey();
-  const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.0-flash";
+  const model = process.env.GEMINI_MODEL?.trim() || "gemini-3.5-flash-lite";
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
     {
@@ -305,7 +305,7 @@ export async function completeChatText(prompt: string): Promise<string | null> {
 
 async function callGeminiText(prompt: string) {
   const key = geminiKey();
-  const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.0-flash";
+  const model = process.env.GEMINI_MODEL?.trim() || "gemini-3.5-flash-lite";
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
     {

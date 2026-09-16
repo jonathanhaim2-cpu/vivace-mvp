@@ -32,7 +32,7 @@ export function accountantPackageText(month: string, rows: AccountRollupRow[]) {
     }
   }
   lines.push("", `סה״כ הכנסות מדווחות: ${formatIls(incomeTotal)}`);
-  lines.push("", "הקבצים מצורפים ב-ZIP לפי כרטיס.");
+  lines.push("", "הקבצים מצורפים ב-ZIP לפי קטגוריה.");
 
   return {
     subject: `${COMPANY.nameHe} · חבילת הנה״ח ${monthLabel(month)} · ${COMPANY.taxId}`,
