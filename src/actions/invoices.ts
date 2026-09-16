@@ -1,14 +1,22 @@
 "use server";
 
+import { unlink } from "node:fs/promises";
+import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { assertLeafAccount } from "@/lib/accounts";
 import { analyzeStoredPhoto } from "@/lib/analyze-photo";
 import { IMPORT_ANALYZE_GAP_MS, sleep } from "@/lib/ai-throttle";
+import { INVOICE_DUPLICATE_STATUS } from "@/lib/constants";
 import { invoiceClassificationFromForm } from "@/lib/invoice-form";
+import {
+  duplicateInvoiceData,
+  findExistingDuplicateOriginal,
+  markPhotoIfDuplicate,
+} from "@/lib/invoice-duplicates";
 import { monthKeyFromDate, resolvedPeriodMonth } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
-import { saveUpload } from "@/lib/uploads";
+import { saveUpload, UPLOAD_DIR } from "@/lib/uploads";
 import { requirePermission } from "@/lib/access";
 
 function readMonth(formData: FormData) {
@@ -28,6 +36,47 @@ async function optionalLeaf(formData: FormData) {
   return accountId;
 }
 
+function revalidateInvoicePaths() {
+  revalidatePath("/invoices");
+  revalidatePath("/invoices/import");
+  revalidatePath("/invoices/package");
+  revalidatePath("/reports");
+  revalidatePath("/ap");
+  revalidatePath("/anomalies");
+  revalidatePath("/settings");
+  revalidatePath("/");
+}
+
+async function createUploadedInvoicePhoto(input: {
+  saved: { fileName: string; originalName: string; mimeType: string; contentHash: string };
+  accountId: string | null;
+  amountIls?: number | null;
+  voiceNoteText?: string | null;
+  periodMonth: string | null;
+  source: string;
+}) {
+  const original = await findExistingDuplicateOriginal({
+    contentHash: input.saved.contentHash,
+    originalName: input.saved.originalName,
+  });
+  const duplicate = original?.id ? duplicateInvoiceData(original.id) : null;
+  return prisma.invoicePhoto.create({
+    data: {
+      accountId: input.accountId,
+      amountIls: input.amountIls ?? null,
+      voiceNoteText: input.voiceNoteText ?? null,
+      fileName: input.saved.fileName,
+      originalName: input.saved.originalName,
+      mimeType: input.saved.mimeType,
+      contentHash: input.saved.contentHash,
+      periodMonth: input.periodMonth,
+      source: input.source,
+      classifiedAt: input.accountId && !duplicate ? new Date() : null,
+      ...(duplicate ?? { isDuplicate: false, duplicateOfId: null, duplicateStatus: null }),
+    },
+  });
+}
+
 export async function uploadStandaloneInvoice(formData: FormData) {
   await requirePermission("nav.invoices");
   const photo = formData.get("photo");
@@ -41,26 +90,20 @@ export async function uploadStandaloneInvoice(formData: FormData) {
   const periodMonth = readMonth(formData);
   const saved = await saveUpload(photo);
 
-  const created = await prisma.invoicePhoto.create({
-    data: {
-      accountId,
-      amountIls: amountIls != null && Number.isFinite(amountIls) ? amountIls : null,
-      voiceNoteText,
-      fileName: saved.fileName,
-      originalName: saved.originalName,
-      mimeType: saved.mimeType,
-      periodMonth,
-      source: "MANUAL",
-      classifiedAt: accountId ? new Date() : null,
-    },
+  const created = await createUploadedInvoicePhoto({
+    saved,
+    accountId,
+    amountIls: amountIls != null && Number.isFinite(amountIls) ? amountIls : null,
+    voiceNoteText,
+    periodMonth,
+    source: "MANUAL",
   });
+  if (!created.isDuplicate) {
+    await analyzeStoredPhoto(created.id);
+  }
 
-  await analyzeStoredPhoto(created.id);
-
-  revalidatePath("/invoices");
-  revalidatePath("/reports");
-  revalidatePath("/settings");
-  redirect("/invoices");
+  revalidateInvoicePaths();
+  redirect(created.isDuplicate ? "/invoices?dup=1" : "/invoices");
 }
 
 export async function updateInvoiceCategory(photoId: string, formData: FormData) {
@@ -68,6 +111,10 @@ export async function updateInvoiceCategory(photoId: string, formData: FormData)
   const accountId = String(formData.get("accountId") ?? "");
   await assertLeafAccount(accountId);
   const periodMonth = String(formData.get("periodMonth") ?? "").trim();
+  const photo = await prisma.invoicePhoto.findUnique({ where: { id: photoId } });
+  if (photo?.isDuplicate) {
+    throw new Error("חשבונית מסומנת ככפיל — אשרו שהיא ייחודית לפני שיבוץ");
+  }
   await prisma.invoicePhoto.update({
     where: { id: photoId },
     data: {
@@ -76,14 +123,17 @@ export async function updateInvoiceCategory(photoId: string, formData: FormData)
       ...(periodMonth ? { periodMonth } : {}),
     },
   });
-  revalidatePath("/invoices");
-  revalidatePath("/reports");
-  revalidatePath("/ap");
+  revalidateInvoicePaths();
 }
 
 export async function saveInvoiceClassification(photoId: string, formData: FormData) {
+  await requirePermission("nav.invoices");
   const parsed = invoiceClassificationFromForm(formData);
   await assertLeafAccount(parsed.accountId);
+  const photo = await prisma.invoicePhoto.findUnique({ where: { id: photoId } });
+  if (photo?.isDuplicate) {
+    throw new Error("חשבונית מסומנת ככפיל — אשרו שהיא ייחודית לפני שיבוץ");
+  }
   await prisma.invoicePhoto.update({
     where: { id: photoId },
     data: {
@@ -97,9 +147,7 @@ export async function saveInvoiceClassification(photoId: string, formData: FormD
       aiStatus: "MANUAL",
     },
   });
-  revalidatePath("/invoices");
-  revalidatePath("/reports");
-  revalidatePath("/ap");
+  revalidateInvoicePaths();
 }
 
 export async function confirmAiSuggestion(photoId: string) {
@@ -107,6 +155,9 @@ export async function confirmAiSuggestion(photoId: string) {
   const photo = await prisma.invoicePhoto.findUnique({ where: { id: photoId } });
   if (!photo?.aiAccountId) {
     throw new Error("אין הצעת AI לאישור");
+  }
+  if (photo.isDuplicate) {
+    throw new Error("חשבונית מסומנת ככפיל — אשרו שהיא ייחודית לפני שיבוץ");
   }
   await assertLeafAccount(photo.aiAccountId);
   const periodMonth = resolvedPeriodMonth(photo.periodMonth, photo.aiInvoiceDate);
@@ -120,15 +171,14 @@ export async function confirmAiSuggestion(photoId: string) {
       ...(periodMonth ? { periodMonth } : {}),
     },
   });
-  revalidatePath("/invoices");
-  revalidatePath("/reports");
+  revalidateInvoicePaths();
 }
 
 export async function analyzeInvoicePhoto(photoId: string) {
   await requirePermission("nav.invoices");
   await analyzeStoredPhoto(photoId);
-  revalidatePath("/invoices");
-  revalidatePath("/settings");
+  await markPhotoIfDuplicate(photoId);
+  revalidateInvoicePaths();
 }
 
 export async function importInboxFiles(formData: FormData) {
@@ -139,31 +189,59 @@ export async function importInboxFiles(formData: FormData) {
   }
   const periodMonth = readOptionalMonth(formData);
   const defaultAccount = await optionalLeaf(formData);
+  let duplicateCount = 0;
 
-  const createdIds: string[] = [];
+  const createdPhotos: { id: string; isDuplicate: boolean }[] = [];
   for (const file of files) {
     const saved = await saveUpload(file);
-    const created = await prisma.invoicePhoto.create({
-      data: {
-        accountId: defaultAccount,
-        fileName: saved.fileName,
-        originalName: saved.originalName,
-        mimeType: saved.mimeType,
-        periodMonth,
-        source: "BULK_IMPORT",
-        classifiedAt: defaultAccount ? new Date() : null,
-      },
+    const created = await createUploadedInvoicePhoto({
+      saved,
+      accountId: defaultAccount,
+      periodMonth,
+      source: "BULK_IMPORT",
     });
-    createdIds.push(created.id);
+    if (created.isDuplicate) duplicateCount += 1;
+    createdPhotos.push(created);
   }
 
-  for (const [index, id] of createdIds.entries()) {
+  const toAnalyze = createdPhotos.filter((photo) => !photo.isDuplicate);
+  for (const [index, photo] of toAnalyze.entries()) {
     if (index > 0) await sleep(IMPORT_ANALYZE_GAP_MS);
-    await analyzeStoredPhoto(id);
+    await analyzeStoredPhoto(photo.id);
   }
 
-  revalidatePath("/invoices");
-  revalidatePath("/invoices/import");
-  revalidatePath("/settings");
-  redirect(`/invoices?imported=${files.length}`);
+  revalidateInvoicePaths();
+  const params = new URLSearchParams();
+  if (toAnalyze.length > 0) params.set("imported", String(toAnalyze.length));
+  if (duplicateCount > 0) params.set("dup", String(duplicateCount));
+  const qs = params.toString();
+  redirect(qs ? `/invoices?${qs}` : "/invoices");
+}
+
+export async function confirmInvoiceUnique(photoId: string) {
+  await requirePermission("nav.invoices");
+  const photo = await prisma.invoicePhoto.findUnique({ where: { id: photoId } });
+  if (!photo) {
+    throw new Error("חשבונית לא נמצאה");
+  }
+  await prisma.invoicePhoto.update({
+    where: { id: photoId },
+    data: {
+      isDuplicate: false,
+      duplicateOfId: null,
+      duplicateStatus: INVOICE_DUPLICATE_STATUS.CONFIRMED_UNIQUE,
+    },
+  });
+  revalidateInvoicePaths();
+}
+
+export async function deleteDuplicateInvoice(photoId: string) {
+  await requirePermission("nav.invoices");
+  const photo = await prisma.invoicePhoto.findUnique({ where: { id: photoId } });
+  if (!photo?.isDuplicate) {
+    throw new Error("אפשר למחוק רק חשבונית שמסומנת ככפיל");
+  }
+  await prisma.invoicePhoto.delete({ where: { id: photoId } });
+  await unlink(path.join(UPLOAD_DIR, photo.fileName)).catch(() => undefined);
+  revalidateInvoicePaths();
 }

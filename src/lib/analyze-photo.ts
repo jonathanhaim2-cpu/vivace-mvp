@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { analyzeInvoiceDocument, getAiRuntime } from "@/lib/ai";
 import { aiFailureReason } from "@/lib/ai-throttle";
+import { markPhotoIfDuplicate } from "@/lib/invoice-duplicates";
 import { resolvedPeriodMonth } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { UPLOAD_DIR } from "@/lib/uploads";
@@ -50,6 +51,7 @@ export async function analyzeStoredPhoto(photoId: string) {
         ...(periodMonth ? { periodMonth } : {}),
       },
     });
+    await markPhotoIfDuplicate(photoId);
     return suggestion;
   } catch (error) {
     console.error("analyzeStoredPhoto", error);
