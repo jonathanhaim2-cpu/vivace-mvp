@@ -10,7 +10,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { COMPANY } from "@/lib/constants";
 import { isAuthEnabled } from "@/lib/auth";
 import { getAiRuntime } from "@/lib/ai";
-import { listChatMessages } from "@/actions/chat";
+import { getChatPanel } from "@/actions/chat";
 import { getAppSession, sessionCan } from "@/lib/session";
 import { listDueCutoffReminders } from "@/lib/reminders";
 import { getSendToSuppliersEnabled } from "@/lib/whatsapp-routing";
@@ -43,9 +43,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     if (pathname !== "/forbidden") redirect("/forbidden");
   }
 
-  const [runtime, chatMessages, dueReminders, sendToSuppliers] = await Promise.all([
+  const [runtime, chatPanel, dueReminders, sendToSuppliers] = await Promise.all([
     getAiRuntime(),
-    sessionCan(session, "nav.chat") ? listChatMessages() : Promise.resolve([]),
+    sessionCan(session, "nav.chat")
+      ? getChatPanel()
+      : Promise.resolve({ currentThreadId: "", threads: [], messages: [] }),
     listDueCutoffReminders({
       branchId: session.branchId,
       isNetwork: session.isNetwork,
@@ -67,7 +69,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 branches={session.branches}
                 authEnabled={authEnabled}
                 aiAvailable={runtime.available}
-                chatMessages={chatMessages}
+                chatPanel={chatPanel}
                 dueReminders={dueReminders}
                 sendToSuppliers={sendToSuppliers}
               >
