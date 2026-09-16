@@ -6,6 +6,7 @@ import { GroupedAccountSelect } from "@/components/accounts/grouped-account-sele
 import { InvoiceAiTip } from "@/components/ai-helper-tip";
 import { AiMissingBanner } from "@/components/ai-missing-banner";
 import { AiSuggestionCard } from "@/components/ai-suggestion-card";
+import { ImportSuccessBanner } from "@/components/invoices/import-success-banner";
 import { InvoiceDocumentPreview } from "@/components/invoices/invoice-document-preview";
 import { PendingInvoiceCard } from "@/components/invoices/pending-invoice-card";
 import { EmptyState, PageHeader } from "@/components/page-header";
@@ -25,7 +26,18 @@ import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function InvoicesPage() {
+function importedCountFromParam(imported: string | undefined) {
+  if (!imported || !/^\d+$/.test(imported)) return 0;
+  return Number(imported);
+}
+
+export default async function InvoicesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ imported?: string }>;
+}) {
+  const { imported } = await searchParams;
+  const importedCount = importedCountFromParam(imported);
   const [photos, rollup, runtime] = await Promise.all([
     prisma.invoicePhoto.findMany({
       include: {
@@ -50,6 +62,7 @@ export default async function InvoicesPage() {
         description="שיבוץ לקטגוריה בתבנית הנה״ח של יונתן. האב נמדד בדוח ובחבילת רואה החשבון."
       />
 
+      {importedCount > 0 ? <ImportSuccessBanner count={importedCount} /> : null}
       {runtime.reason === "no_key" ? <AiMissingBanner /> : null}
       <InvoiceAiTip />
 
@@ -78,7 +91,7 @@ export default async function InvoicesPage() {
       </div>
 
       {pending.length > 0 ? (
-        <Card>
+        <Card id="pending-classification" className="scroll-mt-24">
           <CardHeader>
             <CardTitle>ממתינות לסיווג · {pending.length}</CardTitle>
             <CardDescription>

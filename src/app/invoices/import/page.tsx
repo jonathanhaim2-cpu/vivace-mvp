@@ -1,12 +1,14 @@
+import Link from "next/link";
 import { importInboxFiles } from "@/actions/invoices";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
 import { InvoiceAiTip } from "@/components/ai-helper-tip";
 import { PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { monthLabel, recentMonthKeys } from "@/lib/months";
+import { cn } from "@/lib/utils";
 
 export default function InvoiceImportPage() {
   const months = recentMonthKeys();
@@ -19,6 +21,12 @@ export default function InvoiceImportPage() {
       />
 
       <InvoiceAiTip variant="import" />
+
+      <div className="flex flex-wrap gap-2">
+        <Link href="/invoices" className={cn(buttonVariants())}>
+          לתור הסיווג
+        </Link>
+      </div>
 
       <Card>
         <CardHeader>
@@ -60,7 +68,12 @@ export default function InvoiceImportPage() {
                 ברירת המחדל: ללא שיבוץ — לתור הסיווג. ה-AI יציע קטגוריה לכל חשבונית בנפרד; תאשרו או תערכו שם.
               </FieldDescription>
             </Field>
-            <Button type="submit">ייבוא לתור</Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="submit">ייבוא לתור</Button>
+              <Link href="/invoices" className={cn(buttonVariants({ variant: "outline" }))}>
+                לתור הסיווג
+              </Link>
+            </div>
           </form>
         </CardContent>
       </Card>
