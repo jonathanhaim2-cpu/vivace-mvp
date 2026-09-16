@@ -1,6 +1,7 @@
 import { confirmAiSuggestion } from "@/actions/invoices";
 import { Button } from "@/components/ui/button";
 import { isLowConfidence } from "@/lib/ai";
+import { AI_QUOTA_MESSAGE } from "@/lib/ai-throttle";
 import { formatIls } from "@/lib/format";
 
 type Props = {
@@ -39,6 +40,13 @@ export function AiSuggestionCard({
     );
   }
   if (status === "error" || status === "FAILED") {
+    if (reason === AI_QUOTA_MESSAGE) {
+      return (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          {AI_QUOTA_MESSAGE}
+        </div>
+      );
+    }
     return (
       <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm">
         ניתוח AI נכשל. שייכו ידנית.
