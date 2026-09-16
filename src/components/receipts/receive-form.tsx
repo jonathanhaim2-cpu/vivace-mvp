@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { scanReceiptDocument } from "@/actions/receipt-scan";
 import { submitGoodsReceipt } from "@/actions/receipts";
+import { ReceiptAiTip } from "@/components/ai-helper-tip";
 import { AiMissingBanner } from "@/components/ai-missing-banner";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
 import { Button } from "@/components/ui/button";
@@ -99,6 +100,7 @@ export function ReceiveForm({
   return (
     <form action={action} onSubmit={continueToReview} className="space-y-6">
       {!aiAvailable ? <AiMissingBanner /> : null}
+      <ReceiptAiTip />
       {scanMessage ? <p className="text-sm text-primary">{scanMessage}</p> : null}
 
       <div className={cn("space-y-3", step === 2 && "hidden")}>

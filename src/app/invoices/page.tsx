@@ -3,6 +3,7 @@ import { uploadStandaloneInvoice, updateInvoiceCategory } from "@/actions/invoic
 import { AccountPicker } from "@/components/accounts/account-picker";
 import { AccountRollup } from "@/components/accounts/account-rollup";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
+import { InvoiceAiTip } from "@/components/ai-helper-tip";
 import { AiMissingBanner } from "@/components/ai-missing-banner";
 import { AiSuggestionCard } from "@/components/ai-suggestion-card";
 import { AnalyzeInvoiceButton } from "@/components/analyze-invoice-button";
@@ -49,6 +50,7 @@ export default async function InvoicesPage() {
       />
 
       {runtime.reason === "no_key" ? <AiMissingBanner /> : null}
+      <InvoiceAiTip />
 
       <div className="flex flex-wrap gap-2">
         <Link href="/invoices/import" className={cn(buttonVariants({ variant: "outline" }))}>
