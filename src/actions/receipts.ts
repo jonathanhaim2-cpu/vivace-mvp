@@ -22,7 +22,7 @@ import {
   qtyDiffers,
 } from "@/lib/credits";
 import { prisma } from "@/lib/prisma";
-import { getAppSession } from "@/lib/session";
+import { requireBranchAccess, requirePermission } from "@/lib/access";
 import { saveUpload } from "@/lib/uploads";
 
 function pricesDiffer(a: number, b: number) {
@@ -30,6 +30,7 @@ function pricesDiffer(a: number, b: number) {
 }
 
 export async function submitGoodsReceipt(orderId: string, formData: FormData) {
+  const session = await requirePermission("action.goods_intake");
   const existing = await prisma.goodsReceipt.findUnique({ where: { orderId } });
   if (existing) {
     throw new Error("כבר קיימת קליטה להזמנה זו");
@@ -40,6 +41,7 @@ export async function submitGoodsReceipt(orderId: string, formData: FormData) {
     include: { lines: { include: { product: true } } },
   });
   if (!order) throw new Error("הזמנה לא נמצאה");
+  await requireBranchAccess(order.branchId, session);
 
   const photo = formData.get("photo");
   if (!(photo instanceof File) || photo.size === 0) {
@@ -176,7 +178,7 @@ export async function submitGoodsReceipt(orderId: string, formData: FormData) {
 }
 
 export async function approvePriceChange(lineId: string) {
-  const session = await getAppSession();
+  const session = await requirePermission("action.edit_prices");
   if (!session.isNetwork) {
     throw new Error("רק משרד הרשת יכול לאשר שינוי מחיר");
   }
@@ -202,7 +204,7 @@ export async function approvePriceChange(lineId: string) {
 }
 
 export async function rejectPriceChange(lineId: string) {
-  const session = await getAppSession();
+  const session = await requirePermission("action.edit_prices");
   if (!session.isNetwork) {
     throw new Error("רק משרד הרשת יכול לדחות שינוי מחיר");
   }
@@ -240,6 +242,7 @@ async function refreshReceiptStatus(receiptId: string) {
 }
 
 export async function markForwardedToAccountant(receiptId: string) {
+  await requirePermission("action.accounting_package");
   await prisma.goodsReceipt.update({
     where: { id: receiptId },
     data: { forwardedToAccountant: true, forwardedAt: new Date() },
@@ -249,6 +252,7 @@ export async function markForwardedToAccountant(receiptId: string) {
 }
 
 export async function assignReceiptCategory(receiptId: string, formData: FormData) {
+  await requirePermission("nav.invoices");
   const accountId = String(formData.get("accountId") ?? "");
   await assertLeafAccount(accountId);
   await prisma.goodsReceipt.update({

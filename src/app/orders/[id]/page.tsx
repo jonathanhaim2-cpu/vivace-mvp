@@ -21,6 +21,7 @@ import { resolveSupplierForBranch } from "@/lib/supplier-branch";
 import { buildOrderWhatsAppText, buildWhatsAppUrl } from "@/lib/whatsapp";
 import { getSendToSuppliersEnabled, resolveOrderWhatsAppPhone } from "@/lib/whatsapp-routing";
 import { RoiTestModeBadge } from "@/components/orders/send-to-suppliers-toggle";
+import { getAppSession, sessionCan } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 export default async function OrderDetailPage({
@@ -32,6 +33,7 @@ export default async function OrderDetailPage({
 }) {
   const { id } = await params;
   const { print } = await searchParams;
+  const session = await getAppSession();
   const order = await prisma.order.findUnique({
     where: { id },
     include: {
@@ -110,28 +112,34 @@ export default async function OrderDetailPage({
             {message}
           </pre>
           <div className="flex flex-wrap gap-2 print:hidden">
-            <WhatsAppButton orderId={order.id} href={whatsappHref} />
+            {sessionCan(session, "action.send_whatsapp") ? (
+              <WhatsAppButton orderId={order.id} href={whatsappHref} />
+            ) : null}
             {!sendToSuppliers ? <RoiTestModeBadge /> : (
               <span className="self-center text-xs text-muted-foreground">וואטסאפ {whatsappPhone}</span>
             )}
             <Link href={`/orders/${order.id}?print=1`} className={cn(buttonVariants({ variant: "outline" }))}>
               הדפסה / PDF
             </Link>
-            {!order.receipt ? (
+            {!order.receipt && sessionCan(session, "action.goods_intake") ? (
               <Link href={`/orders/${order.id}/receive`} className={cn(buttonVariants({ variant: "secondary" }))}>
                 קליטת סחורה
               </Link>
-            ) : (
+            ) : order.receipt ? (
               <Link href={`/receipts/${order.receipt.id}`} className={cn(buttonVariants({ variant: "secondary" }))}>
                 צפייה בקליטה
               </Link>
-            )}
+            ) : null}
           </div>
           <div className="space-y-1 print:hidden">
             <p className="text-xs text-muted-foreground">
               {order.receipt ? "סחורה: נקלטה" : "סחורה: טרם נקלטה"}
             </p>
-            <WhatsAppTicks orderId={order.id} status={order.whatsappStatus} />
+            <WhatsAppTicks
+              orderId={order.id}
+              status={order.whatsappStatus}
+              canManage={sessionCan(session, "action.send_whatsapp")}
+            />
           </div>
         </CardContent>
       </Card>

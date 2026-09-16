@@ -26,7 +26,7 @@ import {
 import { isPlantsCouncilRelevant, PLANTS_COUNCIL } from "@/lib/plants-council";
 import { networkNetPrice, visiblePrice } from "@/lib/pricing";
 import { prisma } from "@/lib/prisma";
-import { getAppSession } from "@/lib/session";
+import { getAppSession, sessionCan } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 export default async function SupplierDetailPage({
@@ -63,29 +63,39 @@ export default async function SupplierDetailPage({
       <PageHeader
         title={supplier.name}
         description={`${documentTypeLabel(supplier.documentType)}${supplier.taxId ? ` · ח.פ. ${supplier.taxId}` : ""}${supplier.active ? "" : " · לא פעיל"}`}
-        action={{ href: `/orders/new?supplierId=${supplier.id}`, label: "הזמנה מספק זה" }}
+        action={
+          sessionCan(session, "action.create_orders")
+            ? { href: `/orders/new?supplierId=${supplier.id}`, label: "הזמנה מספק זה" }
+            : undefined
+        }
       />
 
       {imported ? (
         <p className="text-sm text-primary">יובאו / עודכנו {imported} מוצרים.</p>
       ) : null}
 
+      {(sessionCan(session, "action.edit_suppliers") || sessionCan(session, "action.edit_prices")) ? (
       <div className="flex flex-wrap gap-2">
-        <Link href={`/suppliers/${supplier.id}/edit`} className={cn(buttonVariants({ variant: "outline" }))}>
-          עריכת ספק
-        </Link>
-        <Link href={`/suppliers/${supplier.id}/products/new`} className={cn(buttonVariants({ variant: "outline" }))}>
-          מוצר חדש
-        </Link>
-        <Link href={`/suppliers/${supplier.id}/import`} className={cn(buttonVariants({ variant: "outline" }))}>
-          ייבוא Excel
-        </Link>
-        <form action={deleteSupplier.bind(null, supplier.id)}>
-          <Button type="submit" variant="destructive">
-            מחיקת ספק
-          </Button>
-        </form>
+        {sessionCan(session, "action.edit_suppliers") ? (
+          <>
+            <Link href={`/suppliers/${supplier.id}/edit`} className={cn(buttonVariants({ variant: "outline" }))}>
+              עריכת ספק
+            </Link>
+            <Link href={`/suppliers/${supplier.id}/products/new`} className={cn(buttonVariants({ variant: "outline" }))}>
+              מוצר חדש
+            </Link>
+            <Link href={`/suppliers/${supplier.id}/import`} className={cn(buttonVariants({ variant: "outline" }))}>
+              ייבוא Excel
+            </Link>
+            <form action={deleteSupplier.bind(null, supplier.id)}>
+              <Button type="submit" variant="destructive">
+                מחיקת ספק
+              </Button>
+            </form>
+          </>
+        ) : null}
       </div>
+      ) : null}
 
       <Card>
         <CardHeader>
@@ -222,19 +232,25 @@ export default async function SupplierDetailPage({
                           <p className="text-xs text-muted-foreground">{PLANTS_COUNCIL.nameHe}</p>
                         ) : null}
                       </div>
+                      {sessionCan(session, "action.edit_prices") || sessionCan(session, "action.edit_suppliers") ? (
                       <div className="flex gap-2">
-                        <Link
-                          href={`/products/${product.id}/edit`}
-                          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-                        >
-                          עריכה
-                        </Link>
-                        <form action={deleteProduct.bind(null, product.id)}>
-                          <Button type="submit" size="sm" variant="ghost">
-                            מחיקה
-                          </Button>
-                        </form>
+                        {sessionCan(session, "action.edit_prices") ? (
+                          <Link
+                            href={`/products/${product.id}/edit`}
+                            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                          >
+                            עריכה
+                          </Link>
+                        ) : null}
+                        {sessionCan(session, "action.edit_suppliers") ? (
+                          <form action={deleteProduct.bind(null, product.id)}>
+                            <Button type="submit" size="sm" variant="ghost">
+                              מחיקה
+                            </Button>
+                          </form>
+                        ) : null}
                       </div>
+                      ) : null}
                     </CardContent>
                   </Card>
                 );
@@ -243,6 +259,7 @@ export default async function SupplierDetailPage({
         )}
       </div>
 
+      {sessionCan(session, "action.edit_suppliers") ? (
       <Card>
         <CardHeader>
           <CardTitle>ייבוא מהיר</CardTitle>
@@ -251,6 +268,7 @@ export default async function SupplierDetailPage({
           <ProductImportForm supplierId={supplier.id} />
         </CardContent>
       </Card>
+      ) : null}
     </div>
   );
 }

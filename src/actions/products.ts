@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { syncProductPriceLists } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/access";
 
 function optionalInt(value: FormDataEntryValue | null) {
   const raw = String(value ?? "").trim();
@@ -62,6 +63,7 @@ function readProductInput(formData: FormData) {
 }
 
 export async function createProduct(supplierId: string, formData: FormData) {
+  await requirePermission("action.edit_suppliers");
   const data = readProductInput(formData);
   const product = await prisma.product.create({ data: { ...data, supplierId } });
   await syncProductPriceLists(product);
@@ -70,6 +72,7 @@ export async function createProduct(supplierId: string, formData: FormData) {
 }
 
 export async function updateProduct(id: string, formData: FormData) {
+  await requirePermission("action.edit_prices");
   const product = await prisma.product.findUnique({ where: { id } });
   if (!product) throw new Error("מוצר לא נמצא");
   const data = readProductInput(formData);
@@ -80,6 +83,7 @@ export async function updateProduct(id: string, formData: FormData) {
 }
 
 export async function deleteProduct(id: string) {
+  await requirePermission("action.edit_suppliers");
   const product = await prisma.product.findUnique({ where: { id } });
   if (!product) throw new Error("מוצר לא נמצא");
   const used = await prisma.orderLine.count({ where: { productId: id } });

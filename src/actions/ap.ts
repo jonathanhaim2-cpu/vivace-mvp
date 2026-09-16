@@ -5,6 +5,7 @@ import { PAYMENT_METHODS } from "@/lib/constants";
 import { getSupplierApRows } from "@/lib/ap";
 import { monthKeyFromDate } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/access";
 
 function monthFrom(formData: FormData) {
   const raw = String(formData.get("month") ?? "").trim();
@@ -12,6 +13,7 @@ function monthFrom(formData: FormData) {
 }
 
 export async function requestKarteset(supplierId: string, formData: FormData) {
+  await requirePermission("nav.ap");
   const month = monthFrom(formData);
   const rows = await getSupplierApRows(month);
   const row = rows.find((item) => item.supplier.id === supplierId);
@@ -35,6 +37,7 @@ export async function requestKarteset(supplierId: string, formData: FormData) {
 }
 
 export async function approveSupplierPayment(supplierId: string, formData: FormData) {
+  await requirePermission("nav.ap");
   const month = monthFrom(formData);
   const payMethod = String(formData.get("payMethod") ?? "").trim();
   if (payMethod && !PAYMENT_METHODS.some((item) => item.value === payMethod)) {
@@ -61,6 +64,7 @@ export async function approveSupplierPayment(supplierId: string, formData: FormD
 }
 
 export async function toggleExpenseFlags(photoId: string, formData: FormData) {
+  await requirePermission("nav.ap");
   const paid = formData.get("paid") === "on" || formData.get("paid") === "true";
   const sent = formData.get("sentToAccountant") === "on" || formData.get("sentToAccountant") === "true";
   await prisma.invoicePhoto.update({

@@ -3,8 +3,10 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/access";
 
 export async function createBranch(formData: FormData) {
+  await requirePermission("action.manage_settings");
   const name = String(formData.get("name") ?? "").trim();
   const address = String(formData.get("address") ?? "").trim() || null;
   const phone = String(formData.get("phone") ?? "").trim() || null;

@@ -7,7 +7,7 @@ Brand: terracotta `#b34b3c`, cream `#F9F7F2`, capsule buttons. Logos in `public/
 
 Zester-like modules: בית, רכש, ספקים, קליטה, חשבוניות, מלאי, Food Cost, דוחות, הגדרות.
 
-Remote-ready: shared-password login + optional vision LLM that proposes a **leaf** card from Jonathan’s chart of accounts.
+Remote-ready: per-user login (username + password) with roles, an admin permission matrix, and optional vision LLM that proposes a **leaf** card from Jonathan’s chart of accounts.
 
 ---
 
@@ -36,7 +36,7 @@ Production-style: `npm run build && npm run start:prod`
 
 ### Remote login
 
-Set `APP_PASSWORD` (and optional `APP_PASSWORD_ROI`). Visitors hit **כניסה ל-Vivac'e**; a cookie session unlocks the app. `/login` and static assets stay public. The רשת/סניף toggle is unchanged after login.
+Set `APP_PASSWORD` (and optional `APP_PASSWORD_ROI`). First boot seeds **jonathan** (admin) and **roi** (admin) from those env passwords; later password changes in the app are not overwritten. Visitors hit **כניסה למערכת** with **שם משתמש + סיסמה**. After login the header shows a role chip. Admins manage users and the permission matrix under **הגדרות → משתמשים / הרשאות**. `/login` and static assets stay public.
 
 ### Invoice AI
 
@@ -113,12 +113,12 @@ npm run dev
 
 פורט **43145**. ברירת המחדל: כרטיסי הנה״ח, עץ קטגוריות, סניף בית שמש (נחל קטלב 2) וסניף קרית יערים (יצחק 27). מספרי וואטסאפ אמיתיים נשמרים אצל הספק; ברירת המחדל של **שליחה לספקים** כבויה ולכן ההודעות נשלחות לרועי.
 
-לשיתוף עם רועי: ראו `DEPLOY.md` — סיסמה ב-`APP_PASSWORD`, כתובת HTTPS, ומפתח AI אופציונלי.
+לשיתוף עם רועי: ראו `DEPLOY.md` — שם משתמש `roi` וסיסמה מ-`APP_PASSWORD_ROI`, כתובת HTTPS, ומפתח AI אופציונלי.
 
 ### מה יש
 
 - רכש וקליטה כמו קודם
-- כניסה בסיסמה משותפת (כשיש `APP_PASSWORD`)
+- כניסה בשם משתמש וסיסמה (כשיש `APP_PASSWORD`; אדמין מנהל משתמשים בהגדרות)
 - ניתוח חשבונית ב-AI + אישור בלחיצה, או שיוך ידני
 - סיווג לקטגוריה, חבילת ZIP להנה״ח, דוח חודשי
 - ספירות מלאי ו-Food Cost תיאורטי

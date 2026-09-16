@@ -12,8 +12,8 @@ Hebrew first, English below. This first remote demo uses **SQLite** on a **singl
 2. מגדירים משתני סביבה (למטה).
 3. יונתן שולח לרועי ב-WhatsApp:
    - הכתובת הציבורית, למשל `https://vivace-xxx.up.railway.app`
-   - הסיסמה מ-`APP_PASSWORD` (או `APP_PASSWORD_ROI` אם הוגדרה סיסמה נפרדת)
-4. רועי נכנס דרך **כניסה ל-Vivac'e**, ואחרי זה בוחר **רשת / סניף** כמו במשרד.
+   - שם משתמש `roi` וסיסמה מ-`APP_PASSWORD_ROI` (או משתמש שייווצר בהגדרות)
+4. רועי נכנס דרך **כניסה למערכת** עם שם משתמש וסיסמה. אחרי הכניסה מוצג תפקיד (אדמין / הנה״ח / מנהל סניף / עובד קצה).
 5. בלי מפתח AI יופיע באנר: **חסר מפתח AI — שיוך ידני**. עם מפתח, העלאת חשבונית מציעה קטגוריה לאישור בלחיצה.
 
 ---
@@ -23,8 +23,8 @@ Hebrew first, English below. This first remote demo uses **SQLite** on a **singl
 | Variable | Required | Purpose |
 |---|---|---|
 | `DATABASE_URL` | yes | SQLite path, e.g. `file:/data/dev.db` on the volume |
-| `APP_PASSWORD` | yes in public deploy | Shared login for Jonathan |
-| `APP_PASSWORD_ROI` | no | Same or separate password for Roi |
+| `APP_PASSWORD` | yes in public deploy | Seeds admin user `jonathan` on first boot (not overwritten later) |
+| `APP_PASSWORD_ROI` | no | Seeds admin user `roi` on first boot |
 | `AUTH_SECRET` | recommended | Session HMAC secret (random 32+ chars) |
 | `GOOGLE_GENERATIVE_AI_API_KEY` or `GEMINI_API_KEY` | for Gemini | Preferred vision provider (Flash) |
 | `OPENAI_API_KEY` | for OpenAI | Used if no Google key, or if `AI_PROVIDER=openai` |
@@ -101,7 +101,7 @@ AI_MONTHLY_BUDGET_USD=5
 ```
 
 4. After first deploy, run seed once against the hosted DB (`npx prisma db push && npx tsx prisma/seed.ts` with that `DATABASE_URL`).
-5. Send Roi the `*.vercel.app` HTTPS URL + `APP_PASSWORD`.
+5. Send Roi the `*.vercel.app` HTTPS URL + username `roi` and the password.
 
 **Recommended for the first shared demo:** Railway/Fly + volume (SQLite above). Use Vercel once Turso/Postgres exists.
 
@@ -119,16 +119,16 @@ npm run build
 npm run start:prod
 ```
 
-Open http://127.0.0.1:43145 — you should see **כניסה ל-Vivac'e** if `APP_PASSWORD` is set.
+Open http://127.0.0.1:43145 — you should see **כניסה למערכת** (שם משתמש + סיסמה) if `APP_PASSWORD` is set.
 
 ---
 
 ## English — how Jonathan shares access with Roi
 
 1. Deploy to Railway with a volume (see above).
-2. Set `APP_PASSWORD` (and optional `APP_PASSWORD_ROI`).
-3. Send Roi the HTTPS URL + the password (not in the repo, not in a screenshot of `.env`).
-4. Roi logs in at **כניסה ל-Vivac'e**. The רשת/סניף toggle still works after login.
+2. Set `APP_PASSWORD` (and optional `APP_PASSWORD_ROI`) — first boot seeds users `jonathan` and `roi`.
+3. Send Roi the HTTPS URL + username `roi` and the password (not in the repo, not in a screenshot of `.env`).
+4. Roi logs in at **כניסה למערכת** with username + password. After login the header shows the role chip (אדמין / הנה״ח / מנהל סניף / עובד קצה).
 5. If no AI key is configured, classification stays manual. Settings → **שימוש ב-AI** shows call count and estimated USD.
 
 Seed on boot (`db:ready`) upserts Jonathan’s chart of accounts, the category tree, the two live branches (בית שמש / קרית יערים), and routes every supplier phone to Roi. It does not recreate demo suppliers. `SEED_DEMO=true` is opt-in and off by default.

@@ -7,8 +7,10 @@ import { getAccountRollup } from "@/lib/accounts";
 import { monthRangeUtc, previousMonthKey } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { UPLOAD_DIR } from "@/lib/uploads";
+import { requirePermission } from "@/lib/access";
 
 export async function GET(request: Request) {
+  await requirePermission("action.accounting_package");
   const month = new URL(request.url).searchParams.get("month") || previousMonthKey();
   const rollup = await getAccountRollup(month);
   const { start, end } = monthRangeUtc(month);

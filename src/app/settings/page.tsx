@@ -2,6 +2,7 @@ import { logout } from "@/actions/auth";
 import { createBranch } from "@/actions/branches";
 import { ForecastInputForm } from "@/components/dashboard/forecast-form";
 import { PageHeader } from "@/components/page-header";
+import { SettingsNav } from "@/components/settings/settings-nav";
 import { AiMissingBanner } from "@/components/ai-missing-banner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +12,7 @@ import { getAiRuntime } from "@/lib/ai";
 import { isAuthEnabled } from "@/lib/auth";
 import { getForecastTurnover } from "@/lib/dashboard";
 import { monthLabel } from "@/lib/months";
-import { getAppSession } from "@/lib/session";
+import { getAppSession, sessionCan } from "@/lib/session";
 import { getSendToSuppliersEnabled } from "@/lib/whatsapp-routing";
 import { SendToSuppliersToggle } from "@/components/orders/send-to-suppliers-toggle";
 import Link from "next/link";
@@ -31,13 +32,46 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-6">
+      <SettingsNav permissions={session.permissions} />
       <PageHeader
         title="הגדרות"
-        description="מפתחות AI וסיסמת כניסה מגיעים רק ממשתני סביבה. אין סודות בקוד."
+        description="משתמשים, הרשאות, סניפים והגדרות מערכת. סיסמאות נשמרות מוצפנות — אין סודות בקוד."
       />
 
       {runtime.reason === "no_key" ? <AiMissingBanner /> : null}
 
+      {sessionCan(session, "action.manage_users") || sessionCan(session, "action.manage_permissions") ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {sessionCan(session, "action.manage_users") ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>משתמשים</CardTitle>
+                <CardDescription>יצירה, עריכה, השבתה ואיפוס סיסמה לפי תפקיד וסניף.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/settings/users" className={cn(buttonVariants())}>
+                  ניהול משתמשים
+                </Link>
+              </CardContent>
+            </Card>
+          ) : null}
+          {sessionCan(session, "action.manage_permissions") ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>הרשאות</CardTitle>
+                <CardDescription>טבלת שליטה: מה כל תפקיד רואה ומה מותר לו לבצע.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/settings/permissions" className={cn(buttonVariants())}>
+                  טבלת שליטה
+                </Link>
+              </CardContent>
+            </Card>
+          ) : null}
+        </div>
+      ) : null}
+
+      {sessionCan(session, "action.toggle_send_to_suppliers") ? (
       <Card>
         <CardHeader>
           <CardTitle>שליחה לספקים</CardTitle>
@@ -52,7 +86,10 @@ export default async function SettingsPage() {
           </p>
         </CardContent>
       </Card>
+      ) : null}
 
+      {sessionCan(session, "action.manage_settings") ? (
+        <>
       <Card>
         <CardHeader>
           <CardTitle>מחזור מכירות חזוי</CardTitle>
@@ -85,6 +122,7 @@ export default async function SettingsPage() {
               ))}
             </ul>
           )}
+          {sessionCan(session, "action.manage_settings") ? (
           <form action={createBranch} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 sm:items-end">
             <Field>
               <FieldLabel htmlFor="name">שם סניף</FieldLabel>
@@ -106,6 +144,7 @@ export default async function SettingsPage() {
               הוספת סניף
             </Button>
           </form>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -120,6 +159,27 @@ export default async function SettingsPage() {
           </Link>
         </CardContent>
       </Card>
+        </>
+      ) : (
+      <Card>
+        <CardHeader>
+          <CardTitle>סניפים</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {session.branches.length === 0 ? (
+            <p className="text-sm text-muted-foreground">אין סניפים עדיין.</p>
+          ) : (
+            <ul className="space-y-1 text-sm">
+              {session.branches.map((branch) => (
+                <li key={branch.id}>
+                  <span className="font-medium">{branch.name}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -171,14 +231,16 @@ export default async function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>כניסה מרוחקת</CardTitle>
-          <CardDescription>סיסמה משותפת דרך APP_PASSWORD. רשת/סניף נשמרים אחרי הכניסה.</CardDescription>
+          <CardTitle>כניסה למערכת</CardTitle>
+          <CardDescription>
+            כל משתמש נכנס עם שם משתמש וסיסמה. המשתמשים הראשונים (jonathan / roi) נוצרים אוטומטית מ־APP_PASSWORD בפריסה הראשונה.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <p>
             {isAuthEnabled()
-              ? "שער הסיסמה פעיל. רק מי שמחובר יכול לראות הזמנות וחשבוניות."
-              : "שער הסיסמה כבוי (אין APP_PASSWORD) — מתאים לפיתוח מקומי בלבד."}
+              ? "שער הכניסה פעיל. אחרי ההתחברות מוצג תפקיד המשתמש, והתפריט מותאם להרשאות."
+              : "שער הכניסה כבוי (אין APP_PASSWORD) — מתאים לפיתוח מקומי בלבד, עם תפקיד אדמין."}
           </p>
           {isAuthEnabled() ? (
             <form action={logout}>

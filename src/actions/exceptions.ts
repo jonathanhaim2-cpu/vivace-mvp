@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { EXCEPTION_KIND, EXCEPTION_STATUS } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/access";
 
 export async function resolveExceptionalItem(id: string, resolution: string) {
+  await requirePermission("action.approve_credits");
   const allowed = new Set<string>([
     EXCEPTION_STATUS.CONFIRMED,
     EXCEPTION_STATUS.ARRIVED,

@@ -2,6 +2,7 @@
 
 import { analyzeReceiptLines, getAiRuntime } from "@/lib/ai";
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/access";
 
 export type ReceiptScanMatch = {
   orderLineId: string;
@@ -15,6 +16,7 @@ function normalize(value: string | null | undefined) {
 }
 
 export async function scanReceiptDocument(orderId: string, formData: FormData) {
+  await requirePermission("action.goods_intake");
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: { lines: { include: { product: true } } },

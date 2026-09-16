@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { ProductImportForm } from "@/components/products/product-import-form";
+import { requirePagePermission } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 
 export default async function ImportProductsPage({ params }: { params: Promise<{ id: string }> }) {
+  await requirePagePermission("action.edit_suppliers");
   const { id } = await params;
   const supplier = await prisma.supplier.findUnique({ where: { id } });
   if (!supplier) notFound();

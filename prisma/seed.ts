@@ -2,6 +2,7 @@ import { unlink } from "node:fs/promises";
 import path from "node:path";
 import { PrismaClient } from "@prisma/client";
 import { seedChartOfAccounts } from "../src/lib/accounts";
+import { seedAuthDefaults } from "../src/lib/auth-seed";
 import { seedProductCategories } from "../src/lib/categories";
 import { DEMO_IDS, seedDemo } from "./seed-demo";
 import { seedRealCatalog } from "./seed-real";
@@ -141,6 +142,7 @@ async function main() {
   await seedChartOfAccounts();
   await seedProductCategories();
   await seedMinimalSettings();
+  await seedAuthDefaults(prisma);
 
   if (demoEnabled()) {
     await seedDemo(prisma);

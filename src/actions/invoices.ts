@@ -7,6 +7,7 @@ import { analyzeStoredPhoto } from "@/lib/analyze-photo";
 import { monthKeyFromDate, resolvedPeriodMonth } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { saveUpload } from "@/lib/uploads";
+import { requirePermission } from "@/lib/access";
 
 function readMonth(formData: FormData) {
   const raw = String(formData.get("periodMonth") ?? "").trim();
@@ -26,6 +27,7 @@ async function optionalLeaf(formData: FormData) {
 }
 
 export async function uploadStandaloneInvoice(formData: FormData) {
+  await requirePermission("nav.invoices");
   const photo = formData.get("photo");
   if (!(photo instanceof File) || photo.size === 0) {
     throw new Error("יש להעלות צילום חשבונית");
@@ -60,6 +62,7 @@ export async function uploadStandaloneInvoice(formData: FormData) {
 }
 
 export async function updateInvoiceCategory(photoId: string, formData: FormData) {
+  await requirePermission("nav.invoices");
   const accountId = String(formData.get("accountId") ?? "");
   await assertLeafAccount(accountId);
   const periodMonth = String(formData.get("periodMonth") ?? "").trim();
@@ -76,6 +79,7 @@ export async function updateInvoiceCategory(photoId: string, formData: FormData)
 }
 
 export async function confirmAiSuggestion(photoId: string) {
+  await requirePermission("nav.invoices");
   const photo = await prisma.invoicePhoto.findUnique({ where: { id: photoId } });
   if (!photo?.aiAccountId) {
     throw new Error("אין הצעת AI לאישור");
@@ -97,12 +101,14 @@ export async function confirmAiSuggestion(photoId: string) {
 }
 
 export async function analyzeInvoicePhoto(photoId: string) {
+  await requirePermission("nav.invoices");
   await analyzeStoredPhoto(photoId);
   revalidatePath("/invoices");
   revalidatePath("/settings");
 }
 
 export async function importInboxFiles(formData: FormData) {
+  await requirePermission("nav.invoices");
   const files = formData.getAll("photos").filter((item): item is File => item instanceof File && item.size > 0);
   if (files.length === 0) {
     throw new Error("יש לבחור לפחות קובץ אחד לייבוא");

@@ -5,8 +5,10 @@ import { redirect } from "next/navigation";
 import { syncProductPriceLists } from "@/lib/catalog";
 import { parseProductSpreadsheet } from "@/lib/import-products";
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/access";
 
 export async function importSupplierProducts(supplierId: string, formData: FormData) {
+  await requirePermission("action.edit_suppliers");
   const supplier = await prisma.supplier.findUnique({ where: { id: supplierId } });
   if (!supplier) throw new Error("ספק לא נמצא");
 

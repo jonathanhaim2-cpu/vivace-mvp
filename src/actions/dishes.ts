@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/access";
 
 export async function updateDishPricing(dishId: string, formData: FormData) {
+  await requirePermission("nav.foodcost");
   const dish = await prisma.dish.findUnique({ where: { id: dishId } });
   if (!dish) throw new Error("מנה לא נמצאה");
   const sellPriceRaw = String(formData.get("sellPrice") ?? "").trim();
@@ -21,6 +23,7 @@ export async function updateDishPricing(dishId: string, formData: FormData) {
 }
 
 export async function createDish(formData: FormData) {
+  await requirePermission("nav.foodcost");
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("יש למלא שם מנה");
   const kind = String(formData.get("kind") ?? "DISH") === "INTERMEDIATE" ? "INTERMEDIATE" : "DISH";
@@ -41,6 +44,7 @@ export async function createDish(formData: FormData) {
 }
 
 export async function addDishComponent(dishId: string, formData: FormData) {
+  await requirePermission("nav.foodcost");
   const productId = String(formData.get("productId") ?? "").trim() || null;
   const componentDishId = String(formData.get("componentDishId") ?? "").trim() || null;
   const qty = Number(formData.get("qty") ?? 0);
@@ -71,6 +75,7 @@ export async function addDishComponent(dishId: string, formData: FormData) {
 }
 
 export async function removeDishComponent(componentId: string, dishId: string) {
+  await requirePermission("nav.foodcost");
   await prisma.dishComponent.delete({ where: { id: componentId } });
   revalidatePath(`/foodcost/${dishId}`);
   revalidatePath("/foodcost");

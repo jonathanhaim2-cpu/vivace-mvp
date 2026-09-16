@@ -3,13 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { productUnitCost } from "@/lib/foodcost";
 import { prisma } from "@/lib/prisma";
-import { getAppSession } from "@/lib/session";
 import { saveUpload } from "@/lib/uploads";
+import { requireBranchAccess, requirePermission } from "@/lib/access";
 
 export async function createWasteEntry(formData: FormData) {
-  const session = await getAppSession();
+  const session = await requirePermission("action.edit_inventory");
   const branchId = String(formData.get("branchId") || session.branchId || "");
   if (!branchId) throw new Error("יש לבחור סניף");
+  await requireBranchAccess(branchId, session);
   const productId = String(formData.get("productId") ?? "").trim() || null;
   const qty = Number(formData.get("qty") ?? 0);
   const notes = String(formData.get("notes") ?? "").trim() || null;
@@ -38,6 +39,10 @@ export async function createWasteEntry(formData: FormData) {
 }
 
 export async function deleteWasteEntry(id: string) {
+  const session = await requirePermission("action.edit_inventory");
+  const entry = await prisma.wasteEntry.findUnique({ where: { id } });
+  if (!entry) return;
+  await requireBranchAccess(entry.branchId, session);
   await prisma.wasteEntry.delete({ where: { id } });
   revalidatePath("/waste");
 }
