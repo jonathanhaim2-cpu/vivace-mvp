@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { analyzeInvoiceDocument, getAiRuntime } from "@/lib/ai";
+import { aiFailureReason } from "@/lib/ai-throttle";
 import { resolvedPeriodMonth } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { UPLOAD_DIR } from "@/lib/uploads";
@@ -54,7 +55,7 @@ export async function analyzeStoredPhoto(photoId: string) {
     console.error("analyzeStoredPhoto", error);
     await prisma.invoicePhoto.update({
       where: { id: photoId },
-      data: { aiStatus: "FAILED" },
+      data: { aiStatus: "FAILED", aiReason: aiFailureReason(error) },
     });
     return null;
   }

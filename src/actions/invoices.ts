@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { assertLeafAccount } from "@/lib/accounts";
 import { analyzeStoredPhoto } from "@/lib/analyze-photo";
+import { IMPORT_ANALYZE_GAP_MS, sleep } from "@/lib/ai-throttle";
 import { invoiceClassificationFromForm } from "@/lib/invoice-form";
 import { monthKeyFromDate, resolvedPeriodMonth } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
@@ -156,7 +157,8 @@ export async function importInboxFiles(formData: FormData) {
     createdIds.push(created.id);
   }
 
-  for (const id of createdIds) {
+  for (const [index, id] of createdIds.entries()) {
+    if (index > 0) await sleep(IMPORT_ANALYZE_GAP_MS);
     await analyzeStoredPhoto(id);
   }
 

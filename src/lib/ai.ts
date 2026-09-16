@@ -1,3 +1,4 @@
+import { isRateLimitError, withRateLimitRetry } from "@/lib/ai-throttle";
 import { CHART_OF_ACCOUNTS, isChartLeafId } from "@/lib/chart-of-accounts";
 import { monthKeyFromDate } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
@@ -200,14 +201,16 @@ async function runVisionJson<T>(
   const b64 = input.buffer.toString("base64");
   const mime = input.mimeType || "image/jpeg";
   try {
-    const raw =
+    const raw = await withRateLimitRetry(() =>
       runtime.provider === "google"
-        ? await callGemini(prompt, b64, mime)
-        : await callOpenAi(prompt, b64, mime, input.fileName);
+        ? callGemini(prompt, b64, mime)
+        : callOpenAi(prompt, b64, mime, input.fileName),
+    );
     await recordAiCall(runtime.provider);
     return parse(raw);
   } catch (error) {
     console.error("AI vision failed", error);
+    if (isRateLimitError(error)) throw error;
     return null;
   }
 }
