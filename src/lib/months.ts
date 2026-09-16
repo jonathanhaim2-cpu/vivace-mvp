@@ -65,6 +65,13 @@ export function monthRangeUtc(key: string) {
   return { start, end };
 }
 
+/** `all` = no month filter; missing/invalid falls back to current month (or `fallback`). */
+export function parseMonthParam(value: string | undefined, fallback: string | null = monthKeyFromDate()) {
+  if (value === "all") return null;
+  if (value && /^\d{4}-\d{2}$/.test(value)) return value;
+  return fallback;
+}
+
 export function recentMonthKeys(count = 8) {
   const keys: string[] = [];
   let [year, month] = monthKeyFromDate().split("-").map(Number);

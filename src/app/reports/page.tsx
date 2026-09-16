@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { ReportExportButtons } from "@/components/report-export-buttons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { buttonVariants } from "@/components/ui/button";
+import { CompactField, FilterBar, NativeSelect } from "@/components/ui/compact-form";
 import { getAccountRollup } from "@/lib/accounts";
 import { monthLabel, previousMonthKey, recentMonthKeys } from "@/lib/months";
 import { cn } from "@/lib/utils";
@@ -24,26 +25,18 @@ export default async function ReportsPage({
         description={`סיכום ${monthLabel(month)} לפי קטגוריות — מחשבוניות וקליטות ששובצו.`}
       />
 
-      <form className="flex flex-wrap items-end gap-2">
-        <label className="text-sm">
-          <span className="mb-1 block text-muted-foreground">חודש</span>
-          <select
-            name="month"
-            defaultValue={month}
-            className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm"
-          >
+      <FilterBar submitLabel="רענון">
+        <CompactField label="חודש" htmlFor="report-month">
+          <NativeSelect id="report-month" name="month" defaultValue={month}>
             {recentMonthKeys().map((key) => (
               <option key={key} value={key}>
                 {monthLabel(key)}
               </option>
             ))}
-          </select>
-        </label>
-        <button type="submit" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
-          רענון
-        </button>
-        <ReportExportButtons report="monthly" month={month} />
-      </form>
+          </NativeSelect>
+        </CompactField>
+      </FilterBar>
+      <ReportExportButtons report="monthly" month={month} />
 
       <Alert>
         <AlertTitle>TODO · ייבוא מכירות מ-Tabit</AlertTitle>

@@ -1,7 +1,6 @@
 import { PermissionMatrix } from "@/components/permissions/permission-matrix";
 import { PageHeader } from "@/components/page-header";
 import { SettingsNav } from "@/components/settings/settings-nav";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requirePagePermission } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { APP_ROLES, resolveRolePermissions, type AppRole, type PermissionKey } from "@/lib/roles";
@@ -26,23 +25,13 @@ export default async function PermissionsSettingsPage() {
   ) as Record<AppRole, PermissionKey[]>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <SettingsNav permissions={session.permissions} />
       <PageHeader
         title="טבלת שליטה"
-        description="מה כל תפקיד רואה בתפריט, ומה מותר לו לבצע. השינויים נשמרים במסד ונכנסים לתוקף מיד."
+        description="שורות = מסכים ופעולות. עמודות = תפקידים. הרשאות ליבה של אדמין נעולות."
       />
-      <Card>
-        <CardHeader>
-          <CardTitle>הרשאות לפי תפקיד</CardTitle>
-          <CardDescription>
-            שורות = מסכים ופעולות. עמודות = תפקידים. הרשאות ליבה של אדמין נעולות כדי לא להינעל מחוץ למערכת.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <PermissionMatrix initial={initial} />
-        </CardContent>
-      </Card>
+      <PermissionMatrix initial={initial} />
     </div>
   );
 }

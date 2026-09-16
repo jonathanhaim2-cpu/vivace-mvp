@@ -1,7 +1,8 @@
 import { decideOrderStandard } from "@/actions/inventory";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CompactField, CompactPanel, FilterBar, NativeSelect } from "@/components/ui/compact-form";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { STANDARD_STATUS } from "@/lib/constants";
 import { monthKeyFromDate, monthLabel, recentMonthKeys } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
@@ -23,91 +24,125 @@ function statusLabel(status: string) {
 export default async function OrderStandardsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string }>;
+  searchParams: Promise<{ month?: string; status?: string; branch?: string }>;
 }) {
   const session = await getAppSession();
-  const { month: requested } = await searchParams;
-  const month = requested && /^\d{4}-\d{2}$/.test(requested) ? requested : monthKeyFromDate();
+  const params = await searchParams;
+  const month = params.month && /^\d{4}-\d{2}$/.test(params.month) ? params.month : monthKeyFromDate();
+  const status = params.status?.trim() ?? "";
+  const branchId = params.branch?.trim() ?? "";
   const rows = await prisma.orderStandardSuggestion.findMany({
     where: {
       periodMonth: month,
-      ...(session.isNetwork ? {} : { branchId: session.branchId ?? undefined }),
+      ...(status ? { status } : {}),
+      ...(session.isNetwork
+        ? branchId
+          ? { branchId }
+          : {}
+        : { branchId: session.branchId ?? undefined }),
     },
     include: { branch: true, product: { include: { supplier: true } } },
     orderBy: [{ status: "asc" }, { product: { name: "asc" } }],
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="תקני הזמנה לאישור"
         description="ספירת תחילת חודש + הזמנות + ספירת סוף חודש מציעות תקן למוצר. העובד מאשר או דוחה. אין ML."
       />
 
-      <form className="flex flex-wrap gap-2">
-        <select name="month" defaultValue={month} className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm">
-          {recentMonthKeys().map((key) => (
-            <option key={key} value={key}>
-              {monthLabel(key)}
-            </option>
-          ))}
-        </select>
-        <Button type="submit" size="sm" variant="outline">
-          הצגה
-        </Button>
-      </form>
+      <FilterBar submitLabel="הצגה">
+        <CompactField label="חודש" htmlFor="std-month">
+          <NativeSelect id="std-month" name="month" defaultValue={month}>
+            {recentMonthKeys().map((key) => (
+              <option key={key} value={key}>
+                {monthLabel(key)}
+              </option>
+            ))}
+          </NativeSelect>
+        </CompactField>
+        <CompactField label="סטטוס" htmlFor="std-status">
+          <NativeSelect id="std-status" name="status" defaultValue={status}>
+            <option value="">הכל</option>
+            <option value={STANDARD_STATUS.PENDING}>ממתין</option>
+            <option value={STANDARD_STATUS.APPROVED}>אושר</option>
+            <option value={STANDARD_STATUS.REJECTED}>נדחה</option>
+          </NativeSelect>
+        </CompactField>
+        {session.isNetwork ? (
+          <CompactField label="סניף" htmlFor="std-branch">
+            <NativeSelect id="std-branch" name="branch" defaultValue={branchId}>
+              <option value="">כל הסניפים</option>
+              {session.branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {branch.name}
+                </option>
+              ))}
+            </NativeSelect>
+          </CompactField>
+        ) : null}
+      </FilterBar>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>פחת יומי / מכולת</CardTitle>
-          <CardDescription>
-            שאלות יומיות (מה נזרק היום, מה חסר במכולת) נרשמות בינתיים בדוח הפחת. חישוב התקן כאן משתמש בפחת ששויך למוצר בחודש.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <CompactPanel
+        title="פחת יומי / מכולת"
+        description="שאלות יומיות (מה נזרק היום, מה חסר במכולת) נרשמות בינתיים בדוח הפחת. חישוב התקן כאן משתמש בפחת ששויך למוצר בחודש."
+      />
 
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           אין הצעות לחודש זה. סגרו ספירת «סוף חודש» אחרי ספירת תחילת חודש והזמנות.
         </p>
       ) : (
-        <div className="space-y-3">
-          {rows.map((row) => (
-            <Card key={row.id} size="sm">
-              <CardContent className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-sm">
-                  <p className="font-medium">
-                    {row.product.name} · {row.product.supplier.name}
-                  </p>
-                  <p className="text-muted-foreground">
-                    {row.branch.name} · {statusLabel(row.status)} · התחלה {row.startQty} + הזמנות {row.orderedQty} − סוף{" "}
-                    {row.endQty} = צריכה {row.consumptionQty}
-                    {row.wasteQty ? ` · פחת ${row.wasteQty}` : ""}
-                  </p>
-                  <p className="text-muted-foreground">
-                    תקן נוכחי {row.currentStandard} → מוצע {row.suggestedStandard}
-                  </p>
-                </div>
-                {row.status === STANDARD_STATUS.PENDING ? (
-                  <div className="flex gap-2">
-                    <form action={decideOrderStandard.bind(null, row.id)}>
-                      <input type="hidden" name="decision" value="approve" />
-                      <Button type="submit" size="sm">
-                        אישור תקן
-                      </Button>
-                    </form>
-                    <form action={decideOrderStandard.bind(null, row.id)}>
-                      <input type="hidden" name="decision" value="reject" />
-                      <Button type="submit" size="sm" variant="outline">
-                        דחייה
-                      </Button>
-                    </form>
-                  </div>
-                ) : null}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>מוצר</TableHead>
+              <TableHead>סניף</TableHead>
+              <TableHead>חישוב</TableHead>
+              <TableHead>תקן</TableHead>
+              <TableHead>סטטוס</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <TableRow key={row.id}>
+                <TableCell>
+                  <p className="font-medium">{row.product.name}</p>
+                  <p className="text-xs text-muted-foreground">{row.product.supplier.name}</p>
+                </TableCell>
+                <TableCell>{row.branch.name}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">
+                  התחלה {row.startQty} + הזמנות {row.orderedQty} − סוף {row.endQty} = צריכה {row.consumptionQty}
+                  {row.wasteQty ? ` · פחת ${row.wasteQty}` : ""}
+                </TableCell>
+                <TableCell>
+                  {row.currentStandard} → {row.suggestedStandard}
+                </TableCell>
+                <TableCell>{statusLabel(row.status)}</TableCell>
+                <TableCell className="text-end">
+                  {row.status === STANDARD_STATUS.PENDING ? (
+                    <div className="flex justify-end gap-1.5">
+                      <form action={decideOrderStandard.bind(null, row.id)}>
+                        <input type="hidden" name="decision" value="approve" />
+                        <Button type="submit" size="sm">
+                          אישור
+                        </Button>
+                      </form>
+                      <form action={decideOrderStandard.bind(null, row.id)}>
+                        <input type="hidden" name="decision" value="reject" />
+                        <Button type="submit" size="sm" variant="outline">
+                          דחייה
+                        </Button>
+                      </form>
+                    </div>
+                  ) : null}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
     </div>
   );

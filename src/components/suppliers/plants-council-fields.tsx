@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { CompactField, NativeSelect } from "@/components/ui/compact-form";
 import { Input } from "@/components/ui/input";
 import { PLANTS_COUNCIL } from "@/lib/plants-council";
 
@@ -17,32 +17,29 @@ export function PlantsCouncilSupplierFields({
   const [on, setOn] = useState(relevant);
 
   return (
-    <div className="space-y-4">
-      <label className="flex items-center gap-2 text-sm">
-        <input type="hidden" name="plantsCouncilRelevant" value="false" />
-        <input
-          type="checkbox"
+    <div className="flex flex-wrap items-end gap-2">
+      <CompactField label={PLANTS_COUNCIL.nameHe} htmlFor="plants-relevant">
+        <NativeSelect
+          id="plants-relevant"
           name="plantsCouncilRelevant"
-          value="true"
-          checked={on}
-          onChange={(event) => setOn(event.target.checked)}
-        />
-        רלוונטי ל{PLANTS_COUNCIL.nameHe} (ברירת מחדל: לא)
-      </label>
+          value={on ? "true" : "false"}
+          onChange={(event) => setOn(event.target.value === "true")}
+        >
+          <option value="false">לא רלוונטי</option>
+          <option value="true">רלוונטי</option>
+        </NativeSelect>
+      </CompactField>
       {on ? (
         <>
-          <Field>
-            <FieldLabel htmlFor="plantsCouncilUrl">קישור מחירון {PLANTS_COUNCIL.nameHe}</FieldLabel>
+          <CompactField label="קישור מחירון" htmlFor="plantsCouncilUrl" grow>
             <Input
               id="plantsCouncilUrl"
               name="plantsCouncilUrl"
               defaultValue={url ?? ""}
               placeholder={PLANTS_COUNCIL.defaultUrl}
             />
-            <FieldDescription>{PLANTS_COUNCIL.noteHe}</FieldDescription>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="plantsCouncilDiscountPct">% מתחת למחירון המועצה</FieldLabel>
+          </CompactField>
+          <CompactField label="% מתחת למחירון" htmlFor="plantsCouncilDiscountPct">
             <Input
               id="plantsCouncilDiscountPct"
               name="plantsCouncilDiscountPct"
@@ -53,7 +50,7 @@ export function PlantsCouncilSupplierFields({
               defaultValue={discountPct ?? ""}
               placeholder="10"
             />
-          </Field>
+          </CompactField>
         </>
       ) : (
         <>
@@ -76,15 +73,15 @@ export function PlantsCouncilProductField({
     return <input type="hidden" name="plantsCouncilRelevant" value="inherit" />;
   }
   return (
-    <label className="flex items-center gap-2 text-sm">
-      <input type="hidden" name="plantsCouncilRelevant" value="false" />
-      <input
-        type="checkbox"
+    <CompactField label={PLANTS_COUNCIL.nameHe} htmlFor="plantsCouncilRelevant">
+      <NativeSelect
+        id="plantsCouncilRelevant"
         name="plantsCouncilRelevant"
-        value="true"
-        defaultChecked={productRelevant !== false}
-      />
-      רלוונטי ל{PLANTS_COUNCIL.nameHe} (ירושה מהספק; אפשר לכבות למוצר זה)
-    </label>
+        defaultValue={productRelevant === false ? "false" : "inherit"}
+      >
+        <option value="inherit">ירושה מהספק</option>
+        <option value="false">לא רלוונטי למוצר זה</option>
+      </NativeSelect>
+    </CompactField>
   );
 }

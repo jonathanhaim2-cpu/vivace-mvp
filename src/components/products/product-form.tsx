@@ -1,5 +1,6 @@
 import { createProduct, updateProduct } from "@/actions/products";
 import { Button } from "@/components/ui/button";
+import { NativeSelect } from "@/components/ui/compact-form";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -51,9 +52,9 @@ export function ProductForm({
   const pack = packUnits(product?.cartonToBags, product?.bagsToUnits);
 
   return (
-    <form action={action} className="space-y-6">
+    <form action={action} className="space-y-4">
       <FieldGroup>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-x-3 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
           <Field>
             <FieldLabel htmlFor="name">שם מוצר</FieldLabel>
             <Input id="name" name="name" required defaultValue={product?.name} />
@@ -112,15 +113,10 @@ export function ProductForm({
           </Field>
           <Field>
             <FieldLabel htmlFor="vatIncluded">מע״מ</FieldLabel>
-            <label className="flex h-8 items-center gap-2 text-sm">
-              <input
-                id="vatIncluded"
-                type="checkbox"
-                name="vatIncluded"
-                defaultChecked={product?.vatIncluded ?? true}
-              />
-              המחיר כולל מע״מ
-            </label>
+            <NativeSelect id="vatIncluded" name="vatIncluded" defaultValue={product?.vatIncluded === false ? "false" : "true"}>
+              <option value="true">כולל מע״מ</option>
+              <option value="false">לפני מע״מ</option>
+            </NativeSelect>
             {product ? (
               <FieldDescription>
                 לפני מע״מ {formatIls(beforeVat(listPrice, product.vatIncluded))} · אחרי הנחה{" "}
@@ -188,19 +184,14 @@ export function ProductForm({
         {mixDocuments ? (
           <Field>
             <FieldLabel htmlFor="documentType">סוג מסמך למוצר זה</FieldLabel>
-            <select
-              id="documentType"
-              name="documentType"
-              defaultValue={product?.documentType ?? ""}
-              className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
-            >
+            <NativeSelect id="documentType" name="documentType" defaultValue={product?.documentType ?? ""}>
               <option value="">ברירת מחדל של הספק</option>
               {DOCUMENT_TYPES.filter((t) => t.value !== "MIX_PER_PRODUCT").map((type) => (
                 <option key={type.value} value={type.value}>
                   {type.label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </Field>
         ) : null}
 

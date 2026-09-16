@@ -2,9 +2,8 @@ import { notFound } from "next/navigation";
 import { saveInventoryCount, submitInventoryCount } from "@/actions/inventory";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { Field, FieldLabel } from "@/components/ui/field";
+import { CompactField, CompactForm, NativeSelect } from "@/components/ui/compact-form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { INVENTORY_KIND } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 import { inventoryKindLabel } from "@/lib/order-standards";
@@ -34,43 +33,32 @@ export default async function InventoryCountDetailPage({
         description={`${formatDate(count.countedOn)} · ${inventoryKindLabel(count.kind)} · ${open ? "פתוחה לעריכה" : "נסגרה"}`}
       />
 
-      <form action={saveInventoryCount.bind(null, count.id)} className="space-y-5">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field>
-            <FieldLabel htmlFor="countedOn">תאריך</FieldLabel>
-            <Input id="countedOn" name="countedOn" type="date" defaultValue={dateValue} disabled={!open} />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="kind">סוג ספירה</FieldLabel>
-            <select
-              id="kind"
-              name="kind"
-              defaultValue={count.kind}
-              disabled={!open}
-              className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
-            >
-              <option value={INVENTORY_KIND.START}>תחילת חודש</option>
-              <option value={INVENTORY_KIND.END}>סוף חודש</option>
-              <option value={INVENTORY_KIND.SPOT}>ספירה נקודתית</option>
-            </select>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="periodMonth">חודש תקן</FieldLabel>
-            <Input
-              id="periodMonth"
-              name="periodMonth"
-              type="month"
-              dir="ltr"
-              defaultValue={count.periodMonth ?? ""}
-              disabled={!open}
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="notes">הערות</FieldLabel>
-            <Textarea id="notes" name="notes" defaultValue={count.notes ?? ""} disabled={!open} />
-          </Field>
-        </div>
-        <div className="space-y-2">
+      <CompactForm action={saveInventoryCount.bind(null, count.id)}>
+        <CompactField label="תאריך" htmlFor="countedOn">
+          <Input id="countedOn" name="countedOn" type="date" defaultValue={dateValue} disabled={!open} />
+        </CompactField>
+        <CompactField label="סוג ספירה" htmlFor="kind">
+          <NativeSelect id="kind" name="kind" defaultValue={count.kind} disabled={!open}>
+            <option value={INVENTORY_KIND.START}>תחילת חודש</option>
+            <option value={INVENTORY_KIND.END}>סוף חודש</option>
+            <option value={INVENTORY_KIND.SPOT}>ספירה נקודתית</option>
+          </NativeSelect>
+        </CompactField>
+        <CompactField label="חודש תקן" htmlFor="periodMonth">
+          <Input
+            id="periodMonth"
+            name="periodMonth"
+            type="month"
+            dir="ltr"
+            defaultValue={count.periodMonth ?? ""}
+            disabled={!open}
+          />
+        </CompactField>
+        <CompactField label="הערות" htmlFor="notes" grow>
+          <Input id="notes" name="notes" defaultValue={count.notes ?? ""} disabled={!open} />
+        </CompactField>
+        {open ? <Button type="submit">שמירת כמויות</Button> : null}
+        <div className="w-full basis-full space-y-1.5 pt-1">
           {count.lines.map((line) => (
             <div
               key={line.id}
@@ -94,12 +82,7 @@ export default async function InventoryCountDetailPage({
             </div>
           ))}
         </div>
-        {open ? (
-          <div className="flex flex-wrap gap-2">
-            <Button type="submit">שמירת כמויות</Button>
-          </div>
-        ) : null}
-      </form>
+      </CompactForm>
       {open ? (
         <form action={submitInventoryCount.bind(null, count.id)}>
           <Button type="submit" variant="outline">

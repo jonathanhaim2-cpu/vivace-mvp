@@ -1,9 +1,8 @@
 import { createInventoryCount } from "@/actions/inventory";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { Field, FieldLabel } from "@/components/ui/field";
+import { CompactField, CompactForm, NativeSelect } from "@/components/ui/compact-form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { INVENTORY_KIND } from "@/lib/constants";
 import { monthKeyFromDate } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
@@ -47,55 +46,38 @@ export default async function NewInventoryCountPage() {
       {products.length === 0 ? (
         <p className="mb-4 text-sm text-muted-foreground">אין מוצרים עדיין. אפשר לפתוח ספירה ריקה, או להוסיף ספק ומוצרים קודם.</p>
       ) : null}
-      <form action={createInventoryCount} className="space-y-5">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field>
-            <FieldLabel htmlFor="branchId">סניף</FieldLabel>
-            <select
-              id="branchId"
-              name="branchId"
-              defaultValue={session.branchId ?? ""}
-              className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
-            >
-              {session.branches.map((branch) => (
-                <option key={branch.id} value={branch.id}>
-                  {branch.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="countedOn">תאריך ספירה</FieldLabel>
-            <Input id="countedOn" name="countedOn" type="date" defaultValue={dateValue} />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="kind">סוג ספירה</FieldLabel>
-            <select
-              id="kind"
-              name="kind"
-              defaultValue={INVENTORY_KIND.SPOT}
-              className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
-            >
-              <option value={INVENTORY_KIND.START}>תחילת חודש</option>
-              <option value={INVENTORY_KIND.END}>סוף חודש</option>
-              <option value={INVENTORY_KIND.SPOT}>ספירה נקודתית</option>
-            </select>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="periodMonth">חודש תקן</FieldLabel>
-            <Input id="periodMonth" name="periodMonth" type="month" defaultValue={monthKeyFromDate()} dir="ltr" />
-          </Field>
-          <Field className="sm:col-span-2">
-            <FieldLabel htmlFor="notes">הערות</FieldLabel>
-            <Textarea id="notes" name="notes" placeholder="למשל: ספירת בוקר לפני פתיחה" />
-          </Field>
-        </div>
-
-        <div className="space-y-2">
+      <CompactForm action={createInventoryCount}>
+        <CompactField label="סניף" htmlFor="branchId">
+          <NativeSelect id="branchId" name="branchId" defaultValue={session.branchId ?? ""}>
+            {session.branches.map((branch) => (
+              <option key={branch.id} value={branch.id}>
+                {branch.name}
+              </option>
+            ))}
+          </NativeSelect>
+        </CompactField>
+        <CompactField label="תאריך ספירה" htmlFor="countedOn">
+          <Input id="countedOn" name="countedOn" type="date" defaultValue={dateValue} />
+        </CompactField>
+        <CompactField label="סוג ספירה" htmlFor="kind">
+          <NativeSelect id="kind" name="kind" defaultValue={INVENTORY_KIND.SPOT}>
+            <option value={INVENTORY_KIND.START}>תחילת חודש</option>
+            <option value={INVENTORY_KIND.END}>סוף חודש</option>
+            <option value={INVENTORY_KIND.SPOT}>ספירה נקודתית</option>
+          </NativeSelect>
+        </CompactField>
+        <CompactField label="חודש תקן" htmlFor="periodMonth">
+          <Input id="periodMonth" name="periodMonth" type="month" defaultValue={monthKeyFromDate()} dir="ltr" />
+        </CompactField>
+        <CompactField label="הערות" htmlFor="notes" grow>
+          <Input id="notes" name="notes" placeholder="למשל: ספירת בוקר לפני פתיחה" />
+        </CompactField>
+        <Button type="submit">שמירת ספירה</Button>
+        <div className="w-full basis-full space-y-1.5 pt-1">
           {products.map((product) => (
             <div
               key={product.id}
-              className="grid items-center gap-2 rounded-lg border bg-card px-3 py-2 sm:grid-cols-[1fr_8rem]"
+              className="grid items-center gap-2 rounded-lg border bg-card px-3 py-1.5 sm:grid-cols-[1fr_8rem]"
             >
               <div>
                 <p className="text-sm font-medium">{product.name}</p>
@@ -115,8 +97,7 @@ export default async function NewInventoryCountPage() {
             </div>
           ))}
         </div>
-        <Button type="submit">שמירת ספירה</Button>
-      </form>
+      </CompactForm>
     </div>
   );
 }
