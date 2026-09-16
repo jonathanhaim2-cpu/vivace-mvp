@@ -65,10 +65,13 @@ export function AppShell({
 
   return (
     <div className="min-h-full bg-background">
-      <aside className="fixed inset-y-0 start-0 z-30 hidden w-64 overflow-x-hidden flex-col bg-sidebar text-sidebar-foreground print:hidden lg:flex">
-        <div className="border-b border-sidebar-border px-4 py-4">
-          <Link href="/" className="block min-w-0 w-full">
-            <BrandLogo variant="wb" className="items-stretch" />
+      <aside
+        data-app-sidebar
+        className="fixed inset-y-0 start-0 z-30 hidden w-64 overflow-hidden flex-col bg-sidebar text-sidebar-foreground print:hidden lg:flex"
+      >
+        <div className="overflow-hidden border-b border-sidebar-border px-3 py-3">
+          <Link href="/" className="block min-w-0 w-full overflow-hidden">
+            <BrandLogo variant="wb" />
           </Link>
           <p className="mt-3 text-[11px] tracking-wide text-sidebar-foreground/55">
             {COMPANY.nameHe} · ע.מ {COMPANY.taxId}

@@ -209,6 +209,16 @@
   .app-card {
     box-shadow: var(--shadow-card);
   }
+  /* Keep the brand mark inside the RTL sidebar; never paint a black plate. */
+  [data-app-sidebar] img {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    height: auto;
+    background-color: transparent;
+    object-fit: contain;
+  }
 }
 
 @media print {
