@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 import { COMPANY } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -19,17 +17,28 @@ function LogoMark({
   priority: boolean;
   className?: string;
 }) {
+  // Native <img> serves the PNG as-is. next/image optimization can flatten
+  // alpha to a black JPEG plate in production, which is the bug in the sidebar.
   return (
-    <div className={cn("relative", compact ? "h-10 w-40" : "h-28 w-72 sm:h-32 sm:w-80", className)}>
-      <Image
-        src={src}
-        alt={alt}
-        fill
-        sizes={compact ? "160px" : "240px"}
-        priority={priority}
-        className="object-contain object-center"
-      />
-    </div>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      width={577}
+      height={337}
+      decoding="async"
+      fetchPriority={priority ? "high" : "auto"}
+      className={cn(
+        "block min-w-0 bg-transparent object-contain object-center",
+        compact ? "h-10 w-auto max-w-full" : "h-auto w-full max-w-full",
+        className,
+      )}
+      style={
+        compact
+          ? { maxWidth: "100%", height: "2.5rem", width: "auto", backgroundColor: "transparent" }
+          : { width: "100%", maxWidth: "100%", minWidth: 0, height: "auto", backgroundColor: "transparent" }
+      }
+    />
   );
 }
 
@@ -47,7 +56,7 @@ export function BrandLogo({
   const alt = `${COMPANY.wordmark} ${COMPANY.tagline}`;
 
   return (
-    <div className={cn("flex flex-col items-center", className)}>
+    <div className={cn("flex w-full min-w-0 max-w-full flex-col items-center overflow-hidden bg-transparent", className)}>
       {variant === "wb" ? (
         <LogoMark src={DARK_SRC} alt={alt} compact={compact} priority={!compact} />
       ) : variant === "rb" ? (
