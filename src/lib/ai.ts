@@ -223,7 +223,7 @@ export async function analyzeReceiptLines(input: {
 
 async function callGemini(prompt: string, b64: string, mime: string) {
   const key = geminiKey();
-  const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.0-flash";
+  const model = process.env.GEMINI_MODEL?.trim() || "gemini-3.5-flash-lite";
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
     {
@@ -305,7 +305,7 @@ export async function completeChatText(prompt: string): Promise<string | null> {
 
 async function callGeminiText(prompt: string) {
   const key = geminiKey();
-  const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.0-flash";
+  const model = process.env.GEMINI_MODEL?.trim() || "gemini-3.5-flash-lite";
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
     {

@@ -31,7 +31,7 @@ Hebrew first, English below. This first remote demo uses **SQLite** on a **singl
 | `AI_PROVIDER` | no | `google` or `openai` (auto-detect if omitted) |
 | `AI_MONTHLY_BUDGET_USD` | no | Soft cap; analysis stops when estimated spend would exceed it |
 | `AI_USD_PER_CALL` | no | Override estimated USD per call |
-| `GEMINI_MODEL` | no | Default `gemini-2.0-flash` |
+| `GEMINI_MODEL` | no | Default `gemini-3.5-flash-lite` |
 | `OPENAI_VISION_MODEL` | no | Default `gpt-4o-mini` |
 | `UPLOAD_DIR` | recommended | e.g. `/data/uploads` on the same volume |
 | `PORT` | host-set | Railway/Fly set this; `npm start` respects it |
