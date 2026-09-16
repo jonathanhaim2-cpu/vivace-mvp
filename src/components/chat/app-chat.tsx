@@ -55,11 +55,11 @@ export function AppChat({
         <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
           <MessageCircle className="size-5" />
         </span>
-        <span className="sr-only">עוזר Vivac'e</span>
+        <span className="sr-only">עוזר Vivac&apos;e</span>
       </SheetTrigger>
       <SheetContent side="left" className="w-full max-w-md">
         <SheetHeader>
-          <SheetTitle>עוזר Vivac'e</SheetTitle>
+          <SheetTitle>עוזר Vivac&apos;e</SheetTitle>
           <SheetDescription>
             שאלו על רכש, Food Cost או AP לפי הנתונים החיים במערכת.
           </SheetDescription>
