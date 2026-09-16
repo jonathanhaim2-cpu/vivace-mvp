@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { analyzeInvoiceDocument, getAiRuntime } from "@/lib/ai";
+import { resolvedPeriodMonth } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { UPLOAD_DIR } from "@/lib/uploads";
 
@@ -33,6 +34,7 @@ export async function analyzeStoredPhoto(photoId: string) {
       return null;
     }
 
+    const periodMonth = resolvedPeriodMonth(photo.periodMonth, suggestion.invoiceDate);
     await prisma.invoicePhoto.update({
       where: { id: photoId },
       data: {
@@ -44,6 +46,7 @@ export async function analyzeStoredPhoto(photoId: string) {
         aiReason: suggestion.reason,
         aiStatus: "SUGGESTED",
         amountIls: photo.amountIls ?? suggestion.totalIls,
+        ...(periodMonth ? { periodMonth } : {}),
       },
     });
     return suggestion;

@@ -49,7 +49,7 @@ export default async function AccountantPackagePage({
       <Card>
         <CardHeader>
           <CardTitle>{classifiedDocs} מסמכים משובצים</CardTitle>
-          <CardDescription>רק כרטיסי בן. סיכומי האב מופיעים בגוף המייל ובקובץ הסיכום שב-ZIP.</CardDescription>
+          <CardDescription>רק קטגוריות. סיכומי האב מופיעים בגוף המייל ובקובץ הסיכום שב-ZIP.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           <a href={`/api/accountant/package?month=${month}`} className={cn(buttonVariants())}>

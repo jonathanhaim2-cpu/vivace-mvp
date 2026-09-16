@@ -16,7 +16,7 @@ import { getAccountRollup } from "@/lib/accounts";
 import { getAiRuntime } from "@/lib/ai";
 import { chartLeafMeta } from "@/lib/chart-of-accounts";
 import { expenseCategoryLabel, formatDateTime, formatIls } from "@/lib/format";
-import { monthKeyFromDate, monthLabel, recentMonthKeys } from "@/lib/months";
+import { monthKeyFromDate, monthLabel, recentMonthKeys, resolvedPeriodMonth } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { publicFileUrl } from "@/lib/uploads";
 import { cn } from "@/lib/utils";
@@ -45,7 +45,7 @@ export default async function InvoicesPage() {
     <div className="space-y-8">
       <PageHeader
         title="חשבוניות וסיווג"
-        description="שיבוץ לכרטיס בן בתבנית הנה״ח של יונתן. האב נמדד בדוח ובחבילת רואה החשבון."
+        description="שיבוץ לקטגוריה בתבנית הנה״ח של יונתן. האב נמדד בדוח ובחבילת רואה החשבון."
       />
 
       {runtime.reason === "no_key" ? <AiMissingBanner /> : null}
@@ -79,12 +79,13 @@ export default async function InvoicesPage() {
           <CardHeader>
             <CardTitle>ממתינות לסיווג · {pending.length}</CardTitle>
             <CardDescription>
-              ייבוא והעלאה בלי כרטיס נכנסים לכאן. אפשר לאשר הצעת AI בלחיצה אחת, או לשייך ידנית.
+              ייבוא והעלאה בלי קטגוריה נכנסים לכאן. ה-AI מציע קטגוריה ותאריך לכל מסמך — מאשרים בלחיצה או מתקנים ידנית.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {pending.map((photo) => {
               const suggested = chartLeafMeta(photo.aiAccountId);
+              const reportMonth = resolvedPeriodMonth(photo.periodMonth, photo.aiInvoiceDate);
               return (
                 <div key={photo.id} className="space-y-3 rounded-lg border p-3">
                   <div className="flex flex-wrap items-start justify-between gap-2">
@@ -92,7 +93,7 @@ export default async function InvoicesPage() {
                       <p className="font-medium">{photo.originalName}</p>
                       <p className="text-xs text-muted-foreground">
                         {formatDateTime(photo.createdAt)} · {photo.source === "BULK_IMPORT" ? "ייבוא תיקייה" : "העלאה"}
-                        {photo.periodMonth ? ` · ${monthLabel(photo.periodMonth)}` : ""}
+                        {reportMonth ? ` · ${monthLabel(reportMonth)}` : ""}
                       </p>
                     </div>
                     {photo.aiStatus !== "SUGGESTED" && photo.aiStatus !== "CONFIRMED" ? (
@@ -114,7 +115,7 @@ export default async function InvoicesPage() {
                     className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end"
                   >
                     <GroupedAccountSelect defaultValue={photo.aiAccountId} />
-                    <input type="hidden" name="periodMonth" value={photo.periodMonth ?? monthKeyFromDate()} />
+                    <input type="hidden" name="periodMonth" value={reportMonth ?? monthKeyFromDate()} />
                     <Button type="submit" size="sm" variant="outline">
                       שיבוץ ידני
                     </Button>
@@ -130,7 +131,7 @@ export default async function InvoicesPage() {
         <CardHeader>
           <CardTitle>העלאה + ניתוח</CardTitle>
           <CardDescription>
-            אפשר לבחור כרטיס מראש, או להעלות בלי שיבוץ ולקבל הצעת AI לאישור.
+            אפשר לבחור קטגוריה מראש, או להעלות בלי שיבוץ ולקבל הצעת AI לאישור.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -174,7 +175,7 @@ export default async function InvoicesPage() {
       <div>
         <h2 className="mb-3 font-heading text-lg font-semibold">מסמכים משובצים</h2>
         {classified.length === 0 ? (
-          <EmptyState title="אין חשבוניות משובצות" description="העלו או ייבאו מסמך ושייכו לכרטיס בן." />
+          <EmptyState title="אין חשבוניות משובצות" description="העלו או ייבאו מסמך ושייכו לקטגוריה." />
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
             {classified.map((photo) => {

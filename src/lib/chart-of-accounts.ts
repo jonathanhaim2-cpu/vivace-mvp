@@ -204,7 +204,7 @@ export function chartLeafMeta(leafId: string | null | undefined) {
 
 export function accountPathLabel(leafId: string | null | undefined) {
   const meta = chartLeafMeta(leafId);
-  if (!leafId) return "ללא כרטיס";
+  if (!leafId) return "ללא קטגוריה";
   if (!meta) return leafId;
   return `${meta.name} · ${meta.parentName}`;
 }
