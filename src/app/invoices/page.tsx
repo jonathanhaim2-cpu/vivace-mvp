@@ -5,7 +5,8 @@ import { AccountRollup } from "@/components/accounts/account-rollup";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
 import { AiMissingBanner } from "@/components/ai-missing-banner";
 import { AiSuggestionCard } from "@/components/ai-suggestion-card";
-import { AnalyzeInvoiceButton } from "@/components/analyze-invoice-button";
+import { InvoiceDocumentPreview } from "@/components/invoices/invoice-document-preview";
+import { PendingInvoiceCard } from "@/components/invoices/pending-invoice-card";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +17,7 @@ import { getAccountRollup } from "@/lib/accounts";
 import { getAiRuntime } from "@/lib/ai";
 import { chartLeafMeta } from "@/lib/chart-of-accounts";
 import { expenseCategoryLabel, formatDateTime, formatIls } from "@/lib/format";
-import { monthKeyFromDate, monthLabel, recentMonthKeys, resolvedPeriodMonth } from "@/lib/months";
+import { monthKeyFromDate, monthLabel, recentMonthKeys } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { publicFileUrl } from "@/lib/uploads";
 import { cn } from "@/lib/utils";
@@ -79,50 +80,13 @@ export default async function InvoicesPage() {
           <CardHeader>
             <CardTitle>ממתינות לסיווג · {pending.length}</CardTitle>
             <CardDescription>
-              ייבוא והעלאה בלי קטגוריה נכנסים לכאן. ה-AI מציע קטגוריה ותאריך לכל מסמך — מאשרים בלחיצה או מתקנים ידנית.
+              ייבוא והעלאה בלי קטגוריה נכנסים לכאן. רואים את המסמך, מאשרים הצעת AI, או ממלאים תאריך/ספק/סכום ומשבצים ידנית.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {pending.map((photo) => {
-              const suggested = chartLeafMeta(photo.aiAccountId);
-              const reportMonth = resolvedPeriodMonth(photo.periodMonth, photo.aiInvoiceDate);
-              return (
-                <div key={photo.id} className="space-y-3 rounded-lg border p-3">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <p className="font-medium">{photo.originalName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDateTime(photo.createdAt)} · {photo.source === "BULK_IMPORT" ? "ייבוא תיקייה" : "העלאה"}
-                        {reportMonth ? ` · ${monthLabel(reportMonth)}` : ""}
-                      </p>
-                    </div>
-                    {photo.aiStatus !== "SUGGESTED" && photo.aiStatus !== "CONFIRMED" ? (
-                      <AnalyzeInvoiceButton photoId={photo.id} />
-                    ) : null}
-                  </div>
-                  <AiSuggestionCard
-                    photoId={photo.id}
-                    supplierName={photo.aiSupplierName}
-                    invoiceDate={photo.aiInvoiceDate}
-                    totalIls={photo.aiTotalIls}
-                    confidence={photo.aiConfidence}
-                    reason={photo.aiReason}
-                    status={photo.aiStatus}
-                    suggestedAccount={suggested}
-                  />
-                  <form
-                    action={updateInvoiceCategory.bind(null, photo.id)}
-                    className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end"
-                  >
-                    <GroupedAccountSelect defaultValue={photo.aiAccountId} />
-                    <input type="hidden" name="periodMonth" value={reportMonth ?? monthKeyFromDate()} />
-                    <Button type="submit" size="sm" variant="outline">
-                      שיבוץ ידני
-                    </Button>
-                  </form>
-                </div>
-              );
-            })}
+            {pending.map((photo) => (
+              <PendingInvoiceCard key={photo.id} photo={photo} months={months} />
+            ))}
           </CardContent>
         </Card>
       ) : null}
@@ -187,25 +151,18 @@ export default async function InvoicesPage() {
                     <CardDescription>
                       {formatDateTime(photo.createdAt)}
                       {photo.periodMonth ? ` · ${monthLabel(photo.periodMonth)}` : ""}
+                      {photo.aiSupplierName ? ` · ${photo.aiSupplierName}` : ""}
+                      {photo.aiInvoiceDate ? ` · ${photo.aiInvoiceDate}` : ""}
                       {photo.goodsReceipt ? ` · קליטה מול ${photo.goodsReceipt.order.supplier.name}` : ""}
                       {photo.amountIls != null ? ` · ${formatIls(photo.amountIls)}` : ""}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <a href={fileUrl} target="_blank" rel="noreferrer">
-                      {photo.mimeType.startsWith("image/") ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={fileUrl}
-                          alt={photo.originalName}
-                          className="h-40 w-full rounded-lg border object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-24 items-center justify-center rounded-lg border bg-muted text-sm">
-                          קובץ מצורף
-                        </div>
-                      )}
-                    </a>
+                    <InvoiceDocumentPreview
+                      fileUrl={fileUrl}
+                      mimeType={photo.mimeType}
+                      originalName={photo.originalName}
+                    />
                     <p className="text-sm font-medium">{expenseCategoryLabel(photo.accountId)}</p>
                     {photo.aiStatus === "CONFIRMED" ? (
                       <AiSuggestionCard

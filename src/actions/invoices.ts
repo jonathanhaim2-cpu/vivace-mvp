@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { assertLeafAccount } from "@/lib/accounts";
 import { analyzeStoredPhoto } from "@/lib/analyze-photo";
+import { invoiceClassificationFromForm } from "@/lib/invoice-form";
 import { monthKeyFromDate, resolvedPeriodMonth } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { saveUpload } from "@/lib/uploads";
@@ -76,6 +77,28 @@ export async function updateInvoiceCategory(photoId: string, formData: FormData)
   });
   revalidatePath("/invoices");
   revalidatePath("/reports");
+  revalidatePath("/ap");
+}
+
+export async function saveInvoiceClassification(photoId: string, formData: FormData) {
+  const parsed = invoiceClassificationFromForm(formData);
+  await assertLeafAccount(parsed.accountId);
+  await prisma.invoicePhoto.update({
+    where: { id: photoId },
+    data: {
+      accountId: parsed.accountId,
+      classifiedAt: new Date(),
+      periodMonth: parsed.periodMonth,
+      aiInvoiceDate: parsed.invoiceDate,
+      aiSupplierName: parsed.supplierName,
+      amountIls: parsed.amountIls,
+      voiceNoteText: parsed.note,
+      aiStatus: "MANUAL",
+    },
+  });
+  revalidatePath("/invoices");
+  revalidatePath("/reports");
+  revalidatePath("/ap");
 }
 
 export async function confirmAiSuggestion(photoId: string) {
