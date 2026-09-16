@@ -18,16 +18,10 @@ export default function InvoiceImportPage() {
       <PageHeader
         title="ייבוא מתיקייה"
         description="מעלים כמה חשבוניות בבת אחת. כל קובץ נכנס לתור הסיווג, ו-AI מציע תאריך וקטגוריה לאישור — בלי לבחור מראש לכל האצווה."
+        action={{ href: "/invoices", label: "לתור הסיווג" }}
       />
 
       <InvoiceAiTip variant="import" />
-
-      <div className="flex flex-wrap gap-2">
-        <Link href="/invoices" className={cn(buttonVariants())}>
-          לתור הסיווג
-        </Link>
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle>העלאה מרובה</CardTitle>
