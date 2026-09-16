@@ -74,6 +74,7 @@ export function PendingInvoiceCard({ photo, months }: { photo: PendingInvoicePho
                 id={field("invoiceDate")}
                 name="invoiceDate"
                 type="date"
+                lang="he-IL"
                 defaultValue={toDateInputValue(photo.aiInvoiceDate)}
               />
             </Field>
