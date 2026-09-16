@@ -10,6 +10,7 @@ import { isAuthEnabled } from "@/lib/auth";
 import { getAiRuntime } from "@/lib/ai";
 import { listChatMessages } from "@/actions/chat";
 import { getAppSession } from "@/lib/session";
+import { listDueCutoffReminders } from "@/lib/reminders";
 import "./globals.css";
 
 const rubik = Rubik({
@@ -26,7 +27,14 @@ export const dynamic = "force-dynamic";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getAppSession();
-  const [runtime, chatMessages] = await Promise.all([getAiRuntime(), listChatMessages()]);
+  const [runtime, chatMessages, dueReminders] = await Promise.all([
+    getAiRuntime(),
+    listChatMessages(),
+    listDueCutoffReminders({
+      branchId: session.branchId,
+      isNetwork: session.isNetwork,
+    }),
+  ]);
 
   return (
     <html lang="he" dir="rtl" suppressHydrationWarning className={`${rubik.variable} h-full antialiased`}>
@@ -41,6 +49,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 authEnabled={isAuthEnabled()}
                 aiAvailable={runtime.available}
                 chatMessages={chatMessages}
+                dueReminders={dueReminders}
               >
                 {children}
               </AppShell>

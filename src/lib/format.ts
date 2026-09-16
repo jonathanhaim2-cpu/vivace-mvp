@@ -162,9 +162,27 @@ export function nowInIsrael() {
   return {
     day: weekdayMap[get("weekday")] ?? new Date().getDay(),
     date: Number(get("day")) || 1,
+    month: Number(get("month")) || 1,
+    year: Number(get("year")) || new Date().getFullYear(),
     minutes: Number(get("hour")) * 60 + Number(get("minute")),
     dateLabel: `${get("day")}/${get("month")}/${get("year")}`,
   };
+}
+
+export type IsraelClock = ReturnType<typeof nowInIsrael>;
+
+export function addCalendarDays(year: number, month: number, date: number, days: number) {
+  const utc = new Date(Date.UTC(year, month - 1, date + days));
+  return {
+    year: utc.getUTCFullYear(),
+    month: utc.getUTCMonth() + 1,
+    date: utc.getUTCDate(),
+    weekday: utc.getUTCDay(),
+  };
+}
+
+export function formatIsraelDayLabel(year: number, month: number, date: number) {
+  return `${String(date).padStart(2, "0")}/${String(month).padStart(2, "0")}/${year}`;
 }
 
 /** LTR mark so "14:00" does not render as "00:14" in Hebrew RTL. */
@@ -270,6 +288,90 @@ export function nextDeliveryInfo(deliveryDays: number[], cutoffTime: string, ord
     daysUntil,
     nextDayLabel,
   };
+}
+
+export type NextOrderWindow = {
+  open: boolean;
+  missedToday: boolean;
+  daysUntil: number;
+  weekdayLabel: string;
+  dateLabel: string;
+  cutoffLabel: string;
+  label: string;
+  warning: string | null;
+  reminderDue: boolean;
+  minutesLeft: number | null;
+};
+
+/** Next calendar order slot from order-days + cutoff (not delivery days). */
+export function nextOrderWindow(
+  orderDays: number[],
+  cutoffTime: string,
+  reminderHoursBefore = 2,
+  from: IsraelClock = nowInIsrael(),
+): NextOrderWindow {
+  const unique = [...new Set(orderDays)].sort((a, b) => a - b);
+  const cutoff = parseCutoffMinutes(cutoffTime);
+  const clock = formatClockTime(cutoffTime);
+  const empty: NextOrderWindow = {
+    open: true,
+    missedToday: false,
+    daysUntil: 7,
+    weekdayLabel: "—",
+    dateLabel: "—",
+    cutoffLabel: clock,
+    label: "אין ימי הזמנה מוגדרים",
+    warning: null,
+    reminderDue: false,
+    minutesLeft: null,
+  };
+  if (unique.length === 0) return empty;
+
+  const missedToday = unique.includes(from.day) && from.minutes > cutoff;
+  const minutesLeftToday = unique.includes(from.day) && from.minutes <= cutoff ? cutoff - from.minutes : null;
+  const reminderWindow = Math.max(1, reminderHoursBefore) * 60;
+  const reminderDue =
+    minutesLeftToday != null && minutesLeftToday > 0 && minutesLeftToday <= reminderWindow;
+
+  for (let offset = 0; offset <= 14; offset += 1) {
+    const weekday = (from.day + offset) % 7;
+    if (!unique.includes(weekday)) continue;
+    if (offset === 0 && from.minutes > cutoff) continue;
+
+    const cal = addCalendarDays(from.year, from.month, from.date, offset);
+    const dateLabel = formatIsraelDayLabel(cal.year, cal.month, cal.date);
+    const weekdayLabel = WEEKDAYS.find((w) => w.value === weekday)?.label ?? "—";
+    const weekish = offset >= 6;
+
+    let warning: string | null = null;
+    if (missedToday && weekish) {
+      warning = "שים לב, ההזמנה הבאה לספק רק בעוד שבוע";
+    } else if (missedToday) {
+      warning = `שים לב, עברתם את שעת הסגירה. ההזמנה הבאה בעוד ${offset} ימים`;
+    } else if (weekish && offset > 0) {
+      warning = "שים לב, ההזמנה הבאה לספק רק בעוד שבוע";
+    }
+
+    const label =
+      offset === 0
+        ? `ההזמנה הקרובה: היום, ${weekdayLabel} ${dateLabel} · עד ${clock}`
+        : `ההזמנה הקרובה: ${weekdayLabel} ${dateLabel} · סגירה ב-${clock}`;
+
+    return {
+      open: offset === 0,
+      missedToday,
+      daysUntil: offset,
+      weekdayLabel,
+      dateLabel,
+      cutoffLabel: clock,
+      label,
+      warning,
+      reminderDue,
+      minutesLeft: offset === 0 ? minutesLeftToday : null,
+    };
+  }
+
+  return { ...empty, missedToday, open: false, label: `נסגר להיום (${clock})` };
 }
 
 export function suggestOrderQty(

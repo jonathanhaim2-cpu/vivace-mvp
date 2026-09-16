@@ -7,11 +7,14 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
-import { COMPANY, PRICE_CHANGE } from "@/lib/constants";
+import { COMPANY, EXCEPTION_KIND, PRICE_CHANGE } from "@/lib/constants";
+import { ExceptionActions } from "@/components/exceptions/exception-actions";
+import { billedAsLabel, exceptionKindLabel, exceptionStatusLabel } from "@/lib/credits";
 import { expenseCategoryLabel, formatDateTime, formatIls, lineTotal } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { getAppSession } from "@/lib/session";
 import { publicFileUrl } from "@/lib/uploads";
+import { buildCreditWhatsAppText, buildWhatsAppUrl } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
 
 export default async function ReceiptDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -23,6 +26,7 @@ export default async function ReceiptDetailPage({ params }: { params: Promise<{ 
       photos: true,
       order: { include: { supplier: true, branch: true } },
       lines: { include: { orderLine: { include: { product: true } } } },
+      exceptionalItems: { where: { status: "OPEN" }, orderBy: { createdAt: "desc" } },
     },
   });
   if (!receipt) notFound();
@@ -58,8 +62,51 @@ export default async function ReceiptDetailPage({ params }: { params: Promise<{ 
       {receipt.status === "CREDIT_NEEDED" ? (
         <Alert variant="destructive">
           <AlertTitle>נדרשת בקשת זיכוי</AlertTitle>
-          <AlertDescription>שינוי המחיר נדחה. יש לבקש זיכוי מהספק מחוץ למערכת ב-MVP זה.</AlertDescription>
+          <AlertDescription>יש בקשת זיכוי פתוחה או דחיית שינוי מחיר. עד שהספק מאשר — זה מופיע במסמכים החריגים בדשבורד.</AlertDescription>
         </Alert>
+      ) : null}
+
+      {receipt.exceptionalItems.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>מסמכים חריגים פתוחים</CardTitle>
+            <CardDescription>בקשות זיכוי, חוסר בלי זיכוי, ופריטים שסומנו כבדרך.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {receipt.exceptionalItems.map((item) => {
+              const creditHref =
+                item.kind === EXCEPTION_KIND.CREDIT_REQUEST
+                  ? buildWhatsAppUrl(
+                      receipt.order.supplier.whatsappPhone,
+                      buildCreditWhatsAppText({
+                        branch: receipt.order.branch,
+                        supplierName: receipt.order.supplier.name,
+                        productName: item.productName,
+                        orderedQty: item.orderedQty,
+                        receivedQty: item.receivedQty,
+                        amountIls: item.amountIls,
+                      }),
+                    )
+                  : null;
+              return (
+                <div key={item.id} className="rounded-lg border p-3">
+                  <p className="font-medium">{item.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {exceptionKindLabel(item.kind)} · {exceptionStatusLabel(item.status)}
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <ExceptionActions id={item.id} kind={item.kind} />
+                    {creditHref ? (
+                      <a href={creditHref} target="_blank" rel="noreferrer" className={cn(buttonVariants({ size: "sm" }))}>
+                        שליחת בקשת זיכוי בוואטסאפ
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
       ) : null}
 
       <Card>
@@ -72,7 +119,12 @@ export default async function ReceiptDetailPage({ params }: { params: Promise<{ 
             const orderedTotal = lineTotal(ordered.qty, ordered.unitPrice, ordered.discountPercent);
             const invoiceTotal = line.receivedQty * line.invoicePrice;
             return (
-              <div key={line.id} className="rounded-lg border p-3">
+              <div
+                key={line.id}
+                className={
+                  line.qtyMismatch ? "rounded-lg border border-amber-400 bg-amber-50 p-3 dark:bg-amber-950/20" : "rounded-lg border p-3"
+                }
+              >
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="font-medium">{ordered.product.name}</p>
@@ -81,10 +133,18 @@ export default async function ReceiptDetailPage({ params }: { params: Promise<{ 
                       {line.receivedQty} ב-{formatIls(line.invoicePrice)} ({formatIls(invoiceTotal)})
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
+                      {line.qtyMismatch ? (
+                        <span className="rounded-full bg-amber-200 px-2 py-0.5 text-xs text-amber-950">
+                          ? כמות שונה מההזמנה
+                        </span>
+                      ) : null}
                       {line.missing ? (
                         <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-xs text-destructive">
                           חוסר / לא הגיע במלואו
                         </span>
+                      ) : null}
+                      {billedAsLabel(line.billedAs) ? (
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{billedAsLabel(line.billedAs)}</span>
                       ) : null}
                       {line.wrongPrice ? (
                         <span className="rounded-full bg-accent px-2 py-0.5 text-xs">מחיר שונה</span>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { EmptyState, PageHeader } from "@/components/page-header";
+import { WhatsAppTicks } from "@/components/orders/whatsapp-ticks";
 import { OrderStatusBadge } from "@/components/status-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDateTime, formatIls, lineTotal } from "@/lib/format";
@@ -49,11 +50,16 @@ export default async function OrdersPage() {
                         {order.branch.name} · {formatDateTime(order.createdAt)} · {formatIls(total)}
                       </p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <OrderStatusBadge status={order.status} />
-                      {order.receipt ? (
-                        <span className="text-xs text-muted-foreground">יש קליטה</span>
-                      ) : null}
+                    <div className="flex flex-col items-start gap-1 sm:items-end">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <OrderStatusBadge status={order.status} />
+                        {order.receipt ? (
+                          <span className="text-xs text-muted-foreground">סחורה נקלטה</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">סחורה טרם נקלטה</span>
+                        )}
+                      </div>
+                      <WhatsAppTicks orderId={order.id} status={order.whatsappStatus} compact canManage={false} />
                     </div>
                   </CardContent>
                 </Card>

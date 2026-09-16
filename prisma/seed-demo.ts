@@ -78,13 +78,35 @@ export async function seedDemo(prisma: PrismaClient) {
 
   await prisma.branch.upsert({
     where: { id: ids.herzliya },
-    update: { name: "סניף הרצליה", address: "המנור 12, הרצליה פיתוח" },
-    create: { id: ids.herzliya, name: "סניף הרצליה", address: "המנור 12, הרצליה פיתוח" },
+    update: {
+      name: "סניף הרצליה",
+      address: "המנור 12, הרצליה פיתוח",
+      phone: "0526408537",
+      contactName: "רועי",
+    },
+    create: {
+      id: ids.herzliya,
+      name: "סניף הרצליה",
+      address: "המנור 12, הרצליה פיתוח",
+      phone: "0526408537",
+      contactName: "רועי",
+    },
   });
   await prisma.branch.upsert({
     where: { id: ids.telaviv },
-    update: { name: "סניף תל אביב", address: "אלנבי 88, תל אביב" },
-    create: { id: ids.telaviv, name: "סניף תל אביב", address: "אלנבי 88, תל אביב" },
+    update: {
+      name: "סניף תל אביב",
+      address: "אלנבי 88, תל אביב",
+      phone: "0526408537",
+      contactName: "רועי",
+    },
+    create: {
+      id: ids.telaviv,
+      name: "סניף תל אביב",
+      address: "אלנבי 88, תל אביב",
+      phone: "0526408537",
+      contactName: "רועי",
+    },
   });
 
   await prisma.supplier.upsert({

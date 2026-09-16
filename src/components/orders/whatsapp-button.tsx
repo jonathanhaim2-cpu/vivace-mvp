@@ -1,24 +1,29 @@
 "use client";
 
 import { markOrderSent } from "@/actions/orders";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export function WhatsAppButton({
   orderId,
   href,
+  label = "שליחה בוואטסאפ",
 }: {
   orderId: string;
   href: string;
+  label?: string;
 }) {
   return (
-    <Button
-      type="button"
-      onClick={async () => {
-        await markOrderSent(orderId);
-        window.open(href, "_blank", "noopener,noreferrer");
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className={cn(buttonVariants())}
+      onClick={() => {
+        void markOrderSent(orderId);
       }}
     >
-      שליחה בוואטסאפ
-    </Button>
+      {label}
+    </a>
   );
 }

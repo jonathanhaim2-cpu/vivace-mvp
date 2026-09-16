@@ -136,7 +136,16 @@ export async function getAnomalies(branchId?: string | null) {
   const unclassified = await prisma.invoicePhoto.count({
     where: { accountId: null },
   });
-  return { pricePending, missing, unclassified };
+  const exceptional = await prisma.exceptionalItem.findMany({
+    where: {
+      status: "OPEN",
+      ...(branchId ? { branchId } : {}),
+    },
+    include: { supplier: true, branch: true, order: true },
+    orderBy: { createdAt: "desc" },
+    take: 30,
+  });
+  return { pricePending, missing, unclassified, exceptional };
 }
 
 export async function getGoodsToReceiveToday(branchId?: string | null) {

@@ -37,7 +37,10 @@ export default async function HomePage() {
   ]);
 
   const anomalyCount =
-    anomalies.pricePending.length + anomalies.missing.length + (anomalies.unclassified > 0 ? 1 : 0);
+    anomalies.pricePending.length +
+    anomalies.missing.length +
+    anomalies.exceptional.length +
+    (anomalies.unclassified > 0 ? 1 : 0);
   const overCount = fill.filter((row) => row.over).length;
 
   return (
@@ -155,13 +158,23 @@ export default async function HomePage() {
 
         <Card className={anomalyCount > 0 ? "ring-1 ring-destructive/40" : undefined}>
           <CardHeader>
-            <CardTitle>חריגות מחיר ומסמך</CardTitle>
+            <CardTitle>מסמכים חריגים</CardTitle>
             <CardDescription>
               {anomalyCount === 0 ? "אין חריגות פתוחות." : `${anomalyCount} פריטים לבדיקה.`}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            {anomalies.pricePending.slice(0, 3).map((receipt) => (
+            {anomalies.exceptional.slice(0, 4).map((item) => (
+              <Link
+                key={item.id}
+                href={item.goodsReceiptId ? `/receipts/${item.goodsReceiptId}` : "/anomalies?type=exceptional"}
+                className="block hover:underline"
+              >
+                {item.title}
+                {session.isNetwork ? ` · ${item.branch.name}` : ""}
+              </Link>
+            ))}
+            {anomalies.pricePending.slice(0, 2).map((receipt) => (
               <Link key={receipt.id} href={`/receipts/${receipt.id}`} className="block hover:underline">
                 מחיר שונה · {receipt.order.supplier.name}
               </Link>

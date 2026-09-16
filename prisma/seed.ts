@@ -46,6 +46,20 @@ async function wipeKnownDemo() {
   const { branches, suppliers, products, orders, receipts, photos, dishes, inventory, recurring, files } =
     DEMO_IDS;
 
+  await prisma.exceptionalItem.deleteMany({
+    where: {
+      OR: [
+        { orderId: { in: [...orders] } },
+        { branchId: { in: [...branches] } },
+        { supplierId: { in: [...suppliers] } },
+      ],
+    },
+  });
+  await prisma.orderCutoffReminder.deleteMany({
+    where: {
+      OR: [{ branchId: { in: [...branches] } }, { supplierId: { in: [...suppliers] } }],
+    },
+  });
   await prisma.invoicePhoto.deleteMany({
     where: {
       OR: [

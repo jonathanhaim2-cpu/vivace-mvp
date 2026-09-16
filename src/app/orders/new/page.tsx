@@ -81,6 +81,16 @@ export default async function NewOrderPage({
         selectedSupplierId={allowedSupplier}
         branchId={session.branchId}
         branchName={session.branch?.name ?? "סניף"}
+        branch={
+          session.branch
+            ? {
+                name: session.branch.name,
+                address: session.branch.address,
+                phone: session.branch.phone,
+                contactName: session.branch.contactName,
+              }
+            : null
+        }
         weeklySpent={weeklySpent}
         openOrder={
           openOrder

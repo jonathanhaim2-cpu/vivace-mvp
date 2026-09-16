@@ -7,9 +7,11 @@ import { prisma } from "@/lib/prisma";
 export async function createBranch(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const address = String(formData.get("address") ?? "").trim() || null;
+  const phone = String(formData.get("phone") ?? "").trim() || null;
+  const contactName = String(formData.get("contactName") ?? "").trim() || null;
   if (!name) throw new Error("יש למלא שם סניף");
 
-  const branch = await prisma.branch.create({ data: { name, address } });
+  const branch = await prisma.branch.create({ data: { name, address, phone, contactName } });
   const jar = await cookies();
   if (!jar.get("vivace-branch")?.value) {
     jar.set("vivace-branch", branch.id, { path: "/" });

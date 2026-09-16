@@ -4,7 +4,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ClockTime } from "@/components/clock-time";
 import { listManagedSuppliers } from "@/lib/catalog";
 import { PAYMENT_METHODS, PAYMENT_TERMS } from "@/lib/constants";
-import { documentTypeLabel, formatDeliveryDays, formatWeekdays, nextDeliveryInfo, parseDeliveryDays, resolveOrderDays } from "@/lib/format";
+import { NextOrderNotice } from "@/components/orders/next-order-notice";
+import {
+  documentTypeLabel,
+  formatDeliveryDays,
+  formatWeekdays,
+  nextDeliveryInfo,
+  nextOrderWindow,
+  parseDeliveryDays,
+  resolveOrderDays,
+} from "@/lib/format";
 import { getAppSession } from "@/lib/session";
 
 export default async function SuppliersPage() {
@@ -41,6 +50,11 @@ export default async function SuppliersPage() {
               supplier.orderCutoffTime,
               resolveOrderDays(supplier.orderDays, supplier.deliveryDays),
             );
+            const nextOrder = nextOrderWindow(
+              resolveOrderDays(supplier.orderDays, supplier.deliveryDays),
+              supplier.orderCutoffTime,
+              supplier.reminderHoursBefore,
+            );
             const terms = PAYMENT_TERMS.find((t) => t.value === supplier.paymentTerms)?.label;
             const method = PAYMENT_METHODS.find((t) => t.value === supplier.paymentMethod)?.label;
             return (
@@ -65,6 +79,7 @@ export default async function SuppliersPage() {
                       <ClockTime value={supplier.orderCutoffTime} />
                     </p>
                     <p className="text-muted-foreground">{info.label}</p>
+                    <NextOrderNotice info={nextOrder} className="text-xs" />
                     <p className="text-muted-foreground">
                       {supplier._count.products} מוצרים · {supplier._count.orders} הזמנות
                     </p>

@@ -1,12 +1,18 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import type { PrismaClient } from "@prisma/client";
-import { ROI_WHATSAPP_PHONE } from "../src/lib/constants";
+import { COMPANY, ROI_WHATSAPP_PHONE } from "../src/lib/constants";
 import { ensurePriceLists, syncProductPriceLists } from "../src/lib/catalog";
 
 export { ROI_WHATSAPP_PHONE };
 
-type CatalogBranch = { id: string; name: string; address: string };
+type CatalogBranch = {
+  id: string;
+  name: string;
+  address: string;
+  phone?: string;
+  contactName?: string;
+};
 
 type RealCatalog = {
   whatsappPhone?: string;
@@ -33,8 +39,20 @@ type RealCatalog = {
 };
 
 export const PRODUCTION_BRANCHES: CatalogBranch[] = [
-  { id: "branch_beit_shemesh", name: "סניף בית שמש", address: "בית שמש" },
-  { id: "branch_kiryat_yearim", name: "סניף קרית יערים", address: "קרית יערים" },
+  {
+    id: "branch_beit_shemesh",
+    name: "סניף בית שמש",
+    address: "בית שמש",
+    phone: ROI_WHATSAPP_PHONE,
+    contactName: COMPANY.owner,
+  },
+  {
+    id: "branch_kiryat_yearim",
+    name: "סניף קרית יערים",
+    address: "יצחק 27, קרית יערים",
+    phone: ROI_WHATSAPP_PHONE,
+    contactName: COMPANY.owner,
+  },
 ];
 
 const LEGACY_PILOT_BRANCH_ID = "branch_pilot";
@@ -97,6 +115,18 @@ function resolveCatalogBranches(data: RealCatalog): CatalogBranch[] {
   return PRODUCTION_BRANCHES;
 }
 
+function resolveSeedAddress(branch: CatalogBranch, existingAddress?: string | null) {
+  const incoming = branch.address?.trim() || "";
+  const current = existingAddress?.trim() || "";
+  if (branch.id === "branch_kiryat_yearim") {
+    if (current.includes("יצחק 27")) return current;
+    if (incoming.includes("יצחק 27")) return incoming;
+    if (!current || current === "קרית יערים") return "יצחק 27, קרית יערים";
+    return current;
+  }
+  return incoming || current || null;
+}
+
 function isPilotBranch(branch: { id: string; name: string }) {
   const lower = branch.name.toLowerCase();
   const normalized = normalizeBranchName(branch.name);
@@ -115,10 +145,14 @@ async function ensureProductionBranches(client: PrismaClient, branches: CatalogB
     PRODUCTION_BRANCHES[1];
 
   for (const branch of branches) {
+    const phone = branch.phone?.trim() || ROI_WHATSAPP_PHONE;
+    const contactName = branch.contactName?.trim() || COMPANY.owner;
+    const existing = await client.branch.findUnique({ where: { id: branch.id } });
+    const address = resolveSeedAddress(branch, existing?.address);
     await client.branch.upsert({
       where: { id: branch.id },
-      update: { name: branch.name, address: branch.address },
-      create: branch,
+      update: { name: branch.name, address, phone, contactName },
+      create: { id: branch.id, name: branch.name, address, phone, contactName },
     });
   }
 
