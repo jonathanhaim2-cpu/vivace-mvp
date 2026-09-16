@@ -20,16 +20,19 @@ function LogoMark({
   className?: string;
 }) {
   return (
-    <div className={cn("relative", compact ? "h-10 w-40" : "h-28 w-72 sm:h-32 sm:w-80", className)}>
-      <Image
-        src={src}
-        alt={alt}
-        fill
-        sizes={compact ? "160px" : "240px"}
-        priority={priority}
-        className="object-contain object-center"
-      />
-    </div>
+    <Image
+      src={src}
+      alt={alt}
+      width={577}
+      height={337}
+      sizes={compact ? "160px" : "(min-width: 1024px) 14rem, 20rem"}
+      priority={priority}
+      className={cn(
+        "h-auto max-w-full bg-transparent object-contain object-center",
+        compact ? "max-h-10 w-auto" : "w-full",
+        className,
+      )}
+    />
   );
 }
 
@@ -47,7 +50,7 @@ export function BrandLogo({
   const alt = `${COMPANY.wordmark} ${COMPANY.tagline}`;
 
   return (
-    <div className={cn("flex flex-col items-center", className)}>
+    <div className={cn("flex w-full min-w-0 max-w-full flex-col items-center", className)}>
       {variant === "wb" ? (
         <LogoMark src={DARK_SRC} alt={alt} compact={compact} priority={!compact} />
       ) : variant === "rb" ? (

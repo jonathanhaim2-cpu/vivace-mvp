@@ -65,10 +65,10 @@ export function AppShell({
 
   return (
     <div className="min-h-full bg-background">
-      <aside className="fixed inset-y-0 start-0 z-30 hidden w-64 flex-col bg-sidebar text-sidebar-foreground print:hidden lg:flex">
-        <div className="border-b border-sidebar-border px-5 py-5">
-          <Link href="/" className="block">
-            <BrandLogo variant="wb" className="items-start" />
+      <aside className="fixed inset-y-0 start-0 z-30 hidden w-64 overflow-x-hidden flex-col bg-sidebar text-sidebar-foreground print:hidden lg:flex">
+        <div className="border-b border-sidebar-border px-4 py-4">
+          <Link href="/" className="block min-w-0 w-full">
+            <BrandLogo variant="wb" className="items-stretch" />
           </Link>
           <p className="mt-3 text-[11px] tracking-wide text-sidebar-foreground/55">
             {COMPANY.nameHe} · ע.מ {COMPANY.taxId}
@@ -111,8 +111,8 @@ export function AppShell({
 
       <header className="sticky top-0 z-20 border-b border-border bg-background/90 text-foreground backdrop-blur-md print:hidden lg:ms-64">
         <div className="flex items-center justify-between gap-3 px-4 py-2.5">
-          <div className="lg:hidden">
-            <Link href="/">
+          <div className="min-w-0 lg:hidden">
+            <Link href="/" className="block min-w-0 max-w-full">
               <BrandLogo variant="auto" compact />
             </Link>
           </div>
