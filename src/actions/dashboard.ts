@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { saveForecastTurnover, saveRogueDeviationPercent } from "@/lib/dashboard";
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/access";
 
 export async function saveDashboardSettings(formData: FormData) {
+  await requirePermission("action.manage_settings");
   const forecast = Number(formData.get("forecastTurnoverIls") ?? 0);
   if (!Number.isFinite(forecast) || forecast < 0) {
     throw new Error("מחזור חזוי לא חוקי");

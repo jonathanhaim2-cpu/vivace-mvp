@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   FileText,
   Home,
+  Landmark,
   LogOut,
   Settings,
   ShoppingCart,
@@ -17,31 +18,34 @@ import {
 import { logout } from "@/actions/auth";
 import { BrandLogo } from "@/components/brand-logo";
 import { AppChat } from "@/components/chat/app-chat";
-import { RoleSwitcher } from "@/components/role-switcher";
+import { SessionSwitcher } from "@/components/session-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { COMPANY } from "@/lib/constants";
-import type { Role } from "@/lib/constants";
+import { hasPermission, type AppRole, type PermissionKey } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 import { CutoffReminderBanner } from "@/components/cutoff-reminder-banner";
 import { SendToSuppliersToggle } from "@/components/orders/send-to-suppliers-toggle";
 import type { DueCutoffReminder } from "@/lib/reminders";
 
-const NAV = [
-  { href: "/", label: "בית", icon: Home },
-  { href: "/orders", label: "רכש", icon: ShoppingCart },
-  { href: "/suppliers", label: "ספקים", icon: Truck },
-  { href: "/receipts", label: "קליטה", icon: ClipboardCheck },
-  { href: "/invoices", label: "חשבוניות", icon: FileText },
-  { href: "/inventory", label: "מלאי", icon: Warehouse },
-  { href: "/foodcost", label: "Food Cost", icon: UtensilsCrossed },
-  { href: "/reports", label: "דוחות", icon: BarChart3 },
+const NAV: { href: string; label: string; icon: typeof Home; permission: PermissionKey }[] = [
+  { href: "/", label: "בית", icon: Home, permission: "nav.home" },
+  { href: "/orders", label: "רכש", icon: ShoppingCart, permission: "nav.orders" },
+  { href: "/suppliers", label: "ספקים", icon: Truck, permission: "nav.suppliers" },
+  { href: "/receipts", label: "קליטה", icon: ClipboardCheck, permission: "nav.receipts" },
+  { href: "/invoices", label: "חשבוניות", icon: FileText, permission: "nav.invoices" },
+  { href: "/inventory", label: "מלאי", icon: Warehouse, permission: "nav.inventory" },
+  { href: "/foodcost", label: "Food Cost", icon: UtensilsCrossed, permission: "nav.foodcost" },
+  { href: "/reports", label: "דוחות", icon: BarChart3, permission: "nav.reports" },
+  { href: "/ap", label: "תשלומים", icon: Landmark, permission: "nav.ap" },
 ];
 
 type Branch = { id: string; name: string };
 
 export function AppShell({
   children,
-  role,
+  appRole,
+  userName,
+  permissions,
   branchId,
   branches,
   authEnabled,
@@ -51,7 +55,9 @@ export function AppShell({
   sendToSuppliers = false,
 }: {
   children: React.ReactNode;
-  role: Role;
+  appRole: AppRole | null;
+  userName: string | null;
+  permissions: string[];
   branchId: string | null;
   branches: Branch[];
   authEnabled: boolean;
@@ -65,6 +71,11 @@ export function AppShell({
   if (pathname === "/login") {
     return <>{children}</>;
   }
+
+  const items = NAV.filter((item) => hasPermission(permissions, item.permission));
+  const canSettings = hasPermission(permissions, "nav.settings");
+  const canToggleSend = hasPermission(permissions, "action.toggle_send_to_suppliers");
+  const canChat = hasPermission(permissions, "nav.chat");
 
   return (
     <div className="min-h-full bg-background">
@@ -81,7 +92,7 @@ export function AppShell({
           </p>
         </div>
         <nav className="flex flex-1 flex-col gap-1 p-3">
-          {NAV.map((item) => {
+          {items.map((item) => {
             const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
             const Icon = item.icon;
             return (
@@ -123,21 +134,26 @@ export function AppShell({
             </Link>
           </div>
           <div className="hidden text-sm text-muted-foreground lg:block">
-            {role === "network" ? "תצוגת משרד הרשת" : "תצוגת מנהל סניף"}
+            מערכת רכש ומלאי
           </div>
-          <div className="flex items-center gap-2">
-            <SendToSuppliersToggle enabled={sendToSuppliers} compact />
+          <div className="flex min-w-0 items-center justify-end gap-2">
+            {appRole && userName ? (
+              <SessionSwitcher role={appRole} name={userName} branchId={branchId} branches={branches} />
+            ) : null}
+            {canToggleSend ? <SendToSuppliersToggle enabled={sendToSuppliers} compact /> : null}
             <ThemeToggle compact />
-            <Link
-              href="/settings"
-              className={cn(
-                "inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs hover:bg-muted",
-                pathname.startsWith("/settings") && "bg-muted text-primary",
-              )}
-            >
-              <Settings className="size-3.5" />
-              <span className="hidden sm:inline">הגדרות</span>
-            </Link>
+            {canSettings ? (
+              <Link
+                href="/settings"
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs hover:bg-muted",
+                  pathname.startsWith("/settings") && "bg-muted text-primary",
+                )}
+              >
+                <Settings className="size-3.5" />
+                <span className="hidden sm:inline">הגדרות</span>
+              </Link>
+            ) : null}
             {authEnabled ? (
               <form action={logout}>
                 <button
@@ -149,7 +165,6 @@ export function AppShell({
                 </button>
               </form>
             ) : null}
-            <RoleSwitcher role={role} branchId={branchId} branches={branches} />
           </div>
         </div>
       </header>
@@ -161,7 +176,7 @@ export function AppShell({
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur-md print:hidden lg:hidden">
         <div className="flex overflow-x-auto">
-          {NAV.map((item) => {
+          {items.map((item) => {
             const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
             const Icon = item.icon;
             return (
@@ -180,9 +195,11 @@ export function AppShell({
           })}
         </div>
       </nav>
-      <div className="print:hidden">
-        <AppChat messages={chatMessages} aiAvailable={aiAvailable} />
-      </div>
+      {canChat ? (
+        <div className="print:hidden">
+          <AppChat messages={chatMessages} aiAvailable={aiAvailable} />
+        </div>
+      ) : null}
     </div>
   );
 }

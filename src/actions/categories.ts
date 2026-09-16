@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/access";
 
 export async function createCategory(formData: FormData) {
+  await requirePermission("action.manage_settings");
   const name = String(formData.get("name") ?? "").trim();
   const parentId = String(formData.get("parentId") ?? "").trim() || null;
   if (!name) throw new Error("יש למלא שם קטגוריה");
@@ -24,6 +26,7 @@ export async function createCategory(formData: FormData) {
 }
 
 export async function renameCategory(id: string, formData: FormData) {
+  await requirePermission("action.manage_settings");
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("יש למלא שם");
   await prisma.productCategory.update({ where: { id }, data: { name } });
@@ -31,6 +34,7 @@ export async function renameCategory(id: string, formData: FormData) {
 }
 
 export async function deleteCategory(id: string) {
+  await requirePermission("action.manage_settings");
   const used = await prisma.product.count({ where: { categoryId: id } });
   const children = await prisma.productCategory.count({ where: { parentId: id } });
   if (used > 0) throw new Error("לא ניתן למחוק קטגוריה עם מוצרים");

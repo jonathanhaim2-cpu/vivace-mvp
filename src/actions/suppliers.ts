@@ -6,6 +6,7 @@ import { DOCUMENT_TYPES, PAYMENT_METHODS, PAYMENT_TERMS, WEEKDAYS } from "@/lib/
 import { ensurePriceLists } from "@/lib/catalog";
 import { normalizeClockTime } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/access";
 
 function readDays(formData: FormData, fieldName = "deliveryDay") {
   const selected = formData
@@ -118,6 +119,7 @@ async function replaceBranches(supplierId: string, branchIds: string[], formData
 }
 
 export async function createSupplier(formData: FormData) {
+  await requirePermission("action.edit_suppliers");
   const data = readSupplierInput(formData);
   const supplier = await prisma.supplier.create({ data });
   await replaceBranches(supplier.id, readBranchIds(formData), formData);
@@ -127,6 +129,7 @@ export async function createSupplier(formData: FormData) {
 }
 
 export async function updateSupplier(id: string, formData: FormData) {
+  await requirePermission("action.edit_suppliers");
   const data = readSupplierInput(formData);
   await prisma.supplier.update({ where: { id }, data });
   await replaceBranches(id, readBranchIds(formData), formData);
@@ -137,6 +140,7 @@ export async function updateSupplier(id: string, formData: FormData) {
 }
 
 export async function deleteSupplier(id: string) {
+  await requirePermission("action.edit_suppliers");
   const orders = await prisma.order.count({ where: { supplierId: id } });
   if (orders > 0) {
     throw new Error("לא ניתן למחוק ספק עם הזמנות קיימות");

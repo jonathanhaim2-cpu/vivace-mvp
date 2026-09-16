@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/access";
 
 export async function createRecurringLine(formData: FormData) {
+  await requirePermission("nav.foodcost");
   const name = String(formData.get("name") ?? "").trim();
   const amountIls = Number(formData.get("amountIls") ?? 0);
   if (!name) throw new Error("יש למלא שם");
@@ -22,6 +24,7 @@ export async function createRecurringLine(formData: FormData) {
 }
 
 export async function deleteRecurringLine(id: string) {
+  await requirePermission("nav.foodcost");
   await prisma.recurringLine.delete({ where: { id } });
   revalidatePath("/foodcost");
   revalidatePath("/settings");

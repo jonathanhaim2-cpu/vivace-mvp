@@ -12,8 +12,8 @@ Hebrew first, English below. This first remote demo uses **SQLite** on a **singl
 2. מגדירים משתני סביבה (למטה).
 3. יונתן שולח לרועי ב-WhatsApp:
    - הכתובת הציבורית, למשל `https://vivace-xxx.up.railway.app`
-   - הסיסמה מ-`APP_PASSWORD` (או `APP_PASSWORD_ROI` אם הוגדרה סיסמה נפרדת)
-4. רועי נכנס דרך **כניסה ל-Vivac'e**, ואחרי זה בוחר **רשת / סניף** כמו במשרד.
+   - שם משתמש `roi` וסיסמה מ-`APP_PASSWORD_ROI` (או משתמש שייווצר בהגדרות)
+4. רועי נכנס דרך **כניסה למערכת** עם שם משתמש וסיסמה. אחרי הכניסה מוצג תפקיד (אדמין / הנה״ח / מנהל סניף / עובד קצה).
 5. בלי מפתח AI יופיע באנר: **חסר מפתח AI — שיוך ידני**. עם מפתח, העלאת חשבונית מציעה כרטיס בן לאישור בלחיצה.
 
 ---
@@ -23,8 +23,8 @@ Hebrew first, English below. This first remote demo uses **SQLite** on a **singl
 | Variable | Required | Purpose |
 |---|---|---|
 | `DATABASE_URL` | yes | SQLite path, e.g. `file:/data/dev.db` on the volume |
-| `APP_PASSWORD` | yes in public deploy | Shared login for Jonathan |
-| `APP_PASSWORD_ROI` | no | Same or separate password for Roi |
+| `APP_PASSWORD` | yes in public deploy | Seeds admin user `jonathan` on first boot (not overwritten later) |
+| `APP_PASSWORD_ROI` | no | Seeds admin user `roi` on first boot |
 | `AUTH_SECRET` | recommended | Session HMAC secret (random 32+ chars) |
 | `GOOGLE_GENERATIVE_AI_API_KEY` or `GEMINI_API_KEY` | for Gemini | Preferred vision provider (Flash) |
 | `OPENAI_API_KEY` | for OpenAI | Used if no Google key, or if `AI_PROVIDER=openai` |

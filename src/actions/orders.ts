@@ -6,7 +6,7 @@ import { ORDER_STATUSES, WHATSAPP_STATUS } from "@/lib/constants";
 import { supplierVisibleToBranch } from "@/lib/catalog";
 import { nextDeliveryInfo, parseDeliveryDays, parseWeekdays } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
-import { getAppSession } from "@/lib/session";
+import { requireBranchAccess, requirePermission } from "@/lib/access";
 
 async function findOpenOrder(supplierId: string, branchId: string) {
   return prisma.order.findFirst({
@@ -22,7 +22,7 @@ async function findOpenOrder(supplierId: string, branchId: string) {
 }
 
 export async function createOrder(formData: FormData) {
-  const session = await getAppSession();
+  const session = await requirePermission("action.create_orders");
   const supplierId = String(formData.get("supplierId") ?? "");
   const branchId = String(formData.get("branchId") || session.branchId || "");
   const notesForDriver = String(formData.get("notesForDriver") ?? "").trim() || null;
@@ -32,6 +32,7 @@ export async function createOrder(formData: FormData) {
 
   if (!supplierId) throw new Error("יש לבחור ספק");
   if (!branchId) throw new Error("יש לבחור סניף");
+  await requireBranchAccess(branchId, session);
 
   const supplier = await prisma.supplier.findUnique({
     where: { id: supplierId },
@@ -129,8 +130,10 @@ export async function createOrder(formData: FormData) {
 }
 
 export async function markOrderSent(orderId: string) {
+  const session = await requirePermission("action.send_whatsapp");
   const order = await prisma.order.findUnique({ where: { id: orderId } });
   if (!order) throw new Error("הזמנה לא נמצאה");
+  await requireBranchAccess(order.branchId, session);
   const alreadyTracked =
     order.whatsappStatus === WHATSAPP_STATUS.DELIVERED || order.whatsappStatus === WHATSAPP_STATUS.READ;
   await prisma.order.update({
@@ -146,6 +149,10 @@ export async function markOrderSent(orderId: string) {
 }
 
 export async function updateWhatsAppStatus(orderId: string, status: string) {
+  const session = await requirePermission("action.send_whatsapp");
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) throw new Error("הזמנה לא נמצאה");
+  await requireBranchAccess(order.branchId, session);
   const allowed = new Set<string>([
     WHATSAPP_STATUS.PENDING,
     WHATSAPP_STATUS.SENT,

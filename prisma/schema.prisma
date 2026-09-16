@@ -21,6 +21,7 @@ model Branch {
   standardSuggestions OrderStandardSuggestion[]
   exceptionalItems    ExceptionalItem[]
   cutoffReminders     OrderCutoffReminder[]
+  userLinks       UserBranch[]
 }
 
 model Supplier {
@@ -338,6 +339,33 @@ model ChatMessage {
 model AppSetting {
   key   String @id
   value String
+}
+
+model User {
+  id           String       @id @default(cuid())
+  name         String
+  username     String       @unique
+  passwordHash String
+  role         String
+  active       Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  branches     UserBranch[]
+}
+
+model UserBranch {
+  userId   String
+  branchId String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  @@id([userId, branchId])
+}
+
+model RolePermission {
+  role    String
+  key     String
+  allowed Boolean @default(false)
+  @@id([role, key])
 }
 
 model OrderStandardSuggestion {

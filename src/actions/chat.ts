@@ -3,12 +3,14 @@
 import { completeChatText, getAiRuntime } from "@/lib/ai";
 import { buildChatContext } from "@/lib/chat-context";
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/access";
 
 export async function listChatMessages() {
   return prisma.chatMessage.findMany({ orderBy: { createdAt: "asc" }, take: 40 });
 }
 
 export async function sendChatMessage(formData: FormData) {
+  await requirePermission("nav.chat");
   const question = String(formData.get("message") ?? "").trim();
   const path = String(formData.get("path") ?? "/").trim() || "/";
   if (!question) throw new Error("יש לכתוב שאלה");

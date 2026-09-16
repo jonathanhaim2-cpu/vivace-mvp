@@ -12,7 +12,7 @@ import { ExceptionActions } from "@/components/exceptions/exception-actions";
 import { billedAsLabel, exceptionKindLabel, exceptionStatusLabel } from "@/lib/credits";
 import { expenseCategoryLabel, formatDateTime, formatIls, lineTotal } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
-import { getAppSession } from "@/lib/session";
+import { getAppSession, sessionCan } from "@/lib/session";
 import { publicFileUrl } from "@/lib/uploads";
 import { buildCreditWhatsAppText, buildWhatsAppUrl } from "@/lib/whatsapp";
 import { resolveSupplierForBranch } from "@/lib/supplier-branch";
@@ -161,7 +161,7 @@ export default async function ReceiptDetailPage({ params }: { params: Promise<{ 
                       <PriceChangeBadge status={line.priceChangeStatus} />
                     </div>
                   </div>
-                  {session.isNetwork && line.priceChangeStatus === PRICE_CHANGE.PENDING ? (
+                  {sessionCan(session, "action.edit_prices") && line.priceChangeStatus === PRICE_CHANGE.PENDING ? (
                     <PriceActions lineId={line.id} />
                   ) : null}
                 </div>

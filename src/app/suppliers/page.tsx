@@ -14,7 +14,7 @@ import {
   parseDeliveryDays,
   resolveOrderDays,
 } from "@/lib/format";
-import { getAppSession } from "@/lib/session";
+import { getAppSession, sessionCan } from "@/lib/session";
 
 export default async function SuppliersPage() {
   const session = await getAppSession();
@@ -29,18 +29,28 @@ export default async function SuppliersPage() {
             ? "כולל ספקים לא פעילים. זכיין רואה רק פעילים וזמינים לסניף."
             : "ספקים פעילים שזמינים לסניף זה."
         }
-        action={{ href: "/suppliers/new", label: "ספק חדש" }}
+        action={
+          sessionCan(session, "action.edit_suppliers")
+            ? { href: "/suppliers/new", label: "ספק חדש" }
+            : undefined
+        }
       />
-      <p className="mb-4 text-sm">
-        <Link href="/categories" className="text-primary hover:underline">
-          ניהול קטגוריות ותתי־קטגוריות
-        </Link>
-      </p>
+      {sessionCan(session, "action.manage_settings") ? (
+        <p className="mb-4 text-sm">
+          <Link href="/categories" className="text-primary hover:underline">
+            ניהול קטגוריות ותתי־קטגוריות
+          </Link>
+        </p>
+      ) : null}
       {suppliers.length === 0 ? (
         <EmptyState
           title="אין ספקים"
           description="הוסיפו ספק ראשון כדי להתחיל להזמין."
-          action={{ href: "/suppliers/new", label: "יצירת ספק" }}
+          action={
+            sessionCan(session, "action.edit_suppliers")
+              ? { href: "/suppliers/new", label: "יצירת ספק" }
+              : undefined
+          }
         />
       ) : (
         <div className="grid gap-3 md:grid-cols-2">

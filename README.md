@@ -7,7 +7,7 @@ Brand: terracotta `#b34b3c`, cream `#F9F7F2`, capsule buttons. Logos in `public/
 
 Zester-like modules: בית, רכש, ספקים, קליטה, חשבוניות, מלאי, Food Cost, דוחות, הגדרות.
 
-Remote-ready: shared-password login + optional vision LLM that proposes a **leaf** card from Jonathan’s chart of accounts.
+Remote-ready: per-user login (username + password) with roles, an admin permission matrix, and optional vision LLM that proposes a **leaf** card from Jonathan’s chart of accounts.
 
 ---
 
@@ -36,7 +36,7 @@ Production-style: `npm run build && npm run start:prod`
 
 ### Remote login
 
-Set `APP_PASSWORD` (and optional `APP_PASSWORD_ROI`). Visitors hit **כניסה ל-Vivac'e**; a cookie session unlocks the app. `/login` and static assets stay public. The רשת/סניף toggle is unchanged after login.
+Set `APP_PASSWORD` (and optional `APP_PASSWORD_ROI`). First boot seeds **jonathan** (admin) and **roi** (admin) from those env passwords; later password changes in the app are not overwritten. Visitors hit **כניסה למערכת** with **שם משתמש + סיסמה**. After login the header shows a role chip. Admins manage users and the permission matrix under **הגדרות → משתמשים / הרשאות**. `/login` and static assets stay public.
 
 ### Invoice AI
 
