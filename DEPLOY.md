@@ -67,7 +67,7 @@ OPENAI_API_KEY=
 AI_MONTHLY_BUDGET_USD=5
 ```
 
-`start:prod` runs `db:ready` (Prisma generate + `db push` + seed). The seed upserts the real catalog, **סניף בית שמש** + **סניף קרית יערים**, and overwrites every supplier WhatsApp/phone to Roi (`0526408537`) — including existing SQLite rows. It does **not** recreate the old Tnuva/Herzliya demo. Known demo IDs are wiped if they are still in the SQLite file. Set `SEED_DEMO=true` only if you explicitly want that catalog.
+`start:prod` runs `db:ready` (Prisma generate + `db push` + seed). The seed **upserts** the real catalog (stable supplier ids, commercial names from Excel **שם ספק אמיתי**, phones/schedule from the supplier PDF) onto the persistent SQLite volume. It does **not** wipe products or open orders, and it does **not** overwrite every supplier phone to Roi. WhatsApp routing to Roi vs real suppliers is the **שליחה לספקים** AppSetting (default off). Known demo IDs are wiped if they are still in the SQLite file. Set `SEED_DEMO=true` only if you explicitly want that catalog.
 
 ### Fly.io
 

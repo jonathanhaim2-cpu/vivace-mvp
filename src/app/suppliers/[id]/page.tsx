@@ -98,6 +98,15 @@ export default async function SupplierDetailPage({
           </div>
           <p>סוכן: {supplier.agentName || "—"} {supplier.agentPhone ? `· ${supplier.agentPhone}` : ""}</p>
           <p>וואטסאפ הזמנות: {supplier.whatsappPhone}</p>
+          {supplier.branchLinks.some((link) => link.whatsappPhone) ? (
+            <p className="sm:col-span-2 text-muted-foreground">
+              לפי סניף:{" "}
+              {supplier.branchLinks
+                .filter((link) => link.whatsappPhone)
+                .map((link) => `${link.branch.name} ${link.whatsappPhone}`)
+                .join(" · ")}
+            </p>
+          ) : null}
           <p>מפיץ: {supplier.driverName || "—"}</p>
           <p>כתובת: {supplier.address || "—"}</p>
           <p>נקודת חלוקה: {supplier.deliveryPointNumber || "—"}</p>

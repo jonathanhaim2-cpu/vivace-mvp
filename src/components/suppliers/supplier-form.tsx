@@ -34,7 +34,7 @@ type SupplierValues = {
   plantsCouncilUrl: string | null;
   plantsCouncilDiscountPct: number | null;
   plantsCouncilRelevant?: boolean;
-  branchLinks?: { branchId: string }[];
+  branchLinks?: { branchId: string; whatsappPhone?: string | null }[];
 };
 
 export function SupplierForm({
@@ -287,19 +287,32 @@ export function SupplierForm({
           <Field>
             <FieldLabel>זמין בסניפים</FieldLabel>
             <div className="flex flex-wrap gap-2">
-              {branches.map((branch) => (
-                <label key={branch.id} className="inline-flex items-center gap-2 rounded-lg border bg-card px-3 py-1.5 text-sm">
-                  <input
-                    type="checkbox"
-                    name="branchId"
-                    value={branch.id}
-                    defaultChecked={selectedBranches.has(branch.id)}
-                  />
-                  {branch.name}
-                </label>
-              ))}
+              {branches.map((branch) => {
+                const link = supplier?.branchLinks?.find((row) => row.branchId === branch.id);
+                return (
+                  <label key={branch.id} className="inline-flex flex-col gap-1 rounded-lg border bg-card px-3 py-1.5 text-sm">
+                    <span className="inline-flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        name="branchId"
+                        value={branch.id}
+                        defaultChecked={selectedBranches.has(branch.id)}
+                      />
+                      {branch.name}
+                    </span>
+                    <Input
+                      name={`branchWhatsapp:${branch.id}`}
+                      defaultValue={link?.whatsappPhone ?? ""}
+                      placeholder="וואטסאפ לסניף (אופציונלי)"
+                      className="h-7 w-44"
+                    />
+                  </label>
+                );
+              })}
             </div>
-            <FieldDescription>אם לא נבחר אף סניף — הספק זמין לכולם.</FieldDescription>
+            <FieldDescription>
+              אם לא נבחר אף סניף — הספק זמין לכולם. מספר וואטסאפ לסניף דורס את המספר הכללי כששליחה לספקים דולקת.
+            </FieldDescription>
           </Field>
           <PlantsCouncilSupplierFields
             relevant={supplier?.plantsCouncilRelevant ?? false}

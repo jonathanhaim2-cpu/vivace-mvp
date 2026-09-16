@@ -12,13 +12,20 @@ import { isAuthEnabled } from "@/lib/auth";
 import { getForecastTurnover } from "@/lib/dashboard";
 import { monthLabel } from "@/lib/months";
 import { getAppSession } from "@/lib/session";
+import { getSendToSuppliersEnabled } from "@/lib/whatsapp-routing";
+import { SendToSuppliersToggle } from "@/components/orders/send-to-suppliers-toggle";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const [runtime, session, forecast] = await Promise.all([getAiRuntime(), getAppSession(), getForecastTurnover()]);
+  const [runtime, session, forecast, sendToSuppliers] = await Promise.all([
+    getAiRuntime(),
+    getAppSession(),
+    getForecastTurnover(),
+    getSendToSuppliersEnabled(),
+  ]);
   const providerLabel =
     runtime.provider === "google" ? "Google Gemini Flash" : runtime.provider === "openai" ? "OpenAI" : "אין ספק";
 
@@ -30,6 +37,21 @@ export default async function SettingsPage() {
       />
 
       {runtime.reason === "no_key" ? <AiMissingBanner /> : null}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>שליחה לספקים</CardTitle>
+          <CardDescription>
+            כבוי (ברירת מחדל): קישורי וואטסאפ נפתחים למספר של רועי 0526408537. דולק: כל הזמנה נשלחת למספר האמיתי של הספק מהמחירון.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <SendToSuppliersToggle enabled={sendToSuppliers} />
+          <p className="text-sm text-muted-foreground">
+            ההגדרה נשמרת ב־AppSetting <span dir="ltr">orders.sendToSuppliers</span> ושורדת רענון. חל על הזמנות ועל בקשות זיכוי בוואטסאפ.
+          </p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

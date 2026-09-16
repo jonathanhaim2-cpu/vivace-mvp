@@ -17,7 +17,10 @@ import {
   resolveOrderDays,
 } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
+import { resolveSupplierForBranch } from "@/lib/supplier-branch";
 import { buildOrderWhatsAppText, buildWhatsAppUrl } from "@/lib/whatsapp";
+import { getSendToSuppliersEnabled, resolveOrderWhatsAppPhone } from "@/lib/whatsapp-routing";
+import { RoiTestModeBadge } from "@/components/orders/send-to-suppliers-toggle";
 import { cn } from "@/lib/utils";
 
 export default async function OrderDetailPage({
@@ -32,7 +35,7 @@ export default async function OrderDetailPage({
   const order = await prisma.order.findUnique({
     where: { id },
     include: {
-      supplier: true,
+      supplier: { include: { branchLinks: true } },
       branch: true,
       receipt: true,
       lines: { include: { product: true } },
@@ -44,11 +47,23 @@ export default async function OrderDetailPage({
     (sum, line) => sum + lineTotal(line.qty, line.unitPrice, line.discountPercent),
     0,
   );
-  const message = buildOrderWhatsAppText(order);
-  const whatsappHref = buildWhatsAppUrl(order.supplier.whatsappPhone, message);
+  const sendToSuppliers = await getSendToSuppliersEnabled();
+  const resolvedSupplier = resolveSupplierForBranch(order.supplier, order.branchId);
+  const whatsappPhone = resolveOrderWhatsAppPhone({
+    sendToSuppliers,
+    supplierPhone: resolvedSupplier.whatsappPhone,
+  });
+  const message = buildOrderWhatsAppText({
+    ...order,
+    supplier: {
+      name: resolvedSupplier.name,
+      deliveryPointNumber: resolvedSupplier.deliveryPointNumber,
+    },
+  });
+  const whatsappHref = buildWhatsAppUrl(whatsappPhone, message);
   const nextOrder = nextOrderWindow(
-    resolveOrderDays(order.supplier.orderDays, order.supplier.deliveryDays),
-    order.supplier.orderCutoffTime,
+    resolveOrderDays(resolvedSupplier.orderDays, resolvedSupplier.deliveryDays),
+    resolvedSupplier.orderCutoffTime,
     order.supplier.reminderHoursBefore,
   );
 
@@ -68,7 +83,10 @@ export default async function OrderDetailPage({
       <Card>
         <CardHeader>
           <CardTitle>סיכום להזמנה</CardTitle>
-          <CardDescription>קודם פרטי העסק, ואחר כך שורות ההזמנה — כך זה נשלח לספק</CardDescription>
+          <CardDescription>
+            קודם פרטי העסק, ואחר כך שורות ההזמנה
+            {sendToSuppliers ? " — נשלח למספר הספק" : " — מצב בדיקה, נשלח לרועי"}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <OrderCompanyHeader branch={order.branch} />
@@ -93,6 +111,9 @@ export default async function OrderDetailPage({
           </pre>
           <div className="flex flex-wrap gap-2 print:hidden">
             <WhatsAppButton orderId={order.id} href={whatsappHref} />
+            {!sendToSuppliers ? <RoiTestModeBadge /> : (
+              <span className="self-center text-xs text-muted-foreground">וואטסאפ {whatsappPhone}</span>
+            )}
             <Link href={`/orders/${order.id}?print=1`} className={cn(buttonVariants({ variant: "outline" }))}>
               הדפסה / PDF
             </Link>

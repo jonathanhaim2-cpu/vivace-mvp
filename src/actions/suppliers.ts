@@ -82,18 +82,45 @@ function readSupplierInput(formData: FormData) {
   };
 }
 
-async function replaceBranches(supplierId: string, branchIds: string[]) {
-  await prisma.supplierBranch.deleteMany({ where: { supplierId } });
-  if (branchIds.length === 0) return;
-  await prisma.supplierBranch.createMany({
-    data: branchIds.map((branchId) => ({ supplierId, branchId })),
+async function replaceBranches(supplierId: string, branchIds: string[], formData?: FormData) {
+  const existing = await prisma.supplierBranch.findMany({ where: { supplierId } });
+  const previous = new Map(existing.map((row) => [row.branchId, row]));
+  await prisma.supplierBranch.deleteMany({
+    where: { supplierId, branchId: { notIn: branchIds } },
   });
+  if (branchIds.length === 0) return;
+  for (const branchId of branchIds) {
+    const prev = previous.get(branchId);
+    const fromForm = formData ? String(formData.get(`branchWhatsapp:${branchId}`) ?? "").trim() : "";
+    await prisma.supplierBranch.upsert({
+      where: { supplierId_branchId: { supplierId, branchId } },
+      update: {
+        whatsappPhone: fromForm || prev?.whatsappPhone || null,
+      },
+      create: {
+        supplierId,
+        branchId,
+        whatsappPhone: fromForm || prev?.whatsappPhone || null,
+        agentName: prev?.agentName,
+        agentPhone: prev?.agentPhone,
+        accountingPhone: prev?.accountingPhone,
+        accountingEmail: prev?.accountingEmail,
+        taxId: prev?.taxId,
+        address: prev?.address,
+        deliveryPointNumber: prev?.deliveryPointNumber,
+        deliveryDays: prev?.deliveryDays,
+        orderDays: prev?.orderDays,
+        orderCutoffTime: prev?.orderCutoffTime,
+        notes: prev?.notes,
+      },
+    });
+  }
 }
 
 export async function createSupplier(formData: FormData) {
   const data = readSupplierInput(formData);
   const supplier = await prisma.supplier.create({ data });
-  await replaceBranches(supplier.id, readBranchIds(formData));
+  await replaceBranches(supplier.id, readBranchIds(formData), formData);
   await ensurePriceLists(supplier.id);
   revalidatePath("/suppliers");
   redirect(`/suppliers/${supplier.id}`);
@@ -102,7 +129,7 @@ export async function createSupplier(formData: FormData) {
 export async function updateSupplier(id: string, formData: FormData) {
   const data = readSupplierInput(formData);
   await prisma.supplier.update({ where: { id }, data });
-  await replaceBranches(id, readBranchIds(formData));
+  await replaceBranches(id, readBranchIds(formData), formData);
   await ensurePriceLists(id);
   revalidatePath("/suppliers");
   revalidatePath(`/suppliers/${id}`);

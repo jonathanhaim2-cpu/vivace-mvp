@@ -3,6 +3,7 @@ import { monthKeyFromDate, monthRangeUtc } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { RECEIPT_STATUSES } from "@/lib/constants";
 import { supplierVisibleToBranch } from "@/lib/catalog";
+import { resolveSupplierForBranch } from "@/lib/supplier-branch";
 
 const FORECAST_KEY = "dashboard.forecastTurnoverIls";
 const ROGUE_KEY = "dashboard.rogueDeviationPercent";
@@ -155,11 +156,12 @@ export async function getGoodsToReceiveToday(branchId?: string | null) {
       status: { in: ["CONFIRMED", "SENT"] },
       ...(branchId ? { branchId } : {}),
     },
-    include: { supplier: true, branch: true, lines: true },
+    include: { supplier: { include: { branchLinks: true } }, branch: true, lines: true },
     orderBy: { createdAt: "asc" },
   });
   return orders.filter((order) => {
-    const days = parseDeliveryDays(order.supplier.deliveryDays);
+    const resolved = resolveSupplierForBranch(order.supplier, order.branchId);
+    const days = parseDeliveryDays(resolved.deliveryDays);
     return days.includes(today);
   });
 }
@@ -184,10 +186,11 @@ export async function getOrdersToPlaceToday(branchId?: string | null, isNetwork 
     ).map((o) => o.supplierId),
   );
   return visible.filter((supplier) => {
+    const resolved = resolveSupplierForBranch(supplier, branchId ?? null);
     const info = nextDeliveryInfo(
-      parseDeliveryDays(supplier.deliveryDays),
-      supplier.orderCutoffTime,
-      parseWeekdays(supplier.orderDays),
+      parseDeliveryDays(resolved.deliveryDays),
+      resolved.orderCutoffTime,
+      parseWeekdays(resolved.orderDays),
     );
     return info.open && !openIds.has(supplier.id);
   });

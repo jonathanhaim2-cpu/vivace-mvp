@@ -11,6 +11,7 @@ import { getAiRuntime } from "@/lib/ai";
 import { listChatMessages } from "@/actions/chat";
 import { getAppSession } from "@/lib/session";
 import { listDueCutoffReminders } from "@/lib/reminders";
+import { getSendToSuppliersEnabled } from "@/lib/whatsapp-routing";
 import "./globals.css";
 
 const rubik = Rubik({
@@ -27,13 +28,14 @@ export const dynamic = "force-dynamic";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getAppSession();
-  const [runtime, chatMessages, dueReminders] = await Promise.all([
+  const [runtime, chatMessages, dueReminders, sendToSuppliers] = await Promise.all([
     getAiRuntime(),
     listChatMessages(),
     listDueCutoffReminders({
       branchId: session.branchId,
       isNetwork: session.isNetwork,
     }),
+    getSendToSuppliersEnabled(),
   ]);
 
   return (
@@ -50,6 +52,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 aiAvailable={runtime.available}
                 chatMessages={chatMessages}
                 dueReminders={dueReminders}
+                sendToSuppliers={sendToSuppliers}
               >
                 {children}
               </AppShell>

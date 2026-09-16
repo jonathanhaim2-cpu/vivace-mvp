@@ -1,6 +1,7 @@
 import { nextOrderWindow, nowInIsrael, resolveOrderDays } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { supplierVisibleToBranch } from "@/lib/catalog";
+import { resolveSupplierForBranch } from "@/lib/supplier-branch";
 
 export type DueCutoffReminder = {
   supplierId: string;
@@ -46,15 +47,15 @@ export async function listDueCutoffReminders(opts?: {
 
   const due: DueCutoffReminder[] = [];
   for (const supplier of suppliers) {
-    const orderDays = resolveOrderDays(supplier.orderDays, supplier.deliveryDays);
-    const window = nextOrderWindow(orderDays, supplier.orderCutoffTime, supplier.reminderHoursBefore, now);
-    if (!window.reminderDue || window.minutesLeft == null) continue;
-
     for (const branch of targetBranches) {
       if (!opts?.isNetwork && !supplierVisibleToBranch(supplier, branch.id)) continue;
       if (opts?.isNetwork && supplier.branchLinks.length > 0) {
         if (!supplier.branchLinks.some((link) => link.branchId === branch.id)) continue;
       }
+      const resolved = resolveSupplierForBranch(supplier, branch.id);
+      const orderDays = resolveOrderDays(resolved.orderDays, resolved.deliveryDays);
+      const window = nextOrderWindow(orderDays, resolved.orderCutoffTime, supplier.reminderHoursBefore, now);
+      if (!window.reminderDue || window.minutesLeft == null) continue;
       const key = `${supplier.id}:${branch.id}`;
       if (open.has(key)) continue;
       due.push({
@@ -62,7 +63,7 @@ export async function listDueCutoffReminders(opts?: {
         supplierName: supplier.name,
         branchId: branch.id,
         branchName: branch.name,
-        cutoffTime: supplier.orderCutoffTime,
+        cutoffTime: resolved.orderCutoffTime,
         hoursBefore: supplier.reminderHoursBefore,
         minutesLeft: window.minutesLeft,
         dateKey,
