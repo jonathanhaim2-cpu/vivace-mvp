@@ -9,6 +9,12 @@ import {
   type SupplierBranchOverlay,
   type SupplierOverlay,
 } from "../src/lib/supplier-details";
+import {
+  SEMORY_CANONICAL_ID,
+  SEMORY_DUPLICATE_IDS,
+  isSemoryAliasName,
+  mergeSemoryDuplicates,
+} from "../src/lib/supplier-merge";
 
 export { ROI_WHATSAPP_PHONE };
 
@@ -231,7 +237,19 @@ export async function seedRealCatalog(client: PrismaClient) {
 
   await ensureProductionBranches(client, branches);
 
+  const mergedBefore = await mergeSemoryDuplicates(client);
+  if (mergedBefore.mergedIds.length > 0) {
+    console.log(`Merged Semory duplicates into ${SEMORY_CANONICAL_ID}: ${mergedBefore.mergedIds.join(", ")}`);
+  }
+
   for (const supplier of data.suppliers) {
+    if (
+      supplier.id !== SEMORY_CANONICAL_ID &&
+      (SEMORY_DUPLICATE_IDS.includes(supplier.id as (typeof SEMORY_DUPLICATE_IDS)[number]) ||
+        isSemoryAliasName(supplier.name))
+    ) {
+      continue;
+    }
     const overlay = REAL_SUPPLIER_DETAILS[supplier.id];
     const defaultCategoryId = await categoryIdByHint(client, supplier.catHint);
     const existingSupplier = await client.supplier.findUnique({ where: { id: supplier.id } });
@@ -315,6 +333,11 @@ export async function seedRealCatalog(client: PrismaClient) {
         : await client.product.create({ data: { ...dataRow, supplierId: supplier.id } });
       await syncProductPriceLists(saved);
     }
+  }
+
+  const mergedAfter = await mergeSemoryDuplicates(client);
+  if (mergedAfter.mergedIds.length > 0) {
+    console.log(`Merged leftover Semory duplicates into ${SEMORY_CANONICAL_ID}: ${mergedAfter.mergedIds.join(", ")}`);
   }
 
   console.log(

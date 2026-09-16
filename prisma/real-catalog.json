@@ -2891,6 +2891,16 @@
           "packQty": 1,
           "packUnit": "יח",
           "label": null
+        },
+        {
+          "name": "מבשם אוויר שייני וניל 250 מ\"ל",
+          "sku": null,
+          "agreedPrice": 0,
+          "discountPercent": 0,
+          "vatIncluded": false,
+          "packQty": 1,
+          "packUnit": "יח",
+          "label": null
         }
       ]
     },
@@ -3316,24 +3326,6 @@
         },
         {
           "name": "ממרח קרמינו קרם פיסטוק 5 ק\"ג",
-          "sku": null,
-          "agreedPrice": 0,
-          "discountPercent": 0,
-          "vatIncluded": false,
-          "packQty": 1,
-          "packUnit": "יח",
-          "label": null
-        }
-      ]
-    },
-    {
-      "id": "sup_shiny",
-      "name": "סמורי",
-      "slug": "shiny",
-      "catHint": "כלים",
-      "products": [
-        {
-          "name": "מבשם אוויר שייני וניל 250 מ\"ל",
           "sku": null,
           "agreedPrice": 0,
           "discountPercent": 0,

@@ -59,6 +59,7 @@ export function supplierVisibleToBranch(supplier: {
 
 export async function listOrderableSuppliers(opts: { role: Role; branchId: string | null }) {
   const suppliers = await prisma.supplier.findMany({
+    where: { active: true },
     include: { branchLinks: true },
     orderBy: { name: "asc" },
   });
