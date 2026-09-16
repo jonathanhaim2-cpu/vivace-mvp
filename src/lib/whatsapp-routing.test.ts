@@ -8,6 +8,7 @@ import {
   looksLikeFileLabelName,
   REAL_SUPPLIER_DETAILS,
 } from "./supplier-details";
+import { isSemoryAliasName, SEMORY_CANONICAL_ID, SEMORY_CANONICAL_NAME } from "./supplier-merge";
 import { isSendToSuppliersValue, resolveOrderWhatsAppPhone } from "./whatsapp-routing";
 import { toWhatsAppPhone } from "./whatsapp";
 
@@ -79,7 +80,14 @@ test("catalog JSON uses real names and keeps stable supplier ids", () => {
     suppliers: { id: string; name: string }[];
   };
   assert.equal(data.whatsappPhone, undefined);
-  assert.equal(data.suppliers.length, 17);
+  assert.equal(data.suppliers.length, 16);
+  const semory = data.suppliers.filter(
+    (supplier) => supplier.id === SEMORY_CANONICAL_ID || supplier.id === "sup_shiny" || isSemoryAliasName(supplier.name),
+  );
+  assert.equal(semory.length, 1);
+  assert.equal(semory[0]?.id, SEMORY_CANONICAL_ID);
+  assert.equal(semory[0]?.name, SEMORY_CANONICAL_NAME);
+  assert.equal(REAL_SUPPLIER_DETAILS.sup_shiny, undefined);
   for (const supplier of data.suppliers) {
     assert.equal(looksLikeFileLabelName(supplier.name), false, supplier.name);
     const overlay = REAL_SUPPLIER_DETAILS[supplier.id];

@@ -283,10 +283,6 @@ export const REAL_SUPPLIER_DETAILS: Record<string, SupplierOverlay> = {
     name: "סמורי בע״מ",
     ...SEMORY_SHARED,
   },
-  sup_shiny: {
-    name: "סמורי",
-    ...SEMORY_SHARED,
-  },
   sup_tapuza: {
     name: "גרופר אורגני בע״מ",
     taxId: "515889442",
