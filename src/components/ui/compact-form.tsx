@@ -121,7 +121,7 @@ export function FilterBar({
     <form
       method="get"
       className={cn(
-        "mb-3 flex flex-wrap items-end gap-2 rounded-xl border border-border/80 bg-card px-3 py-2",
+        "mb-3 flex w-fit max-w-full flex-wrap items-end gap-2 rounded-xl border border-border/80 bg-card px-3 py-2",
         className,
       )}
     >
