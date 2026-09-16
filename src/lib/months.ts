@@ -24,6 +24,28 @@ export function monthKeyFromDate(value = new Date()) {
   return `${year}-${month}`;
 }
 
+/** YYYY-MM from an AI-extracted invoice date (YYYY-MM-DD or YYYY-MM). */
+export function monthKeyFromInvoiceDate(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const match = String(value)
+    .trim()
+    .match(/^(\d{4})-(\d{2})(?:-\d{2})?/);
+  if (!match) return null;
+  const month = Number(match[2]);
+  if (month < 1 || month > 12) return null;
+  return `${match[1]}-${match[2]}`;
+}
+
+/** Batch override wins; otherwise derive from the invoice date. */
+export function resolvedPeriodMonth(
+  overrideMonth: string | null | undefined,
+  invoiceDate: string | null | undefined,
+): string | null {
+  const override = overrideMonth?.trim() ?? "";
+  if (/^\d{4}-\d{2}$/.test(override)) return override;
+  return monthKeyFromInvoiceDate(invoiceDate);
+}
+
 export function previousMonthKey(from = new Date()) {
   const [year, month] = monthKeyFromDate(from).split("-").map(Number);
   const prev = month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 };

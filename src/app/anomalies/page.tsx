@@ -184,7 +184,7 @@ export default async function AnomaliesPage({
       {showUnclassified ? (
         <Card>
           <CardHeader>
-            <CardTitle>חשבוניות ללא כרטיס</CardTitle>
+            <CardTitle>חשבוניות ללא קטגוריה</CardTitle>
             <CardDescription>
               {anomalies.unclassified === 0 ? "הכול מסווג." : `${anomalies.unclassified} ממתינות בסיווג.`}
             </CardDescription>

@@ -8,7 +8,7 @@ export function AccountRollup({ rows }: { rows: AccountRollupRow[] }) {
 
   return (
     <div className="space-y-6">
-      <RollupSection title="הוצאות" description="כרטיסי בן + סיכום לקטגוריית האב, לפי סדר כרטיסי הנה״ח" rows={expenses} />
+      <RollupSection title="הוצאות" description="קטגוריות + סיכום לקטגוריית האב, לפי סדר כרטיסי הנה״ח" rows={expenses} />
       <RollupSection
         title='הכנסות ללא מע"מ'
         description="מדידה לכל כרטיס ולסיכום האב"

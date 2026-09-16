@@ -49,11 +49,11 @@ export async function seedChartOfAccounts() {
 
 export async function assertLeafAccount(accountId: string) {
   if (!isChartLeafId(accountId)) {
-    throw new Error("יש לבחור כרטיס בן (לא קטגוריית אב)");
+    throw new Error("יש לבחור קטגוריה (לא קטגוריית אב)");
   }
   const account = await prisma.account.findUnique({ where: { id: accountId } });
   if (!account || !account.parentId) {
-    throw new Error("כרטיס לא נמצא או שאינו כרטיס בן");
+    throw new Error("קטגוריה לא נמצאה");
   }
   return account;
 }

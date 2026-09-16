@@ -223,13 +223,13 @@ export default async function ReceiptDetailPage({ params }: { params: Promise<{ 
 
       <Card>
         <CardHeader>
-          <CardTitle>כרטיס הנה״ח</CardTitle>
+          <CardTitle>קטגוריה</CardTitle>
         </CardHeader>
         <CardContent>
           <form action={assignReceiptCategory.bind(null, receipt.id)} className="flex flex-wrap items-end gap-2">
             <GroupedAccountSelect defaultValue={receipt.accountId} kinds={["EXPENSE"]} />
             <Button type="submit" size="sm">
-              עדכון כרטיס
+              עדכון קטגוריה
             </Button>
           </form>
         </CardContent>

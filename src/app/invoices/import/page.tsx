@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { monthKeyFromDate, monthLabel, recentMonthKeys } from "@/lib/months";
+import { monthLabel, recentMonthKeys } from "@/lib/months";
 
 export default function InvoiceImportPage() {
   const months = recentMonthKeys();
@@ -14,13 +14,15 @@ export default function InvoiceImportPage() {
     <div className="space-y-6">
       <PageHeader
         title="ייבוא מתיקייה"
-        description="מדמה משיכת מייל: כמה חשבוניות בבת אחת. בלי כרטיס ברירת מחדל הן ייכנסו לתור, ו-AI יציע כרטיס לאישור."
+        description="מעלים כמה חשבוניות בבת אחת. כל קובץ נכנס לתור הסיווג, ו-AI מציע תאריך וקטגוריה לאישור — בלי לבחור מראש לכל האצווה."
       />
 
       <Card>
         <CardHeader>
           <CardTitle>העלאה מרובה</CardTitle>
-          <CardDescription>PDF או תמונות. אפשר לשייך מראש לכרטיס בן, או לסווג אחר כך במסך החשבוניות.</CardDescription>
+          <CardDescription>
+            PDF או תמונות. אין צורך לבחור חודש או קטגוריה לכל הקבצים. ה-AI מחלץ אותם מכל מסמך, ואתם מאשרים או מתקנים בתור.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form action={importInboxFiles} className="space-y-4">
@@ -30,24 +32,30 @@ export default function InvoiceImportPage() {
               <FieldDescription>בחירה מרובה מתיקיית ההורדות, כמו מצורפים מתיבת המייל.</FieldDescription>
             </Field>
             <Field>
-              <FieldLabel htmlFor="periodMonth">חודש לדיווח</FieldLabel>
+              <FieldLabel htmlFor="periodMonth">חודש לדיווח (אופציונלי)</FieldLabel>
               <select
                 id="periodMonth"
                 name="periodMonth"
-                defaultValue={monthKeyFromDate()}
+                defaultValue=""
                 className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
               >
+                <option value="">אוטומטי — לפי תאריך החשבונית</option>
                 {months.map((key) => (
                   <option key={key} value={key}>
                     {monthLabel(key)}
                   </option>
                 ))}
               </select>
+              <FieldDescription>
+                ריק = לכל חשבונית ייגזר חודש הדיווח מתאריך המסמך שזיהה ה-AI. בחירה כאן דורסת רק אם צריך אחידות לכל האצווה.
+              </FieldDescription>
             </Field>
             <Field>
-              <FieldLabel htmlFor="accountId">כרטיס בן (אופציונלי)</FieldLabel>
+              <FieldLabel htmlFor="accountId">קטגוריה (אופציונלי)</FieldLabel>
               <GroupedAccountSelect id="accountId" allowEmpty required={false} />
-              <FieldDescription>ריק = המסמכים מחכים ב«ממתינות לסיווג».</FieldDescription>
+              <FieldDescription>
+                ברירת המחדל: ללא שיבוץ — לתור הסיווג. ה-AI יציע קטגוריה לכל חשבונית בנפרד; תאשרו או תערכו שם.
+              </FieldDescription>
             </Field>
             <Button type="submit">ייבוא לתור</Button>
           </form>

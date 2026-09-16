@@ -21,7 +21,7 @@ export default async function ReportsPage({
     <div className="space-y-6">
       <PageHeader
         title="דוח תחילת חודש"
-        description={`סיכום ${monthLabel(month)} לפי קטגוריות אב וכרטיסי בן — מחשבוניות וקליטות ששובצו.`}
+        description={`סיכום ${monthLabel(month)} לפי קטגוריות — מחשבוניות וקליטות ששובצו.`}
       />
 
       <form className="flex flex-wrap items-end gap-2">
