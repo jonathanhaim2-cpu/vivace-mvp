@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { createOrder } from "@/actions/orders";
+import { NextOrderNotice } from "@/components/orders/next-order-notice";
+import { OrderCompanyHeader } from "@/components/orders/order-company-header";
 import { ClockTime } from "@/components/clock-time";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +26,7 @@ import {
   formatWeekdays,
   lineTotal,
   nextDeliveryInfo,
+  nextOrderWindow,
   parseDeliveryDays,
   resolveOrderDays,
   suggestOrderQty,
@@ -67,6 +70,7 @@ export function OrderWizard({
   selectedSupplierId,
   branchId,
   branchName,
+  branch,
   weeklySpent,
   openOrder = null,
 }: {
@@ -75,6 +79,7 @@ export function OrderWizard({
   selectedSupplierId?: string;
   branchId: string;
   branchName: string;
+  branch?: { name: string; address?: string | null; phone?: string | null; contactName?: string | null } | null;
   weeklySpent: number;
   openOrder?: OpenOrder;
 }) {
@@ -90,6 +95,13 @@ export function OrderWizard({
         parseDeliveryDays(selected.deliveryDays),
         selected.orderCutoffTime,
         resolveOrderDays(selected.orderDays, selected.deliveryDays),
+      )
+    : null;
+  const nextOrder = selected
+    ? nextOrderWindow(
+        resolveOrderDays(selected.orderDays, selected.deliveryDays),
+        selected.orderCutoffTime,
+        selected.reminderHoursBefore,
       )
     : null;
 
@@ -167,6 +179,11 @@ export function OrderWizard({
             supplier.orderCutoffTime,
             resolveOrderDays(supplier.orderDays, supplier.deliveryDays),
           );
+          const nextOrder = nextOrderWindow(
+            resolveOrderDays(supplier.orderDays, supplier.deliveryDays),
+            supplier.orderCutoffTime,
+            supplier.reminderHoursBefore,
+          );
           return (
             <Link key={supplier.id} href={`/orders/new?supplierId=${supplier.id}`} className="block">
               <Card className="h-full transition-colors hover:bg-accent/40">
@@ -182,6 +199,7 @@ export function OrderWizard({
                     <ClockTime value={supplier.orderCutoffTime} />
                   </p>
                   <p className={info.open ? "text-primary" : "text-destructive"}>{info.label}</p>
+                  <NextOrderNotice info={nextOrder} className="text-xs" />
                   {supplier.driverName ? <p className="text-muted-foreground">מפיץ: {supplier.driverName}</p> : null}
                 </CardContent>
               </Card>
@@ -203,6 +221,7 @@ export function OrderWizard({
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <p className={windowInfo?.open ? "text-primary" : "text-destructive"}>{windowInfo?.label}</p>
+          {nextOrder ? <NextOrderNotice info={nextOrder} /> : null}
           <p>
             ימי הזמנה: {formatWeekdays(resolveOrderDays(selected.orderDays, selected.deliveryDays)) || "—"} · סגירה{" "}
             <ClockTime value={selected.orderCutoffTime} />
@@ -210,7 +229,7 @@ export function OrderWizard({
           <p>ימי אספקה: {formatDeliveryDays(selected.deliveryDays) || "—"}</p>
           <p className="text-muted-foreground">
             תזכורת למנהל הסניף {selected.reminderHoursBefore} שעות לפני{" "}
-            <ClockTime value={selected.orderCutoffTime} /> (תצוגה בלבד ב-MVP).
+            <ClockTime value={selected.orderCutoffTime} />.
           </p>
           {selected.weeklyBudgetIls != null ? (
             <p>
@@ -327,6 +346,7 @@ export function OrderWizard({
           <CardTitle>סיכום הזמנה</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {branch ? <OrderCompanyHeader branch={branch} /> : <p className="text-sm">הזמנה עבור {branchName}</p>}
           {lines.length === 0 ? (
             <p className="text-sm text-muted-foreground">עדיין לא נבחרו מוצרים.</p>
           ) : (

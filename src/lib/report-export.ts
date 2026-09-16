@@ -145,10 +145,17 @@ export async function buildReportTable(kind: ReportKind, month: string): Promise
     line.id,
     "חוסר",
   ]);
+  const exceptionalRows = anomalies.exceptional.map((item) => [
+    item.supplier.name,
+    item.productName,
+    item.kind,
+    item.amountIls,
+  ]);
   return {
-    title: "חריגות מחיר ומסמך",
+    title: "מסמכים חריגים",
     filename: `vivace-anomalies-${month}.xlsx`,
     sheets: [
+      sheet("חריגים", ["ספק", "פריט", "סוג", "סכום ₪"], exceptionalRows),
       sheet("מחיר", ["ספק", "סניף", "מזהה", "סוג"], priceRows),
       sheet("חוסר", ["ספק", "מוצר", "מזהה", "סוג"], missingRows),
       sheet("ללא סיווג", ["כמות"], [[anomalies.unclassified]]),

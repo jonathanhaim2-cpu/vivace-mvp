@@ -20,8 +20,10 @@ import { AppChat } from "@/components/chat/app-chat";
 import { RoleSwitcher } from "@/components/role-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { COMPANY } from "@/lib/constants";
-import { cn } from "@/lib/utils";
 import type { Role } from "@/lib/constants";
+import { cn } from "@/lib/utils";
+import { CutoffReminderBanner } from "@/components/cutoff-reminder-banner";
+import type { DueCutoffReminder } from "@/lib/reminders";
 
 const NAV = [
   { href: "/", label: "בית", icon: Home },
@@ -44,6 +46,7 @@ export function AppShell({
   authEnabled,
   aiAvailable,
   chatMessages,
+  dueReminders = [],
 }: {
   children: React.ReactNode;
   role: Role;
@@ -52,6 +55,7 @@ export function AppShell({
   authEnabled: boolean;
   aiAvailable: boolean;
   chatMessages: { id: string; role: string; content: string }[];
+  dueReminders?: DueCutoffReminder[];
 }) {
   const pathname = usePathname();
 
@@ -144,6 +148,7 @@ export function AppShell({
       </header>
 
       <main className="lg:ms-64">
+        <CutoffReminderBanner initial={dueReminders} />
         <div className="mx-auto w-full max-w-6xl px-4 py-6 pb-28 lg:pb-10">{children}</div>
       </main>
 

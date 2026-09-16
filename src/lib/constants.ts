@@ -8,6 +8,7 @@ export const COMPANY = {
   owner: "רועי",
   productOwner: "יונתן",
   accountantEmail: "accountant@vivace.example",
+  phone: "0526408537",
 } as const;
 
 /** Roi's mobile — every supplier WhatsApp/order goes here until per-supplier numbers are set. */
@@ -84,4 +85,29 @@ export const STANDARD_STATUS = {
   PENDING: "PENDING",
   APPROVED: "APPROVED",
   REJECTED: "REJECTED",
+} as const;
+
+export const WHATSAPP_STATUS = {
+  PENDING: "PENDING",
+  SENT: "SENT",
+  DELIVERED: "DELIVERED",
+  READ: "READ",
+} as const;
+
+export const BILLED_AS = {
+  FULL_ORDERED: "FULL_ORDERED",
+  RECEIVED_ONLY: "RECEIVED_ONLY",
+} as const;
+
+export const EXCEPTION_KIND = {
+  CREDIT_REQUEST: "CREDIT_REQUEST",
+  MISSING_NO_CREDIT: "MISSING_NO_CREDIT",
+  ON_THE_WAY: "ON_THE_WAY",
+} as const;
+
+export const EXCEPTION_STATUS = {
+  OPEN: "OPEN",
+  CONFIRMED: "CONFIRMED",
+  ARRIVED: "ARRIVED",
+  CANCELLED: "CANCELLED",
 } as const;

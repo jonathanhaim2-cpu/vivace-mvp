@@ -1,5 +1,6 @@
 import { COMPANY } from "@/lib/constants";
 import { describePackaging, formatDate, formatIls, lineTotal } from "@/lib/format";
+import { buildOrderHeaderLines, type OrderHeaderBranch } from "@/lib/order-header";
 
 export function toWhatsAppPhone(phone: string) {
   const digits = phone.replace(/\D/g, "");
@@ -9,13 +10,14 @@ export function toWhatsAppPhone(phone: string) {
 }
 
 export function buildWhatsAppUrl(phone: string, text: string) {
-  return `https://wa.me/${toWhatsAppPhone(phone)}?text=${encodeURIComponent(text)}`;
+  const encoded = encodeURIComponent(text);
+  return `https://wa.me/${toWhatsAppPhone(phone)}?text=${encoded}`;
 }
 
 type OrderForMessage = {
   createdAt: Date;
   notesForDriver: string | null;
-  branch: { name: string };
+  branch: OrderHeaderBranch;
   supplier: { name: string };
   lines: {
     qty: number;
@@ -44,8 +46,8 @@ export function buildOrderWhatsAppText(order: OrderForMessage) {
   );
 
   return [
-    `הזמנה מ-${COMPANY.name} / ${COMPANY.nameHe}`,
-    `סניף: ${order.branch.name}`,
+    ...buildOrderHeaderLines(order.branch),
+    "",
     `ספק: ${order.supplier.name}`,
     `תאריך: ${formatDate(order.createdAt)}`,
     "",
@@ -54,6 +56,25 @@ export function buildOrderWhatsAppText(order: OrderForMessage) {
     "",
     order.notesForDriver ? `הערות למפיץ: ${order.notesForDriver}` : "הערות למפיץ: אין",
     `סה״כ משוער: ${formatIls(total)}`,
-    `עוסק מורשה ${COMPANY.taxId}`,
+  ].join("\n");
+}
+
+export function buildCreditWhatsAppText(input: {
+  branch: OrderHeaderBranch;
+  supplierName: string;
+  productName: string;
+  orderedQty: number;
+  receivedQty: number;
+  amountIls: number;
+}) {
+  return [
+    ...buildOrderHeaderLines(input.branch),
+    "",
+    `בקשת זיכוי לספק ${input.supplierName}`,
+    `פריט: ${input.productName}`,
+    `הוזמן: ${input.orderedQty} · התקבל: ${input.receivedQty}`,
+    `סכום לזיכוי: ${formatIls(input.amountIls)}`,
+    "",
+    `תודה, ${COMPANY.nameHe}`,
   ].join("\n");
 }

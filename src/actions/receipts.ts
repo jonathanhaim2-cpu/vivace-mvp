@@ -5,7 +5,22 @@ import { redirect } from "next/navigation";
 import { assertLeafAccount } from "@/lib/accounts";
 import { analyzeStoredPhoto } from "@/lib/analyze-photo";
 import { DEFAULT_EXPENSE_LEAF_ID } from "@/lib/chart-of-accounts";
-import { ORDER_STATUSES, PRICE_CHANGE, RECEIPT_STATUSES } from "@/lib/constants";
+import {
+  BILLED_AS,
+  EXCEPTION_KIND,
+  EXCEPTION_STATUS,
+  ORDER_STATUSES,
+  PRICE_CHANGE,
+  RECEIPT_STATUSES,
+} from "@/lib/constants";
+import {
+  creditAmountIls,
+  exceptionTitle,
+  isShortage,
+  parseBilledAs,
+  parseMismatchAction,
+  qtyDiffers,
+} from "@/lib/credits";
 import { prisma } from "@/lib/prisma";
 import { getAppSession } from "@/lib/session";
 import { saveUpload } from "@/lib/uploads";
@@ -43,41 +58,98 @@ export async function submitGoodsReceipt(orderId: string, formData: FormData) {
       formData.get(`missing:${line.id}`) === "on" ||
       formData.get(`missing:${line.id}`) === "true" ||
       receivedQty <= 0;
-    const wrongPrice = pricesDiffer(invoicePrice, line.unitPrice);
+    const qty = Number.isFinite(receivedQty) ? Math.round(receivedQty) : 0;
+    const price = Number.isFinite(invoicePrice) ? invoicePrice : line.unitPrice;
+    const mismatch = qtyDiffers(line.qty, qty) || missing;
+    const shortage = isShortage(line.qty, qty, missing);
+    const billedAs = shortage
+      ? parseBilledAs(String(formData.get(`billedAs:${line.id}`) ?? "")) ?? BILLED_AS.FULL_ORDERED
+      : null;
+    const mismatchAction = shortage
+      ? parseMismatchAction(String(formData.get(`mismatchAction:${line.id}`) ?? "")) ??
+        EXCEPTION_KIND.MISSING_NO_CREDIT
+      : null;
+    const wrongPrice = pricesDiffer(price, line.unitPrice);
     return {
       orderLineId: line.id,
-      receivedQty: Number.isFinite(receivedQty) ? Math.round(receivedQty) : 0,
-      invoicePrice: Number.isFinite(invoicePrice) ? invoicePrice : line.unitPrice,
+      productName: line.product.name,
+      orderedQty: line.qty,
+      receivedQty: qty,
+      invoicePrice: price,
       missing,
       wrongPrice,
+      qtyMismatch: mismatch,
+      billedAs,
+      mismatchAction,
       priceChangeStatus: wrongPrice ? PRICE_CHANGE.PENDING : null,
     };
   });
 
   const hasPricePending = lineInputs.some((l) => l.priceChangeStatus === PRICE_CHANGE.PENDING);
   const hasMissing = lineInputs.some((l) => l.missing);
+  const hasCreditRequest = lineInputs.some((l) => l.mismatchAction === EXCEPTION_KIND.CREDIT_REQUEST);
   const status = hasPricePending
     ? RECEIPT_STATUSES.PENDING_PRICE_APPROVAL
-    : RECEIPT_STATUSES.APPROVED;
+    : hasCreditRequest
+      ? RECEIPT_STATUSES.CREDIT_NEEDED
+      : RECEIPT_STATUSES.APPROVED;
 
-  await prisma.goodsReceipt.create({
+  const receipt = await prisma.goodsReceipt.create({
     data: {
       orderId,
       status,
       notes,
       accountId,
-      lines: { create: lineInputs },
+      lines: {
+        create: lineInputs.map((line) => ({
+          orderLineId: line.orderLineId,
+          receivedQty: line.receivedQty,
+          invoicePrice: line.invoicePrice,
+          missing: line.missing,
+          wrongPrice: line.wrongPrice,
+          qtyMismatch: line.qtyMismatch,
+          billedAs: line.billedAs,
+          priceChangeStatus: line.priceChangeStatus,
+        })),
+      },
       photos: {
         create: {
           accountId,
-          amountIls: lineInputs.reduce((sum, line) => sum + line.receivedQty * line.invoicePrice, 0),
+          amountIls: lineInputs.reduce((sum, line) => {
+            const billedQty =
+              line.billedAs === BILLED_AS.FULL_ORDERED ? line.orderedQty : line.receivedQty;
+            return sum + billedQty * line.invoicePrice;
+          }, 0),
           fileName: saved.fileName,
           originalName: saved.originalName,
           mimeType: saved.mimeType,
         },
       },
     },
+    include: { lines: true },
   });
+
+  for (const input of lineInputs) {
+    if (!input.mismatchAction) continue;
+    const receiptLine = receipt.lines.find((row) => row.orderLineId === input.orderLineId);
+    const amount = creditAmountIls(input.orderedQty, input.receivedQty, input.invoicePrice, input.billedAs);
+    await prisma.exceptionalItem.create({
+      data: {
+        kind: input.mismatchAction,
+        status: EXCEPTION_STATUS.OPEN,
+        title: exceptionTitle(input.mismatchAction, input.productName, amount),
+        amountIls: input.mismatchAction === EXCEPTION_KIND.CREDIT_REQUEST ? amount : 0,
+        orderedQty: input.orderedQty,
+        receivedQty: input.receivedQty,
+        productName: input.productName,
+        goodsReceiptId: receipt.id,
+        goodsReceiptLineId: receiptLine?.id ?? null,
+        orderId,
+        supplierId: order.supplierId,
+        branchId: order.branchId,
+      },
+    });
+  }
 
   await prisma.order.update({
     where: { id: orderId },
@@ -87,18 +159,20 @@ export async function submitGoodsReceipt(orderId: string, formData: FormData) {
   revalidatePath("/receipts");
   revalidatePath("/orders");
   revalidatePath(`/orders/${orderId}`);
-  const receipt = await prisma.goodsReceipt.findUnique({
+  revalidatePath("/");
+  revalidatePath("/anomalies");
+  const stored = await prisma.goodsReceipt.findUnique({
     where: { orderId },
     include: { photos: true },
   });
-  if (receipt) {
-    for (const item of receipt.photos) {
+  if (stored) {
+    for (const item of stored.photos) {
       await analyzeStoredPhoto(item.id);
     }
   }
   revalidatePath("/invoices");
   revalidatePath("/settings");
-  redirect(`/receipts/${receipt!.id}`);
+  redirect(`/receipts/${stored!.id}`);
 }
 
 export async function approvePriceChange(lineId: string) {

@@ -15,6 +15,7 @@ export function proxy(request: NextRequest) {
     pathname.startsWith("/brand/") ||
     pathname.startsWith("/uploads/") ||
     pathname.startsWith("/vivace-logo") ||
+    pathname.startsWith("/api/cron/") ||
     /\.(?:png|jpe?g|gif|svg|webp|ico|txt|woff2?)$/i.test(pathname);
 
   if (!isAuthEnabled() || isPublic) {

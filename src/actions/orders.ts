@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { ORDER_STATUSES } from "@/lib/constants";
+import { ORDER_STATUSES, WHATSAPP_STATUS } from "@/lib/constants";
 import { supplierVisibleToBranch } from "@/lib/catalog";
 import { nextDeliveryInfo, parseDeliveryDays, parseWeekdays } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
@@ -129,9 +129,40 @@ export async function createOrder(formData: FormData) {
 }
 
 export async function markOrderSent(orderId: string) {
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) throw new Error("הזמנה לא נמצאה");
+  const alreadyTracked =
+    order.whatsappStatus === WHATSAPP_STATUS.DELIVERED || order.whatsappStatus === WHATSAPP_STATUS.READ;
   await prisma.order.update({
     where: { id: orderId },
-    data: { status: ORDER_STATUSES.SENT },
+    data: {
+      status: ORDER_STATUSES.SENT,
+      whatsappStatus: alreadyTracked ? order.whatsappStatus : WHATSAPP_STATUS.SENT,
+      whatsappSentAt: order.whatsappSentAt ?? new Date(),
+    },
+  });
+  revalidatePath(`/orders/${orderId}`);
+  revalidatePath("/orders");
+}
+
+export async function updateWhatsAppStatus(orderId: string, status: string) {
+  const allowed = new Set<string>([
+    WHATSAPP_STATUS.PENDING,
+    WHATSAPP_STATUS.SENT,
+    WHATSAPP_STATUS.DELIVERED,
+    WHATSAPP_STATUS.READ,
+  ]);
+  if (!allowed.has(status)) throw new Error("סטטוס וואטסאפ לא חוקי");
+
+  const now = new Date();
+  await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      whatsappStatus: status,
+      ...(status === WHATSAPP_STATUS.SENT ? { whatsappSentAt: now, status: ORDER_STATUSES.SENT } : {}),
+      ...(status === WHATSAPP_STATUS.DELIVERED ? { whatsappDeliveredAt: now } : {}),
+      ...(status === WHATSAPP_STATUS.READ ? { whatsappReadAt: now, whatsappDeliveredAt: now } : {}),
+    },
   });
   revalidatePath(`/orders/${orderId}`);
   revalidatePath("/orders");

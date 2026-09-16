@@ -11,12 +11,16 @@ model Branch {
   id              String            @id @default(cuid())
   name            String
   address         String?
+  phone           String?
+  contactName     String?
   createdAt       DateTime          @default(now())
   orders          Order[]
   inventoryCounts InventoryCount[]
   supplierLinks   SupplierBranch[]
   wasteEntries    WasteEntry[]
   standardSuggestions OrderStandardSuggestion[]
+  exceptionalItems    ExceptionalItem[]
+  cutoffReminders     OrderCutoffReminder[]
 }
 
 model Supplier {
@@ -56,6 +60,8 @@ model Supplier {
   branchLinks              SupplierBranch[]
   priceLists               PriceList[]
   apMonths                 SupplierApMonth[]
+  exceptionalItems         ExceptionalItem[]
+  cutoffReminders          OrderCutoffReminder[]
 }
 
 model SupplierBranch {
@@ -120,17 +126,22 @@ model Product {
 }
 
 model Order {
-  id             String        @id @default(cuid())
-  supplierId     String
-  supplier       Supplier      @relation(fields: [supplierId], references: [id])
-  branchId       String
-  branch         Branch        @relation(fields: [branchId], references: [id])
-  status         String
-  notesForDriver String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  lines          OrderLine[]
-  receipt        GoodsReceipt?
+  id                  String            @id @default(cuid())
+  supplierId          String
+  supplier            Supplier          @relation(fields: [supplierId], references: [id])
+  branchId            String
+  branch              Branch            @relation(fields: [branchId], references: [id])
+  status              String
+  notesForDriver      String?
+  whatsappStatus      String            @default("PENDING")
+  whatsappSentAt      DateTime?
+  whatsappDeliveredAt DateTime?
+  whatsappReadAt      DateTime?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  lines               OrderLine[]
+  receipt             GoodsReceipt?
+  exceptionalItems    ExceptionalItem[]
 }
 
 model OrderLine {
@@ -186,6 +197,7 @@ model GoodsReceipt {
   updatedAt             DateTime           @updatedAt
   lines                 GoodsReceiptLine[]
   photos                InvoicePhoto[]
+  exceptionalItems      ExceptionalItem[]
 }
 
 model GoodsReceiptLine {
@@ -199,6 +211,9 @@ model GoodsReceiptLine {
   missing           Boolean      @default(false)
   wrongPrice        Boolean      @default(false)
   priceChangeStatus String?
+  billedAs          String?
+  qtyMismatch       Boolean      @default(false)
+  exceptionalItems  ExceptionalItem[]
 }
 
 model InvoicePhoto {
@@ -347,4 +362,40 @@ model SupplierApMonth {
   payMethod            String?
   notes                String?
   @@unique([supplierId, month])
+}
+
+/// Open credit requests, shortages without credit, and "on the way" goods.
+model ExceptionalItem {
+  id                 String            @id @default(cuid())
+  kind               String
+  status             String            @default("OPEN")
+  title              String
+  amountIls          Float             @default(0)
+  orderedQty         Float
+  receivedQty        Float
+  productName        String
+  notes              String?
+  goodsReceiptId     String?
+  goodsReceipt       GoodsReceipt?     @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
+  goodsReceiptLineId String?
+  goodsReceiptLine   GoodsReceiptLine? @relation(fields: [goodsReceiptLineId], references: [id], onDelete: SetNull)
+  orderId            String?
+  order              Order?            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  supplierId         String
+  supplier           Supplier          @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  branchId           String
+  branch             Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  createdAt          DateTime          @default(now())
+  resolvedAt         DateTime?
+}
+
+model OrderCutoffReminder {
+  id         String   @id @default(cuid())
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  branchId   String
+  branch     Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  dateKey    String
+  notifiedAt DateTime @default(now())
+  @@unique([supplierId, branchId, dateKey])
 }

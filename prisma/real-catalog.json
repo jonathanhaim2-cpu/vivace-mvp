@@ -4,12 +4,16 @@
     {
       "id": "branch_beit_shemesh",
       "name": "סניף בית שמש",
-      "address": "בית שמש"
+      "address": "בית שמש",
+      "phone": "0526408537",
+      "contactName": "רועי"
     },
     {
       "id": "branch_kiryat_yearim",
       "name": "סניף קרית יערים",
-      "address": "קרית יערים"
+      "address": "יצחק 27, קרית יערים",
+      "phone": "0526408537",
+      "contactName": "רועי"
     }
   ],
   "suppliers": [

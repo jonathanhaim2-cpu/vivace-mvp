@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { ProductImportForm } from "@/components/products/product-import-form";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { NextOrderNotice } from "@/components/orders/next-order-notice";
 import { ClockTime } from "@/components/clock-time";
 import { categoryPathLabel } from "@/lib/categories";
 import { supplierVisibleToBranch } from "@/lib/catalog";
@@ -17,6 +18,7 @@ import {
   formatIls,
   formatWeekdays,
   nextDeliveryInfo,
+  nextOrderWindow,
   parseDeliveryDays,
   resolveOrderDays,
   suggestOrderQty,
@@ -52,6 +54,7 @@ export default async function SupplierDetailPage({
   const days = parseDeliveryDays(supplier.deliveryDays);
   const orderDays = resolveOrderDays(supplier.orderDays, supplier.deliveryDays);
   const windowInfo = nextDeliveryInfo(days, supplier.orderCutoffTime, orderDays);
+  const nextOrder = nextOrderWindow(orderDays, supplier.orderCutoffTime, supplier.reminderHoursBefore);
   const terms = PAYMENT_TERMS.find((t) => t.value === supplier.paymentTerms)?.label;
   const method = PAYMENT_METHODS.find((t) => t.value === supplier.paymentMethod)?.label;
 
@@ -90,6 +93,9 @@ export default async function SupplierDetailPage({
           <CardDescription>{windowInfo.label}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-2 text-sm sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <NextOrderNotice info={nextOrder} />
+          </div>
           <p>סוכן: {supplier.agentName || "—"} {supplier.agentPhone ? `· ${supplier.agentPhone}` : ""}</p>
           <p>וואטסאפ הזמנות: {supplier.whatsappPhone}</p>
           <p>מפיץ: {supplier.driverName || "—"}</p>

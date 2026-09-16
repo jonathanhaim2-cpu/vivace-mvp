@@ -57,20 +57,32 @@ export default async function SettingsPage() {
                 <li key={branch.id}>
                   <span className="font-medium">{branch.name}</span>
                   {branch.address ? <span className="text-muted-foreground"> · {branch.address}</span> : null}
+                  {branch.phone ? <span className="text-muted-foreground"> · {branch.phone}</span> : null}
+                  {branch.contactName ? <span className="text-muted-foreground"> · {branch.contactName}</span> : null}
                 </li>
               ))}
             </ul>
           )}
-          <form action={createBranch} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+          <form action={createBranch} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 sm:items-end">
             <Field>
               <FieldLabel htmlFor="name">שם סניף</FieldLabel>
               <Input id="name" name="name" required placeholder="למשל: בית שמש" />
             </Field>
             <Field>
-              <FieldLabel htmlFor="address">כתובת (אופציונלי)</FieldLabel>
-              <Input id="address" name="address" placeholder="רחוב, עיר" />
+              <FieldLabel htmlFor="address">כתובת</FieldLabel>
+              <Input id="address" name="address" placeholder="יצחק 27" />
             </Field>
-            <Button type="submit">הוספת סניף</Button>
+            <Field>
+              <FieldLabel htmlFor="phone">טלפון</FieldLabel>
+              <Input id="phone" name="phone" placeholder="0526408537" />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="contactName">איש קשר</FieldLabel>
+              <Input id="contactName" name="contactName" placeholder="רועי" />
+            </Field>
+            <Button type="submit" className="sm:col-span-2 lg:col-span-4">
+              הוספת סניף
+            </Button>
           </form>
         </CardContent>
       </Card>
