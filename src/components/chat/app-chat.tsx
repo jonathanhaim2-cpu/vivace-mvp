@@ -14,7 +14,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { cn } from "@/lib/utils";
 
 type ChatRow = { id: string; role: string; content: string };
 
@@ -29,7 +28,6 @@ export function AppChat({
   const [rows, setRows] = useState(messages);
   const [text, setText] = useState("");
   const [pending, start] = useTransition();
-  const [open, setOpen] = useState(false);
 
   function onSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -46,12 +44,9 @@ export function AppChat({
   }
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet>
       <SheetTrigger
-        className={cn(
-          "fixed bottom-20 end-4 z-40 flex max-w-[calc(100vw-2rem)] cursor-pointer items-end gap-2 border-0 bg-transparent p-0 text-start text-foreground shadow-none outline-none focus-visible:ring-3 focus-visible:ring-ring/50 lg:bottom-6",
-          open && "invisible pointer-events-none",
-        )}
+        className="fixed bottom-20 end-4 z-40 flex max-w-[calc(100vw-2rem)] cursor-pointer items-end gap-2 border-0 bg-transparent p-0 text-start text-foreground shadow-none outline-none focus-visible:ring-3 focus-visible:ring-ring/50 data-popup-open:invisible data-popup-open:pointer-events-none lg:bottom-6"
         title="עוזר Vivac'e"
       >
         <span className="hidden max-w-[11.5rem] rounded-2xl border border-primary/25 bg-primary/10 px-3 py-2 text-[11px] leading-snug shadow-sm sm:inline-block sm:max-w-[14rem] sm:text-xs">
