@@ -39,7 +39,9 @@ export default async function SettingsPage() {
 
       {runtime.reason === "no_key" ? <AiMissingBanner /> : null}
 
-      {sessionCan(session, "action.manage_users") || sessionCan(session, "action.manage_permissions") ? (
+      {sessionCan(session, "action.manage_users") ||
+      sessionCan(session, "action.manage_permissions") ||
+      sessionCan(session, "nav.activity") ? (
         <CompactPanel title="ניהול גישה">
           <div className="flex flex-wrap gap-2">
             {sessionCan(session, "action.manage_users") ? (
@@ -50,6 +52,11 @@ export default async function SettingsPage() {
             {sessionCan(session, "action.manage_permissions") ? (
               <Link href="/settings/permissions" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
                 טבלת הרשאות
+              </Link>
+            ) : null}
+            {sessionCan(session, "nav.activity") ? (
+              <Link href="/settings/activity" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
+                לוג פעילות
               </Link>
             ) : null}
             {sessionCan(session, "action.manage_settings") ? (

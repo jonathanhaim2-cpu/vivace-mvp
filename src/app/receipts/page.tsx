@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { AuditInfoButton } from "@/components/audit-info-button";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { ReceiptStatusBadge } from "@/components/status-badge";
 import { CompactField, FilterBar, NativeSelect } from "@/components/ui/compact-form";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AUDIT_ACTIONS, firstAuditsFor, formatAuditStamp } from "@/lib/audit";
 import { RECEIPT_STATUSES } from "@/lib/constants";
 import { formatDateTime, receiptStatusLabel } from "@/lib/format";
 import { monthLabel, monthRangeUtc, parseMonthParam, recentMonthKeys } from "@/lib/months";
@@ -40,6 +42,11 @@ export default async function ReceiptsPage({
     },
     orderBy: { createdAt: "desc" },
   });
+  const actors = await firstAuditsFor(
+    "GoodsReceipt",
+    receipts.map((receipt) => receipt.id),
+    AUDIT_ACTIONS.RECEIPT_SUBMIT,
+  );
 
   return (
     <div>
@@ -105,9 +112,12 @@ export default async function ReceiptsPage({
             {receipts.map((receipt) => (
               <TableRow key={receipt.id}>
                 <TableCell>
-                  <Link href={`/receipts/${receipt.id}`} className="font-medium hover:underline">
-                    {receipt.order.supplier.name}
-                  </Link>
+                  <div className="flex items-center gap-0.5">
+                    <Link href={`/receipts/${receipt.id}`} className="font-medium hover:underline">
+                      {receipt.order.supplier.name}
+                    </Link>
+                    <AuditInfoButton stamp={formatAuditStamp(actors.get(receipt.id))} />
+                  </div>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{receipt.order.branch.name}</TableCell>
                 <TableCell className="whitespace-nowrap text-muted-foreground">

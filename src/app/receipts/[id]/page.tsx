@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { assignReceiptCategory, markForwardedToAccountant } from "@/actions/receipts";
+import { CancelReceiptButton } from "@/components/receipts/cancel-receipt-button";
+import { AuditInfoButton } from "@/components/audit-info-button";
 import { PriceActions } from "@/components/receipts/price-actions";
 import { PriceChangeBadge, ReceiptStatusBadge } from "@/components/status-badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -8,6 +10,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
 import { COMPANY, EXCEPTION_KIND, PRICE_CHANGE } from "@/lib/constants";
+import { AUDIT_ACTIONS, firstAuditFor, formatAuditStamp, isCancellableReceiptStatus } from "@/lib/audit";
 import { ExceptionActions } from "@/components/exceptions/exception-actions";
 import { billedAsLabel, exceptionKindLabel, exceptionStatusLabel } from "@/lib/credits";
 import { expenseCategoryLabel, formatDateTime, formatIls, lineTotal } from "@/lib/format";
@@ -33,6 +36,12 @@ export default async function ReceiptDetailPage({ params }: { params: Promise<{ 
   });
   if (!receipt) notFound();
 
+  const submitLog = await firstAuditFor("GoodsReceipt", receipt.id, AUDIT_ACTIONS.RECEIPT_SUBMIT);
+  const canCancel =
+    sessionCan(session, "action.cancel_goods_receipt") &&
+    session.isNetwork &&
+    isCancellableReceiptStatus(receipt.status);
+
   const sendToSuppliers = await getSendToSuppliersEnabled();
   const resolvedSupplier = resolveSupplierForBranch(receipt.order.supplier, receipt.order.branchId);
   const creditWhatsAppPhone = resolveOrderWhatsAppPhone({
@@ -50,13 +59,19 @@ export default async function ReceiptDetailPage({ params }: { params: Promise<{ 
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="font-heading text-2xl font-semibold">קליטה · {receipt.order.supplier.name}</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="font-heading text-2xl font-semibold">קליטה · {receipt.order.supplier.name}</h1>
+            <AuditInfoButton stamp={formatAuditStamp(submitLog)} />
+          </div>
           <p className="mt-1 text-sm text-muted-foreground">
             {receipt.order.branch.name} · {formatDateTime(receipt.createdAt)} ·{" "}
             {expenseCategoryLabel(receipt.accountId)}
           </p>
         </div>
-        <ReceiptStatusBadge status={receipt.status} />
+        <div className="flex flex-wrap items-center gap-2">
+          <ReceiptStatusBadge status={receipt.status} />
+          {canCancel ? <CancelReceiptButton receiptId={receipt.id} /> : null}
+        </div>
       </div>
 
       {receipt.status === "PENDING_PRICE_APPROVAL" ? (

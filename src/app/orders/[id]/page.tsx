@@ -21,7 +21,9 @@ import { resolveSupplierForBranch } from "@/lib/supplier-branch";
 import { buildOrderWhatsAppText, buildWhatsAppUrl } from "@/lib/whatsapp";
 import { getSendToSuppliersEnabled, resolveOrderWhatsAppPhone } from "@/lib/whatsapp-routing";
 import { RoiTestModeBadge } from "@/components/orders/send-to-suppliers-toggle";
+import { AuditInfoButton } from "@/components/audit-info-button";
 import { getAppSession, sessionCan } from "@/lib/session";
+import { AUDIT_ACTIONS, firstAuditFor, formatAuditStamp } from "@/lib/audit";
 import { cn } from "@/lib/utils";
 
 export default async function OrderDetailPage({
@@ -44,6 +46,8 @@ export default async function OrderDetailPage({
     },
   });
   if (!order) notFound();
+
+  const createLog = await firstAuditFor("Order", order.id, AUDIT_ACTIONS.ORDER_CREATE);
 
   const total = order.lines.reduce(
     (sum, line) => sum + lineTotal(line.qty, line.unitPrice, line.discountPercent),
@@ -74,7 +78,10 @@ export default async function OrderDetailPage({
       <PrintOnLoad enabled={print === "1"} />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between print:hidden">
         <div>
-          <h1 className="font-heading text-2xl font-semibold">{order.supplier.name}</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="font-heading text-2xl font-semibold">{order.supplier.name}</h1>
+            <AuditInfoButton stamp={formatAuditStamp(createLog)} />
+          </div>
           <p className="mt-1 text-sm text-muted-foreground">
             {order.branch.name} · {formatDateTime(order.createdAt)}
           </p>

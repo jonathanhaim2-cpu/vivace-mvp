@@ -18,6 +18,7 @@ import { monthKeyFromDate, resolvedPeriodMonth } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { saveUpload, UPLOAD_DIR } from "@/lib/uploads";
 import { requirePermission } from "@/lib/access";
+import { AUDIT_ACTIONS, writeAuditLog } from "@/lib/audit";
 
 function readMonth(formData: FormData) {
   const raw = String(formData.get("periodMonth") ?? "").trim();
@@ -78,7 +79,7 @@ async function createUploadedInvoicePhoto(input: {
 }
 
 export async function uploadStandaloneInvoice(formData: FormData) {
-  await requirePermission("nav.invoices");
+  const session = await requirePermission("nav.invoices");
   const photo = formData.get("photo");
   if (!(photo instanceof File) || photo.size === 0) {
     throw new Error("יש להעלות צילום חשבונית");
@@ -102,12 +103,22 @@ export async function uploadStandaloneInvoice(formData: FormData) {
     await analyzeStoredPhoto(created.id);
   }
 
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.INVOICE_UPLOAD,
+    entityType: "InvoicePhoto",
+    entityId: created.id,
+    summary: created.isDuplicate
+      ? `הועלתה חשבונית כפולה · ${saved.originalName}`
+      : `הועלתה חשבונית · ${saved.originalName}`,
+    meta: { fileName: saved.fileName, periodMonth, isDuplicate: created.isDuplicate },
+  });
+
   revalidateInvoicePaths();
   redirect(created.isDuplicate ? "/invoices?dup=1" : "/invoices");
 }
 
 export async function updateInvoiceCategory(photoId: string, formData: FormData) {
-  await requirePermission("nav.invoices");
+  const session = await requirePermission("nav.invoices");
   const accountId = String(formData.get("accountId") ?? "");
   await assertLeafAccount(accountId);
   const periodMonth = String(formData.get("periodMonth") ?? "").trim();
@@ -123,11 +134,18 @@ export async function updateInvoiceCategory(photoId: string, formData: FormData)
       ...(periodMonth ? { periodMonth } : {}),
     },
   });
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.INVOICE_CLASSIFY,
+    entityType: "InvoicePhoto",
+    entityId: photoId,
+    summary: "חשבונית שובצה לקטגוריה",
+    meta: { accountId, periodMonth: periodMonth || null },
+  });
   revalidateInvoicePaths();
 }
 
 export async function saveInvoiceClassification(photoId: string, formData: FormData) {
-  await requirePermission("nav.invoices");
+  const session = await requirePermission("nav.invoices");
   const parsed = invoiceClassificationFromForm(formData);
   await assertLeafAccount(parsed.accountId);
   const photo = await prisma.invoicePhoto.findUnique({ where: { id: photoId } });
@@ -147,11 +165,18 @@ export async function saveInvoiceClassification(photoId: string, formData: FormD
       aiStatus: "MANUAL",
     },
   });
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.INVOICE_CLASSIFY,
+    entityType: "InvoicePhoto",
+    entityId: photoId,
+    summary: "חשבונית סווגה ידנית",
+    meta: { accountId: parsed.accountId, periodMonth: parsed.periodMonth },
+  });
   revalidateInvoicePaths();
 }
 
 export async function confirmAiSuggestion(photoId: string) {
-  await requirePermission("nav.invoices");
+  const session = await requirePermission("nav.invoices");
   const photo = await prisma.invoicePhoto.findUnique({ where: { id: photoId } });
   if (!photo?.aiAccountId) {
     throw new Error("אין הצעת AI לאישור");
@@ -171,6 +196,13 @@ export async function confirmAiSuggestion(photoId: string) {
       ...(periodMonth ? { periodMonth } : {}),
     },
   });
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.INVOICE_CONFIRM_AI,
+    entityType: "InvoicePhoto",
+    entityId: photoId,
+    summary: "אושרה הצעת AI לסיווג חשבונית",
+    meta: { accountId: photo.aiAccountId, periodMonth },
+  });
   revalidateInvoicePaths();
 }
 
@@ -182,7 +214,7 @@ export async function analyzeInvoicePhoto(photoId: string) {
 }
 
 export async function importInboxFiles(formData: FormData) {
-  await requirePermission("nav.invoices");
+  const session = await requirePermission("nav.invoices");
   const files = formData.getAll("photos").filter((item): item is File => item instanceof File && item.size > 0);
   if (files.length === 0) {
     throw new Error("יש לבחור לפחות קובץ אחד לייבוא");
@@ -191,7 +223,7 @@ export async function importInboxFiles(formData: FormData) {
   const defaultAccount = await optionalLeaf(formData);
   let duplicateCount = 0;
 
-  const createdPhotos: { id: string; isDuplicate: boolean }[] = [];
+  const createdPhotos: { id: string; isDuplicate: boolean; originalName: string }[] = [];
   for (const file of files) {
     const saved = await saveUpload(file);
     const created = await createUploadedInvoicePhoto({
@@ -201,13 +233,33 @@ export async function importInboxFiles(formData: FormData) {
       source: "BULK_IMPORT",
     });
     if (created.isDuplicate) duplicateCount += 1;
-    createdPhotos.push(created);
+    createdPhotos.push({
+      id: created.id,
+      isDuplicate: created.isDuplicate,
+      originalName: created.originalName,
+    });
   }
 
   const toAnalyze = createdPhotos.filter((photo) => !photo.isDuplicate);
   for (const [index, photo] of toAnalyze.entries()) {
     if (index > 0) await sleep(IMPORT_ANALYZE_GAP_MS);
     await analyzeStoredPhoto(photo.id);
+  }
+
+  for (const created of createdPhotos) {
+    await writeAuditLog(session, {
+      action: AUDIT_ACTIONS.INVOICE_IMPORT,
+      entityType: "InvoicePhoto",
+      entityId: created.id,
+      summary: created.isDuplicate
+        ? `יובאה חשבונית כפולה · ${created.originalName}`
+        : `יובאה חשבונית · ${created.originalName}`,
+      meta: {
+        periodMonth,
+        isDuplicate: created.isDuplicate,
+        bulkCount: createdPhotos.length,
+      },
+    });
   }
 
   revalidateInvoicePaths();
@@ -219,7 +271,7 @@ export async function importInboxFiles(formData: FormData) {
 }
 
 export async function confirmInvoiceUnique(photoId: string) {
-  await requirePermission("nav.invoices");
+  const session = await requirePermission("nav.invoices");
   const photo = await prisma.invoicePhoto.findUnique({ where: { id: photoId } });
   if (!photo) {
     throw new Error("חשבונית לא נמצאה");
@@ -232,16 +284,28 @@ export async function confirmInvoiceUnique(photoId: string) {
       duplicateStatus: INVOICE_DUPLICATE_STATUS.CONFIRMED_UNIQUE,
     },
   });
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.INVOICE_CLASSIFY,
+    entityType: "InvoicePhoto",
+    entityId: photoId,
+    summary: `חשבונית אושרה כייחודית · ${photo.originalName}`,
+  });
   revalidateInvoicePaths();
 }
 
 export async function deleteDuplicateInvoice(photoId: string) {
-  await requirePermission("nav.invoices");
+  const session = await requirePermission("nav.invoices");
   const photo = await prisma.invoicePhoto.findUnique({ where: { id: photoId } });
   if (!photo?.isDuplicate) {
     throw new Error("אפשר למחוק רק חשבונית שמסומנת ככפיל");
   }
   await prisma.invoicePhoto.delete({ where: { id: photoId } });
   await unlink(path.join(UPLOAD_DIR, photo.fileName)).catch(() => undefined);
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.INVOICE_CLASSIFY,
+    entityType: "InvoicePhoto",
+    entityId: photoId,
+    summary: `נמחקה חשבונית כפולה · ${photo.originalName}`,
+  });
   revalidateInvoicePaths();
 }

@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { AuditInfoButton } from "@/components/audit-info-button";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { WhatsAppTicks } from "@/components/orders/whatsapp-ticks";
 import { OrderStatusBadge } from "@/components/status-badge";
 import { CompactField, FilterBar, NativeSelect } from "@/components/ui/compact-form";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AUDIT_ACTIONS, firstAuditsFor, formatAuditStamp } from "@/lib/audit";
 import { ORDER_STATUSES } from "@/lib/constants";
 import { formatDateTime, formatIls, lineTotal, orderStatusLabel } from "@/lib/format";
 import { monthLabel, monthRangeUtc, parseMonthParam, recentMonthKeys } from "@/lib/months";
@@ -52,6 +54,11 @@ export default async function OrdersPage({
       orderBy: { name: "asc" },
     }),
   ]);
+  const actors = await firstAuditsFor(
+    "Order",
+    orders.map((order) => order.id),
+    AUDIT_ACTIONS.ORDER_CREATE,
+  );
 
   return (
     <div>
@@ -134,11 +141,16 @@ export default async function OrdersPage({
               return (
                 <TableRow key={order.id}>
                   <TableCell>
-                    <Link href={`/orders/${order.id}`} className="font-medium hover:underline">
-                      {order.supplier.name}
-                    </Link>
-                    <div className="mt-0.5">
-                      <WhatsAppTicks orderId={order.id} status={order.whatsappStatus} compact canManage={false} />
+                    <div className="flex items-start gap-0.5">
+                      <div className="min-w-0">
+                        <Link href={`/orders/${order.id}`} className="font-medium hover:underline">
+                          {order.supplier.name}
+                        </Link>
+                        <div className="mt-0.5">
+                          <WhatsAppTicks orderId={order.id} status={order.whatsappStatus} compact canManage={false} />
+                        </div>
+                      </div>
+                      <AuditInfoButton stamp={formatAuditStamp(actors.get(order.id))} />
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{order.branch.name}</TableCell>

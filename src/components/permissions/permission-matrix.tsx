@@ -9,6 +9,7 @@ import {
   PERMISSION_GROUPS,
   PERMISSIONS,
   isLockedAdminPermission,
+  isNetworkOnlyPermission,
   type AppRole,
   type PermissionKey,
 } from "@/lib/roles";
@@ -21,6 +22,7 @@ export function PermissionMatrix({ initial }: { initial: Matrix }) {
 
   function toggle(role: AppRole, key: PermissionKey, next: boolean) {
     if (isLockedAdminPermission(role, key) && !next) return;
+    if (isNetworkOnlyPermission(role, key) && next) return;
     start(async () => {
       setMatrix((current) => {
         const set = new Set(current[role]);
@@ -97,7 +99,9 @@ function GroupRows({
           <td className="sticky start-0 bg-card px-3 py-2">{permission.label}</td>
           {APP_ROLES.map((role) => {
             const checked = matrix[role]?.includes(permission.key) ?? false;
-            const locked = isLockedAdminPermission(role, permission.key);
+            const locked =
+              isLockedAdminPermission(role, permission.key) ||
+              isNetworkOnlyPermission(role, permission.key);
             return (
               <td key={role} className="px-2 py-2 text-center">
                 <label className="inline-flex justify-center">

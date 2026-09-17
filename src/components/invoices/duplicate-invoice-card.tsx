@@ -1,4 +1,5 @@
 import { confirmInvoiceUnique, deleteDuplicateInvoice } from "@/actions/invoices";
+import { AuditInfoButton } from "@/components/audit-info-button";
 import { Button } from "@/components/ui/button";
 import { formatDateTime, formatIls } from "@/lib/format";
 import { monthLabel } from "@/lib/months";
@@ -27,9 +28,10 @@ type Props = {
     amountIls: number | null;
     duplicateOf: DuplicateOriginal;
   };
+  auditStamp: string;
 };
 
-export function DuplicateInvoiceCard({ photo }: Props) {
+export function DuplicateInvoiceCard({ photo, auditStamp }: Props) {
   const fileUrl = publicFileUrl(photo.fileName);
   const original = photo.duplicateOf;
   const originalUrl = original ? publicFileUrl(original.fileName) : null;
@@ -38,17 +40,20 @@ export function DuplicateInvoiceCard({ photo }: Props) {
   return (
     <div className="space-y-3 rounded-lg border border-amber-300 bg-amber-50/70 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <p className="font-medium">
-            {original ? `חשוד ככפיל של ${original.originalName}` : "חשוד ככפיל"}
-          </p>
-          <p className="text-xs text-amber-900">כפילות — לא יובא שוב</p>
-          <p className="text-xs text-muted-foreground">
-            {photo.originalName} · {formatDateTime(photo.createdAt)}
-            {photo.periodMonth ? ` · ${monthLabel(photo.periodMonth)}` : ""}
-            {photo.source === "BULK_IMPORT" ? " · ייבוא תיקייה" : ""}
-            {photo.amountIls != null ? ` · ${formatIls(photo.amountIls)}` : ""}
-          </p>
+        <div className="flex min-w-0 items-start gap-0.5">
+          <div className="min-w-0">
+            <p className="font-medium">
+              {original ? `חשוד ככפיל של ${original.originalName}` : "חשוד ככפיל"}
+            </p>
+            <p className="text-xs text-amber-900">כפילות — לא יובא שוב</p>
+            <p className="text-xs text-muted-foreground">
+              {photo.originalName} · {formatDateTime(photo.createdAt)}
+              {photo.periodMonth ? ` · ${monthLabel(photo.periodMonth)}` : ""}
+              {photo.source === "BULK_IMPORT" ? " · ייבוא תיקייה" : ""}
+              {photo.amountIls != null ? ` · ${formatIls(photo.amountIls)}` : ""}
+            </p>
+          </div>
+          <AuditInfoButton stamp={auditStamp} />
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">

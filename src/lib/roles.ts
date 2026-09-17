@@ -26,9 +26,11 @@ export const PERMISSIONS = [
   { key: "nav.chat", label: "צ׳אט AI", group: "תצוגה" },
   { key: "nav.users", label: "משתמשים", group: "תצוגה" },
   { key: "nav.permissions", label: "הרשאות", group: "תצוגה" },
+  { key: "nav.activity", label: "לוג פעילות", group: "תצוגה" },
   { key: "action.create_orders", label: "יצירת הזמנות", group: "פעולות" },
   { key: "action.send_whatsapp", label: "שליחת הזמנות בוואטסאפ", group: "פעולות" },
   { key: "action.goods_intake", label: "קליטת סחורה", group: "פעולות" },
+  { key: "action.cancel_goods_receipt", label: "ביטול קליטת סחורה", group: "פעולות" },
   { key: "action.edit_inventory", label: "עריכת מלאי", group: "פעולות" },
   { key: "action.edit_suppliers", label: "עריכת ספקים", group: "פעולות" },
   { key: "action.edit_prices", label: "עריכת מחירים", group: "פעולות" },
@@ -49,8 +51,16 @@ export const LOCKED_ADMIN_PERMISSIONS: PermissionKey[] = [
   "nav.settings",
   "nav.users",
   "nav.permissions",
+  "nav.activity",
   "action.manage_users",
   "action.manage_permissions",
+  "action.cancel_goods_receipt",
+];
+
+/** Branch staff cannot receive these even if the matrix row is checked. */
+export const NETWORK_ONLY_PERMISSIONS: PermissionKey[] = [
+  "nav.activity",
+  "action.cancel_goods_receipt",
 ];
 
 const ACCOUNTING_KEYS: PermissionKey[] = [
@@ -60,6 +70,7 @@ const ACCOUNTING_KEYS: PermissionKey[] = [
   "nav.reports",
   "nav.ap",
   "nav.chat",
+  "nav.activity",
   "action.approve_credits",
   "action.accounting_package",
 ];
@@ -131,6 +142,9 @@ export function resolveRolePermissions(
   if (role === "admin") {
     for (const key of LOCKED_ADMIN_PERMISSIONS) allowed.add(key);
   }
+  if (isBranchScopedRole(role)) {
+    for (const key of NETWORK_ONLY_PERMISSIONS) allowed.delete(key);
+  }
   return allowed;
 }
 
@@ -140,6 +154,10 @@ export function hasPermission(permissions: readonly string[], key: string) {
 
 export function isLockedAdminPermission(role: string, key: string) {
   return role === "admin" && LOCKED_ADMIN_PERMISSIONS.includes(key as PermissionKey);
+}
+
+export function isNetworkOnlyPermission(role: string, key: string) {
+  return isBranchScopedRole(parseAppRole(role)) && NETWORK_ONLY_PERMISSIONS.includes(key as PermissionKey);
 }
 
 export function canDeactivateOrDemote(input: {
@@ -159,6 +177,7 @@ export function canDeactivateOrDemote(input: {
 const PATH_RULES: { prefix: string; key: PermissionKey }[] = [
   { prefix: "/settings/users", key: "action.manage_users" },
   { prefix: "/settings/permissions", key: "action.manage_permissions" },
+  { prefix: "/settings/activity", key: "nav.activity" },
   { prefix: "/settings", key: "nav.settings" },
   { prefix: "/categories", key: "nav.settings" },
   { prefix: "/ap", key: "nav.ap" },
