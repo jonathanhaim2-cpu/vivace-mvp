@@ -82,6 +82,10 @@ test("invoiceClassificationFromForm reads document type", () => {
   assert.equal(invoiceClassificationFromForm(form).documentType, "RECEIPT");
   form.set("documentType", "חשבונית");
   assert.equal(invoiceClassificationFromForm(form).documentType, "INVOICE");
+  form.set("documentType", "CREDIT_NOTE");
+  assert.equal(invoiceClassificationFromForm(form).documentType, "CREDIT_NOTE");
+  form.set("documentType", "חשבונית זיכוי");
+  assert.equal(invoiceClassificationFromForm(form).documentType, "CREDIT_NOTE");
 });
 
 test("parsePhotoDocumentType maps Hebrew and English aliases", () => {
@@ -89,6 +93,12 @@ test("parsePhotoDocumentType maps Hebrew and English aliases", () => {
   assert.equal(parsePhotoDocumentType("receipt"), PHOTO_DOCUMENT_TYPE.RECEIPT);
   assert.equal(parsePhotoDocumentType("קבלה"), PHOTO_DOCUMENT_TYPE.RECEIPT);
   assert.equal(parsePhotoDocumentType("חשבונית"), PHOTO_DOCUMENT_TYPE.INVOICE);
+  assert.equal(parsePhotoDocumentType("CREDIT_NOTE"), PHOTO_DOCUMENT_TYPE.CREDIT_NOTE);
+  assert.equal(parsePhotoDocumentType("credit_invoice"), PHOTO_DOCUMENT_TYPE.CREDIT_NOTE);
+  assert.equal(parsePhotoDocumentType("credit note"), PHOTO_DOCUMENT_TYPE.CREDIT_NOTE);
+  assert.equal(parsePhotoDocumentType("חשבונית זיכוי"), PHOTO_DOCUMENT_TYPE.CREDIT_NOTE);
+  assert.equal(parsePhotoDocumentType("חשבונית מס זיכוי"), PHOTO_DOCUMENT_TYPE.CREDIT_NOTE);
+  assert.equal(parsePhotoDocumentType("זיכוי"), PHOTO_DOCUMENT_TYPE.CREDIT_NOTE);
   assert.equal(parsePhotoDocumentType("לא ידוע"), PHOTO_DOCUMENT_TYPE.UNKNOWN);
   assert.equal(parsePhotoDocumentType(""), PHOTO_DOCUMENT_TYPE.UNKNOWN);
   assert.equal(parsePhotoDocumentType("nope"), PHOTO_DOCUMENT_TYPE.UNKNOWN);

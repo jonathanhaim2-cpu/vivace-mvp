@@ -1,6 +1,6 @@
 import {
-  PHOTO_DOCUMENT_TYPE,
   PHOTO_DOCUMENT_TYPES,
+  isPhotoDocumentType,
   parsePhotoDocumentType,
   photoDocumentTypeLabel,
   type PhotoDocumentType,
@@ -69,12 +69,7 @@ export function parseInvoiceFilters(params: {
     statusRaw === "classified" || statusRaw === "pending" || statusRaw === "all" ? statusRaw : "all";
   const documentTypeRaw = params.documentType?.trim() ?? "";
   const documentType: InvoiceDocumentTypeFilter =
-    documentTypeRaw === "all" ||
-    documentTypeRaw === PHOTO_DOCUMENT_TYPE.INVOICE ||
-    documentTypeRaw === PHOTO_DOCUMENT_TYPE.RECEIPT ||
-    documentTypeRaw === PHOTO_DOCUMENT_TYPE.UNKNOWN
-      ? documentTypeRaw
-      : "all";
+    documentTypeRaw === "all" || isPhotoDocumentType(documentTypeRaw) ? documentTypeRaw : "all";
   const from = DATE_RE.test(params.from?.trim() ?? "") ? params.from!.trim() : "";
   const to = DATE_RE.test(params.to?.trim() ?? "") ? params.to!.trim() : "";
 

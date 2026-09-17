@@ -114,7 +114,7 @@ export function ClassifiedInvoiceTable({
                   />
                   <form action={updateInvoiceCategory.bind(null, row.id)} className="flex min-w-[12rem] flex-1 flex-wrap items-center gap-2">
                     <GroupedAccountSelect defaultValue={row.accountId} />
-                    <DocumentTypeSelect defaultValue={row.documentType} className="w-[7.5rem]" />
+                    <DocumentTypeSelect defaultValue={row.documentType} className="w-[10rem]" />
                     <BranchSelect
                       branches={branches}
                       defaultValue={row.branchId}

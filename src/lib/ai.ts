@@ -109,13 +109,14 @@ function chartPrompt() {
 }
 
 function buildPrompt() {
-  return `אתה מנתח חשבוניות וקבלות למסעדת Vivac'e / ויואצ'ה (עוסק מורשה 204754121) בישראל.
+  return `אתה מנתח חשבוניות, חשבוניות זיכוי וקבלות למסעדת Vivac'e / ויואצ'ה (עוסק מורשה 204754121) בישראל.
 חלץ מהמסמך: שם ספק, תאריך, סכום כולל בשקלים אם נראה, וסוג מסמך.
 סוג מסמך (documentType) — חובה אחד מ:
 - INVOICE = חשבונית / חשבונית מס / tax invoice / חשבונית מס-קבלה
+- CREDIT_NOTE = חשבונית זיכוי / credit note / credit invoice (זיכוי, החזר, סכומים שליליים)
 - RECEIPT = קבלה בלבד (אישור תשלום בלי חשבונית מס)
 - UNKNOWN = לא ברור
-חשבונית ≠ קבלה. אם כתוב במפורש רק קבלה — RECEIPT. אם כתוב חשבונית — INVOICE.
+חשבונית ≠ קבלה ≠ חשבונית זיכוי. אם כתוב במפורש חשבונית זיכוי / זיכוי / credit note — CREDIT_NOTE. אם כתוב במפורש רק קבלה — RECEIPT. אם כתוב חשבונית רגילה — INVOICE.
 הצע את הקטגוריה (LEAF בכרטסת) המתאימה ביותר. אסור לבחור קטגוריית אב.
 החזר JSON בלבד במבנה:
 {"supplierName":"","invoiceDate":"YYYY-MM-DD או ריק","totalIls":0,"accountId":"acc_...","documentType":"INVOICE","confidence":0.0,"reason":"משפט קצר בעברית"}
@@ -125,7 +126,7 @@ confidence בין 0 ל-1. אם לא בטוח — confidence נמוך מ-0.55.
 ${chartPrompt()}`;
 }
 
-function parseSuggestion(raw: string): AiSuggestion | null {
+export function parseInvoiceAiSuggestion(raw: string): AiSuggestion | null {
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
   if (start < 0 || end < 0) return null;
@@ -153,7 +154,7 @@ export async function analyzeInvoiceDocument(input: {
   mimeType: string;
   fileName: string;
 }): Promise<AiSuggestion | null> {
-  return runVisionJson(buildPrompt(), input, parseSuggestion);
+  return runVisionJson(buildPrompt(), input, parseInvoiceAiSuggestion);
 }
 
 export type ReceiptExtractLine = {

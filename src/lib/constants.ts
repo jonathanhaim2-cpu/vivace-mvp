@@ -126,9 +126,10 @@ export const INVOICE_SOURCE = {
   RECEIPT: "RECEIPT",
 } as const;
 
-/** InvoicePhoto.documentType — חשבונית vs קבלה in classification (not supplier TAX_INVOICE / DELIVERY_NOTE). */
+/** InvoicePhoto.documentType — classification type (not supplier TAX_INVOICE / DELIVERY_NOTE). */
 export const PHOTO_DOCUMENT_TYPE = {
   INVOICE: "INVOICE",
+  CREDIT_NOTE: "CREDIT_NOTE",
   RECEIPT: "RECEIPT",
   UNKNOWN: "UNKNOWN",
 } as const;
@@ -137,13 +138,29 @@ export type PhotoDocumentType = (typeof PHOTO_DOCUMENT_TYPE)[keyof typeof PHOTO_
 
 export const PHOTO_DOCUMENT_TYPES = [
   { value: PHOTO_DOCUMENT_TYPE.INVOICE, label: "חשבונית" },
+  { value: PHOTO_DOCUMENT_TYPE.CREDIT_NOTE, label: "חשבונית זיכוי" },
   { value: PHOTO_DOCUMENT_TYPE.RECEIPT, label: "קבלה" },
   { value: PHOTO_DOCUMENT_TYPE.UNKNOWN, label: "לא ידוע" },
 ] as const;
 
+export function isPhotoDocumentType(value: string): value is PhotoDocumentType {
+  return (Object.values(PHOTO_DOCUMENT_TYPE) as string[]).includes(value);
+}
+
 export function parsePhotoDocumentType(raw: unknown): PhotoDocumentType {
   const value = String(raw ?? "").trim();
   const upper = value.toUpperCase();
+  if (
+    upper === PHOTO_DOCUMENT_TYPE.CREDIT_NOTE ||
+    upper === "CREDIT_INVOICE" ||
+    upper === "CREDIT NOTE" ||
+    upper === "CREDIT INVOICE" ||
+    value === "חשבונית זיכוי" ||
+    value === "חשבונית מס זיכוי" ||
+    value === "זיכוי"
+  ) {
+    return PHOTO_DOCUMENT_TYPE.CREDIT_NOTE;
+  }
   if (upper === PHOTO_DOCUMENT_TYPE.INVOICE || value === "חשבונית") return PHOTO_DOCUMENT_TYPE.INVOICE;
   if (upper === PHOTO_DOCUMENT_TYPE.RECEIPT || value === "קבלה") return PHOTO_DOCUMENT_TYPE.RECEIPT;
   if (upper === PHOTO_DOCUMENT_TYPE.UNKNOWN || value === "לא ידוע") return PHOTO_DOCUMENT_TYPE.UNKNOWN;
