@@ -70,22 +70,27 @@ export function AiSuggestionCard({
       </div>
     );
   }
-  if (!suggestedAccount && !supplierName) return null;
+  const hasSuggestion =
+    Boolean(suggestedAccount) ||
+    Boolean(supplierName) ||
+    Boolean(invoiceDate) ||
+    totalIls != null ||
+    Boolean(reason) ||
+    confidence != null;
+  if (!hasSuggestion) return null;
 
   const low = isLowConfidence(confidence);
+  const panelClass = low ? "border-amber-400 bg-amber-50" : "border-emerald-200 bg-emerald-50";
 
   return (
     <div
-      className={`space-y-2 rounded-lg border px-3 py-3 text-sm ${
-        low ? "border-amber-400 bg-amber-50" : "border-emerald-200 bg-emerald-50/60"
-      }`}
+      data-tone={low ? "low" : "ok"}
+      className={`ai-suggestion-surface space-y-2 rounded-lg border px-3 py-3 text-sm ${panelClass}`}
     >
       <div className="flex items-center justify-between gap-2">
-        <p className="font-medium">הצעת AI</p>
+        <p className="ai-suggestion-title font-medium">הצעת AI</p>
         {confidence != null ? (
-          <span className="text-xs text-muted-foreground">
-            ביטחון {Math.round(confidence * 100)}%
-          </span>
+          <span className="ai-suggestion-muted text-xs">ביטחון {Math.round(confidence * 100)}%</span>
         ) : null}
       </div>
       {low ? (
@@ -96,50 +101,58 @@ export function AiSuggestionCard({
       <dl className="grid gap-1 text-xs">
         {supplierName ? (
           <div className="flex justify-between gap-2">
-            <dt className="text-muted-foreground">ספק</dt>
-            <dd>{supplierName}</dd>
+            <dt className="ai-suggestion-muted">ספק</dt>
+            <dd className="ai-suggestion-value">{supplierName}</dd>
           </div>
         ) : null}
         {invoiceDate ? (
           <div className="flex justify-between gap-2">
-            <dt className="text-muted-foreground">תאריך</dt>
-            <dd dir="ltr">{invoiceDate}</dd>
+            <dt className="ai-suggestion-muted">תאריך</dt>
+            <dd className="ai-suggestion-value" dir="ltr">
+              {invoiceDate}
+            </dd>
           </div>
         ) : null}
         {totalIls != null ? (
           <div className="flex justify-between gap-2">
-            <dt className="text-muted-foreground">סכום</dt>
-            <dd>{formatIls(totalIls)}</dd>
+            <dt className="ai-suggestion-muted">סכום</dt>
+            <dd className="ai-suggestion-value">{formatIls(totalIls)}</dd>
           </div>
         ) : null}
         {documentType ? (
           <div className="flex justify-between gap-2">
-            <dt className="text-muted-foreground">סוג</dt>
-            <dd>{photoDocumentTypeLabel(documentType)}</dd>
+            <dt className="ai-suggestion-muted">סוג</dt>
+            <dd className="ai-suggestion-value">{photoDocumentTypeLabel(documentType)}</dd>
           </div>
         ) : null}
         {suggestedAccount ? (
           <div className="flex justify-between gap-2">
-            <dt className="text-muted-foreground">קטגוריה</dt>
-            <dd>
+            <dt className="ai-suggestion-muted">קטגוריה</dt>
+            <dd className="ai-suggestion-value">
               {suggestedAccount.parentName} · {suggestedAccount.code} {suggestedAccount.name}
             </dd>
           </div>
         ) : (
-          <p className="text-muted-foreground">לא זוהתה קטגוריה מתאימה.</p>
+          <p className="ai-suggestion-muted">לא זוהתה קטגוריה מתאימה.</p>
         )}
       </dl>
-      {reason ? <p className="text-xs text-muted-foreground">{reason}</p> : null}
+      {reason ? <p className="ai-suggestion-muted text-xs">{reason}</p> : null}
       {suggestedAccount ? (
         <form action={confirmAiSuggestion.bind(null, photoId)} className="space-y-2">
           {branches.length > 0 ? (
-            <BranchSelect
-              id={`ai-branch-${photoId}`}
-              branches={branches}
-              defaultValue={defaultBranchId ?? branches[0]?.id}
-              required
-              allowEmpty={false}
-            />
+            <div className="space-y-1">
+              <label htmlFor={`ai-branch-${photoId}`} className="ai-suggestion-muted block text-[11px] font-medium">
+                סניף
+              </label>
+              <BranchSelect
+                id={`ai-branch-${photoId}`}
+                className="ai-suggestion-control"
+                branches={branches}
+                defaultValue={defaultBranchId ?? branches[0]?.id}
+                required
+                allowEmpty={false}
+              />
+            </div>
           ) : null}
           <Button type="submit" size="sm" className="w-full">
             אשר הצעה

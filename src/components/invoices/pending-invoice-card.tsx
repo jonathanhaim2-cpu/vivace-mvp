@@ -4,9 +4,11 @@ import { GroupedAccountSelect } from "@/components/accounts/grouped-account-sele
 import { AiSuggestionCard } from "@/components/ai-suggestion-card";
 import { AnalyzeInvoiceButton } from "@/components/analyze-invoice-button";
 import { BranchSelect, type BranchOption } from "@/components/branches/branch-select";
+import { DiscardInvoiceButton } from "@/components/invoices/discard-invoice-button";
 import { InvoiceDocumentPreview } from "@/components/invoices/invoice-document-preview";
 import { DocumentTypeBadge, DocumentTypeSelect } from "@/components/invoices/document-type-control";
 import { Button } from "@/components/ui/button";
+import { isAiNotInvoiceSuggestion } from "@/lib/invoice-discard";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -55,6 +57,8 @@ export function PendingInvoiceCard({
   const monthOptions = months.includes(reportMonth) ? months : [reportMonth, ...months];
   const amount = photo.amountIls ?? photo.aiTotalIls;
   const field = (name: string) => `${name}-${photo.id}`;
+  const formId = `classify-${photo.id}`;
+  const notInvoice = isAiNotInvoiceSuggestion(photo);
 
   return (
     <div className="space-y-3 rounded-lg border p-3">
@@ -93,7 +97,11 @@ export function PendingInvoiceCard({
             defaultBranchId={photo.branchId}
           />
 
-          <form action={saveInvoiceClassification.bind(null, photo.id)} className="grid gap-3 sm:grid-cols-2">
+          <form
+            id={formId}
+            action={saveInvoiceClassification.bind(null, photo.id)}
+            className="grid gap-3 sm:grid-cols-2"
+          >
             <Field>
               <FieldLabel htmlFor={field("invoiceDate")}>תאריך חשבונית</FieldLabel>
               <Input
@@ -164,12 +172,19 @@ export function PendingInvoiceCard({
               <FieldLabel htmlFor={field("note")}>הערה (אופציונלי)</FieldLabel>
               <Textarea id={field("note")} name="note" defaultValue={photo.voiceNoteText ?? ""} rows={2} />
             </Field>
-            <div className="sm:col-span-2">
-              <Button type="submit" size="sm">
-                שמירת סיווג
-              </Button>
-            </div>
           </form>
+          {notInvoice ? (
+            <p className="text-xs font-medium text-amber-800">
+              ה-AI סימן שזה אינו חשבונית — אפשר להסיר מהתור בלי לשבץ.
+            </p>
+          ) : null}
+          <div className="flex flex-wrap items-center gap-2">
+            {notInvoice ? <DiscardInvoiceButton photoId={photo.id} notInvoice /> : null}
+            <Button type="submit" form={formId} size="sm" variant={notInvoice ? "outline" : "default"}>
+              שמירת סיווג
+            </Button>
+            {notInvoice ? null : <DiscardInvoiceButton photoId={photo.id} />}
+          </div>
         </div>
       </div>
     </div>

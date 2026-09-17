@@ -92,6 +92,7 @@ test("cancelled receipt links back to the order when meta has orderId", () => {
     "/receipts/gr_1",
   );
   assert.equal(auditActionLabel(AUDIT_ACTIONS.RECEIPT_CANCEL), "ביטול קליטה");
+  assert.equal(auditActionLabel(AUDIT_ACTIONS.INVOICE_DISCARD), "מחיקת מסמך מהתור");
   assert.equal(
     auditEntityHref({
       action: AUDIT_ACTIONS.INVOICE_IMPORT,

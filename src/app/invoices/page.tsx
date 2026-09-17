@@ -255,6 +255,8 @@ export default async function InvoicesPage({
             branchId: resolvedInvoiceBranchId(photo),
             branchName: photo.branch?.name ?? photo.goodsReceipt?.order.branch.name ?? null,
             documentType: photo.documentType,
+            paid: photo.paid,
+            sentToAccountant: photo.sentToAccountant,
           }))}
           branches={branches}
           emptyTitle={classifiedTotal === 0 ? "אין חשבוניות משובצות" : "אין תוצאות לסינון"}

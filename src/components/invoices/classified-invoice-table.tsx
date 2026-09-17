@@ -1,6 +1,7 @@
 import { updateInvoiceCategory } from "@/actions/invoices";
 import { AuditInfoButton } from "@/components/audit-info-button";
 import { BranchSelect, type BranchOption } from "@/components/branches/branch-select";
+import { DiscardInvoiceButton } from "@/components/invoices/discard-invoice-button";
 import { InvoicePreviewButton } from "@/components/invoices/invoice-preview-button";
 import { DocumentTypeBadge, DocumentTypeSelect } from "@/components/invoices/document-type-control";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
@@ -30,6 +31,8 @@ export type ClassifiedInvoiceRow = {
   branchId: string | null;
   branchName: string | null;
   documentType: string;
+  paid: boolean;
+  sentToAccountant: boolean;
 };
 
 export function ClassifiedInvoiceTable({
@@ -124,6 +127,9 @@ export function ClassifiedInvoiceTable({
                       שינוי
                     </Button>
                   </form>
+                  {!row.paid && !row.sentToAccountant ? (
+                    <DiscardInvoiceButton photoId={row.id} accountId={row.accountId} />
+                  ) : null}
                 </div>
               </TableCell>
             </TableRow>

@@ -1,7 +1,5 @@
 "use server";
 
-import { unlink } from "node:fs/promises";
-import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { assertLeafAccount } from "@/lib/accounts";
@@ -10,10 +8,15 @@ import { IMPORT_ANALYZE_GAP_MS, sleep } from "@/lib/ai-throttle";
 import { INVOICE_DUPLICATE_STATUS, INVOICE_SOURCE, PHOTO_DOCUMENT_TYPE, parsePhotoDocumentType } from "@/lib/constants";
 import { invoiceClassificationFromForm } from "@/lib/invoice-form";
 import { markPhotoIfDuplicate } from "@/lib/invoice-duplicates";
+import {
+  discardInvoicePhotoRecord,
+  unlinkDiscardedInvoiceFile,
+} from "@/lib/invoice-discard-db";
+import { invoiceDiscardAuditSummary } from "@/lib/invoice-discard";
 import { createUploadedInvoicePhoto } from "@/lib/invoice-photos";
 import { monthKeyFromDate, resolvedPeriodMonth } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
-import { saveUpload, UPLOAD_DIR } from "@/lib/uploads";
+import { saveUpload } from "@/lib/uploads";
 import { requireBranchAccess, requirePermission } from "@/lib/access";
 import { AUDIT_ACTIONS, writeAuditLog } from "@/lib/audit";
 import type { AppSession } from "@/lib/session";
@@ -317,19 +320,39 @@ export async function confirmInvoiceUnique(photoId: string) {
   revalidateInvoicePaths();
 }
 
-export async function deleteDuplicateInvoice(photoId: string) {
+async function finishInvoicePhotoDiscard(photoId: string, requireDuplicate: boolean) {
   const session = await requirePermission("nav.invoices");
-  const photo = await prisma.invoicePhoto.findUnique({ where: { id: photoId } });
-  if (!photo?.isDuplicate) {
+  const existing = await prisma.invoicePhoto.findUnique({ where: { id: photoId } });
+  if (!existing) {
+    throw new Error("חשבונית לא נמצאה");
+  }
+  if (requireDuplicate && !existing.isDuplicate) {
     throw new Error("אפשר למחוק רק חשבונית שמסומנת ככפיל");
   }
-  await prisma.invoicePhoto.delete({ where: { id: photoId } });
-  await unlink(path.join(UPLOAD_DIR, photo.fileName)).catch(() => undefined);
+  const photo = await discardInvoicePhotoRecord(prisma, photoId);
+  await unlinkDiscardedInvoiceFile(photo.fileName);
   await writeAuditLog(session, {
-    action: AUDIT_ACTIONS.INVOICE_CLASSIFY,
+    action: AUDIT_ACTIONS.INVOICE_DISCARD,
     entityType: "InvoicePhoto",
     entityId: photoId,
-    summary: `נמחקה חשבונית כפולה · ${photo.originalName}`,
+    summary: invoiceDiscardAuditSummary(photo),
+    meta: {
+      originalName: photo.originalName,
+      source: photo.source,
+      isDuplicate: photo.isDuplicate,
+      keepMailImport: true,
+    },
   });
   revalidateInvoicePaths();
+}
+
+/** Discard a pending (or any non-final) invoice photo from the classify queue. */
+export async function discardInvoicePhoto(photoId: string) {
+  await finishInvoicePhotoDiscard(photoId, false);
+  redirect("/invoices");
+}
+
+export async function deleteDuplicateInvoice(photoId: string) {
+  await finishInvoicePhotoDiscard(photoId, true);
+  redirect("/invoices");
 }
