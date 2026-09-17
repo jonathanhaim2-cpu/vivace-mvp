@@ -270,6 +270,20 @@ model InvoicePhoto {
   @@index([branchId])
 }
 
+/// Dedup for IMAP intake: same Message-ID + attachment hash is never imported twice.
+model InvoiceMailImport {
+  id             String   @id @default(cuid())
+  messageId      String
+  contentHash    String
+  uid            Int?
+  originalName   String   @default("")
+  invoicePhotoId String?
+  createdAt      DateTime @default(now())
+
+  @@unique([messageId, contentHash])
+  @@index([messageId])
+}
+
 model InventoryCount {
   id          String               @id @default(cuid())
   branchId    String

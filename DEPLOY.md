@@ -34,6 +34,12 @@ Hebrew first, English below. This first remote demo uses **SQLite** on a **singl
 | `GEMINI_MODEL` | no | Default `gemini-3.5-flash-lite` |
 | `OPENAI_VISION_MODEL` | no | Default `gpt-4o-mini` |
 | `UPLOAD_DIR` | recommended | e.g. `/data/uploads` on the same volume |
+| `INVOICE_MAIL_USER` | for mailbox intake | IMAP username, e.g. `invoices@vivace-pizza.com` |
+| `INVOICE_MAIL_PASSWORD` | for mailbox intake | Gmail **App Password** if 2FA is on — not the account password |
+| `INVOICE_MAIL_HOST` | no | Default `imap.gmail.com` |
+| `INVOICE_MAIL_PORT` | no | Default `993` |
+| `INVOICE_MAIL_TLS` | no | Default `true` |
+| `CRON_SECRET` | recommended with auth | Bearer token for `/api/cron/invoice-mail` (and order reminders) |
 | `PORT` | host-set | Railway/Fly set this; `npm start` respects it |
 
 Never commit real keys. `.env` is gitignored.
@@ -65,9 +71,30 @@ AUTH_SECRET=generate-a-long-random-string
 GOOGLE_GENERATIVE_AI_API_KEY=
 OPENAI_API_KEY=
 AI_MONTHLY_BUDGET_USD=5
+INVOICE_MAIL_USER=invoices@vivace-pizza.com
+INVOICE_MAIL_PASSWORD=
+INVOICE_MAIL_HOST=imap.gmail.com
+INVOICE_MAIL_PORT=993
+INVOICE_MAIL_TLS=true
+CRON_SECRET=
 ```
 
 `start:prod` runs `db:ready` (Prisma generate + `db push` + seed). The seed **upserts** the real catalog (stable supplier ids, commercial names from Excel **שם ספק אמיתי**, phones/schedule from the supplier PDF) onto the persistent SQLite volume. It does **not** wipe products or open orders, and it does **not** overwrite every supplier phone to Roi. WhatsApp routing to Roi vs real suppliers is the **שליחה לספקים** AppSetting (default off). Known demo IDs are wiped if they are still in the SQLite file. Set `SEED_DEMO=true` only if you explicitly want that catalog.
+
+### Invoice mailbox (IMAP)
+
+1. In Gmail: **Settings → See all settings → Forwarding and POP/IMAP → Enable IMAP**.
+2. Google Workspace / Gmail with 2-Step Verification usually **rejects the normal account password** for IMAP. Create an [App Password](https://support.google.com/accounts/answer/185833) and put it in `INVOICE_MAIL_PASSWORD`.
+3. Never put the password in git. Railway env only.
+4. Manual sync: **חשבוניות → חיבור מייל → סנכרן עכשיו** (needs accounting-package permission).
+5. Optional Railway cron (every 15 minutes is enough):
+
+```
+GET or POST https://<public-host>/api/cron/invoice-mail
+Authorization: Bearer $CRON_SECRET
+```
+
+PDF / jpg / png / webp / heic attachments land in the same classification queue as folder import, with source `EMAIL`. Re-runs are deduped by Message-ID + file hash. Successful messages are marked Seen. Manual upload and **ייבוא מתיקייה** are unchanged.
 
 ### Fly.io
 

@@ -117,3 +117,24 @@ export const INVOICE_DUPLICATE_STATUS = {
   DUPLICATE: "DUPLICATE",
   CONFIRMED_UNIQUE: "CONFIRMED_UNIQUE",
 } as const;
+
+/** InvoicePhoto.source — how the file entered the classification queue. */
+export const INVOICE_SOURCE = {
+  MANUAL: "MANUAL",
+  BULK_IMPORT: "BULK_IMPORT",
+  EMAIL: "EMAIL",
+  RECEIPT: "RECEIPT",
+} as const;
+
+export function invoiceSourceLabel(source: string) {
+  switch (source) {
+    case INVOICE_SOURCE.BULK_IMPORT:
+      return "ייבוא תיקייה";
+    case INVOICE_SOURCE.EMAIL:
+      return "מייל";
+    case INVOICE_SOURCE.RECEIPT:
+      return "קליטה";
+    default:
+      return "העלאה";
+  }
+}

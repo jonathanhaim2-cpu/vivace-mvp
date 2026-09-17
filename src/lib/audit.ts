@@ -4,6 +4,18 @@ import { formatDateTime } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import type { AppSession } from "@/lib/session";
 
+export type AuditActor = {
+  actorUserId: string | null;
+  actorUsername: string;
+  actorName: string;
+};
+
+export const IMAP_AUDIT_ACTOR: AuditActor = {
+  actorUserId: null,
+  actorUsername: "imap",
+  actorName: "תיבת מייל",
+};
+
 export const AUDIT_ACTIONS = {
   ORDER_CREATE: "order.create",
   ORDER_SEND: "order.send",
@@ -83,7 +95,7 @@ export type WriteAuditLogInput = {
   meta?: Prisma.InputJsonValue;
 };
 
-export function actorFromSession(session: AppSession) {
+export function actorFromSession(session: AppSession): AuditActor {
   return {
     actorUserId: session.user?.id ?? null,
     actorUsername: session.user?.username?.trim() || "unknown",
@@ -165,14 +177,14 @@ export function auditEntityHref(row: {
     case "RolePermission":
       return "/settings/permissions";
     case "AppSetting":
+      if (row.entityId === "invoiceMail.sync") return "/invoices/mail";
       return "/settings";
     default:
       return null;
   }
 }
 
-export async function writeAuditLog(session: AppSession, input: WriteAuditLogInput) {
-  const actor = actorFromSession(session);
+export async function writeAuditLogForActor(actor: AuditActor, input: WriteAuditLogInput) {
   try {
     await prisma.auditLog.create({
       data: {
@@ -189,6 +201,10 @@ export async function writeAuditLog(session: AppSession, input: WriteAuditLogInp
   } catch (error) {
     console.error("audit log failed", error);
   }
+}
+
+export async function writeAuditLog(session: AppSession, input: WriteAuditLogInput) {
+  await writeAuditLogForActor(actorFromSession(session), input);
 }
 
 export async function firstAuditFor(entityType: string, entityId: string, action?: string | string[]) {

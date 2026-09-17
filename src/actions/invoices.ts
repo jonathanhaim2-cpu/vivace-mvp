@@ -7,13 +7,10 @@ import { redirect } from "next/navigation";
 import { assertLeafAccount } from "@/lib/accounts";
 import { analyzeStoredPhoto } from "@/lib/analyze-photo";
 import { IMPORT_ANALYZE_GAP_MS, sleep } from "@/lib/ai-throttle";
-import { INVOICE_DUPLICATE_STATUS } from "@/lib/constants";
+import { INVOICE_DUPLICATE_STATUS, INVOICE_SOURCE } from "@/lib/constants";
 import { invoiceClassificationFromForm } from "@/lib/invoice-form";
-import {
-  duplicateInvoiceData,
-  findExistingDuplicateOriginal,
-  markPhotoIfDuplicate,
-} from "@/lib/invoice-duplicates";
+import { markPhotoIfDuplicate } from "@/lib/invoice-duplicates";
+import { createUploadedInvoicePhoto } from "@/lib/invoice-photos";
 import { monthKeyFromDate, resolvedPeriodMonth } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { saveUpload, UPLOAD_DIR } from "@/lib/uploads";
@@ -69,44 +66,13 @@ async function resolveInvoiceBranchId(
 function revalidateInvoicePaths() {
   revalidatePath("/invoices");
   revalidatePath("/invoices/import");
+  revalidatePath("/invoices/mail");
   revalidatePath("/invoices/package");
   revalidatePath("/reports");
   revalidatePath("/ap");
   revalidatePath("/anomalies");
   revalidatePath("/settings");
   revalidatePath("/");
-}
-
-async function createUploadedInvoicePhoto(input: {
-  saved: { fileName: string; originalName: string; mimeType: string; contentHash: string };
-  accountId: string | null;
-  branchId?: string | null;
-  amountIls?: number | null;
-  voiceNoteText?: string | null;
-  periodMonth: string | null;
-  source: string;
-}) {
-  const original = await findExistingDuplicateOriginal({
-    contentHash: input.saved.contentHash,
-    originalName: input.saved.originalName,
-  });
-  const duplicate = original?.id ? duplicateInvoiceData(original.id) : null;
-  return prisma.invoicePhoto.create({
-    data: {
-      accountId: input.accountId,
-      branchId: input.branchId ?? null,
-      amountIls: input.amountIls ?? null,
-      voiceNoteText: input.voiceNoteText ?? null,
-      fileName: input.saved.fileName,
-      originalName: input.saved.originalName,
-      mimeType: input.saved.mimeType,
-      contentHash: input.saved.contentHash,
-      periodMonth: input.periodMonth,
-      source: input.source,
-      classifiedAt: input.accountId && !duplicate ? new Date() : null,
-      ...(duplicate ?? { isDuplicate: false, duplicateOfId: null, duplicateStatus: null }),
-    },
-  });
 }
 
 export async function uploadStandaloneInvoice(formData: FormData) {
@@ -130,7 +96,7 @@ export async function uploadStandaloneInvoice(formData: FormData) {
     amountIls: amountIls != null && Number.isFinite(amountIls) ? amountIls : null,
     voiceNoteText,
     periodMonth,
-    source: "MANUAL",
+    source: INVOICE_SOURCE.MANUAL,
   });
   if (!created.isDuplicate) {
     await analyzeStoredPhoto(created.id);
@@ -277,7 +243,7 @@ export async function importInboxFiles(formData: FormData) {
       accountId: defaultAccount,
       branchId,
       periodMonth,
-      source: "BULK_IMPORT",
+      source: INVOICE_SOURCE.BULK_IMPORT,
     });
     if (created.isDuplicate) duplicateCount += 1;
     createdPhotos.push({

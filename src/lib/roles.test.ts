@@ -118,6 +118,8 @@ test("routes map to permission keys", () => {
   assert.equal(requiredPermissionForPath("/settings/activity"), "nav.activity");
   assert.equal(requiredPermissionForPath("/orders/new"), "nav.orders");
   assert.equal(requiredPermissionForPath("/ap"), "nav.ap");
+  assert.equal(requiredPermissionForPath("/invoices/mail"), "action.accounting_package");
+  assert.equal(requiredPermissionForPath("/api/cron/invoice-mail"), null);
   assert.equal(requiredPermissionForPath("/login"), null);
   assert.equal(DEFAULT_ROLE_PERMISSIONS.edge_worker.includes("nav.ap"), false);
 });
