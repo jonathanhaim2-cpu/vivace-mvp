@@ -28,6 +28,7 @@ export default async function UsersSettingsPage() {
       />
 
       <CompactPanel
+        className="max-w-3xl"
         title="משתמש חדש"
         description="אחרי יצירה מופיעה סיסמה זמנית להעתקה — מוסרים ידנית, אין מייל."
       >

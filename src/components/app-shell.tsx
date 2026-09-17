@@ -188,7 +188,7 @@ export function AppShell({
 
       <main className="lg:ms-64">
         <CutoffReminderBanner initial={dueReminders} />
-        <div className="mx-auto w-full max-w-6xl px-4 py-6 pb-28 lg:pb-10">{children}</div>
+        <div className="w-full px-3 py-6 pb-28 lg:px-4 lg:pb-10">{children}</div>
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur-md print:hidden lg:hidden">

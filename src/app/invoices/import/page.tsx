@@ -3,7 +3,7 @@ import { importInboxFiles } from "@/actions/invoices";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
 import { InvoiceAiTip } from "@/components/ai-helper-tip";
 import { BranchSelect } from "@/components/branches/branch-select";
-import { PageHeader } from "@/components/page-header";
+import { NarrowForm, PageHeader } from "@/components/page-header";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { CompactField, CompactForm, CompactPanel, NativeSelect } from "@/components/ui/compact-form";
 import { Input } from "@/components/ui/input";
@@ -26,47 +26,49 @@ export default async function InvoiceImportPage() {
 
       <InvoiceAiTip variant="import" />
 
-      <CompactPanel
-        title="העלאה מרובה"
-        description="PDF או תמונות. ריק בחודש/קטגוריה = ה-AI מחלץ מכל מסמך, ואתם מאשרים בתור. אותו קובץ פעמיים לא ייספר פעמיים."
-      >
-        <CompactForm action={importInboxFiles}>
-          <CompactField
-            label="קבצים"
-            htmlFor="photos"
-            grow
-            hint="בחירה מרובה מתיקיית ההורדות, כמו מצורפים מתיבת המייל."
-          >
-            <Input id="photos" name="photos" type="file" accept="image/*,application/pdf" multiple required />
-          </CompactField>
-          <CompactField label="חודש לדיווח" htmlFor="periodMonth">
-            <NativeSelect id="periodMonth" name="periodMonth" defaultValue="">
-              <option value="">אוטומטי — לפי תאריך החשבונית</option>
-              {months.map((key) => (
-                <option key={key} value={key}>
-                  {monthLabel(key)}
-                </option>
-              ))}
-            </NativeSelect>
-          </CompactField>
-          <CompactField label="סניף" htmlFor="branchId">
-            <BranchSelect
-              id="branchId"
-              branches={branches}
-              defaultValue={session.branchId}
-              allowEmpty
-              emptyLabel="לשיבוץ אחר כך"
-            />
-          </CompactField>
-          <CompactField label="קטגוריה" htmlFor="accountId" className="min-w-[14rem]">
-            <GroupedAccountSelect id="accountId" allowEmpty required={false} />
-          </CompactField>
-          <Button type="submit">ייבוא לתור</Button>
-          <Link href="/invoices" className={cn(buttonVariants({ variant: "outline" }))}>
-            לתור הסיווג
-          </Link>
-        </CompactForm>
-      </CompactPanel>
+      <NarrowForm>
+        <CompactPanel
+          title="העלאה מרובה"
+          description="PDF או תמונות. ריק בחודש/קטגוריה = ה-AI מחלץ מכל מסמך, ואתם מאשרים בתור. אותו קובץ פעמיים לא ייספר פעמיים."
+        >
+          <CompactForm action={importInboxFiles}>
+            <CompactField
+              label="קבצים"
+              htmlFor="photos"
+              grow
+              hint="בחירה מרובה מתיקיית ההורדות, כמו מצורפים מתיבת המייל."
+            >
+              <Input id="photos" name="photos" type="file" accept="image/*,application/pdf" multiple required />
+            </CompactField>
+            <CompactField label="חודש לדיווח" htmlFor="periodMonth">
+              <NativeSelect id="periodMonth" name="periodMonth" defaultValue="">
+                <option value="">אוטומטי — לפי תאריך החשבונית</option>
+                {months.map((key) => (
+                  <option key={key} value={key}>
+                    {monthLabel(key)}
+                  </option>
+                ))}
+              </NativeSelect>
+            </CompactField>
+            <CompactField label="סניף" htmlFor="branchId">
+              <BranchSelect
+                id="branchId"
+                branches={branches}
+                defaultValue={session.branchId}
+                allowEmpty
+                emptyLabel="לשיבוץ אחר כך"
+              />
+            </CompactField>
+            <CompactField label="קטגוריה" htmlFor="accountId" className="min-w-[14rem]">
+              <GroupedAccountSelect id="accountId" allowEmpty required={false} />
+            </CompactField>
+            <Button type="submit">ייבוא לתור</Button>
+            <Link href="/invoices" className={cn(buttonVariants({ variant: "outline" }))}>
+              לתור הסיווג
+            </Link>
+          </CompactForm>
+        </CompactPanel>
+      </NarrowForm>
     </div>
   );
 }

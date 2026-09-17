@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { PageHeader } from "@/components/page-header";
+import { NarrowForm, PageHeader } from "@/components/page-header";
 import { SupplierForm } from "@/components/suppliers/supplier-form";
 import { requirePagePermission } from "@/lib/access";
 import { listCategoryTree } from "@/lib/categories";
@@ -21,7 +21,9 @@ export default async function EditSupplierPage({ params }: { params: Promise<{ i
   return (
     <div>
       <PageHeader title={`עריכת ${supplier.name}`} />
-      <SupplierForm supplier={supplier} categoryTree={tree} branches={branches} />
+      <NarrowForm wide>
+        <SupplierForm supplier={supplier} categoryTree={tree} branches={branches} />
+      </NarrowForm>
     </div>
   );
 }

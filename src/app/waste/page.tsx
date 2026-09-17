@@ -81,7 +81,7 @@ export default async function WastePage({
           action={{ href: "/settings", label: "הוספת סניף" }}
         />
       ) : (
-      <CompactPanel title="רישום פחת">
+      <CompactPanel className="max-w-3xl" title="רישום פחת">
           <CompactForm action={createWasteEntry}>
             {session.isNetwork ? (
               <CompactField label="סניף" htmlFor="branchId">

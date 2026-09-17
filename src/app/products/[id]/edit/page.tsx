@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { PageHeader } from "@/components/page-header";
+import { NarrowForm, PageHeader } from "@/components/page-header";
 import { ProductForm } from "@/components/products/product-form";
 import { requirePagePermission } from "@/lib/access";
 import { listCategoryTree } from "@/lib/categories";
@@ -22,14 +22,16 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   return (
     <div>
       <PageHeader title={`עריכת ${product.name}`} description={product.supplier.name} />
-      <ProductForm
-        supplierId={product.supplierId}
-        mixDocuments={product.supplier.documentType === "MIX_PER_PRODUCT"}
-        product={product}
-        categoryTree={tree}
-        isNetwork={session.isNetwork}
-        supplierPlantsCouncilRelevant={product.supplier.plantsCouncilRelevant}
-      />
+      <NarrowForm wide>
+        <ProductForm
+          supplierId={product.supplierId}
+          mixDocuments={product.supplier.documentType === "MIX_PER_PRODUCT"}
+          product={product}
+          categoryTree={tree}
+          isNetwork={session.isNetwork}
+          supplierPlantsCouncilRelevant={product.supplier.plantsCouncilRelevant}
+        />
+      </NarrowForm>
     </div>
   );
 }
