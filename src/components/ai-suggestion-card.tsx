@@ -3,6 +3,7 @@ import { BranchSelect, type BranchOption } from "@/components/branches/branch-se
 import { Button } from "@/components/ui/button";
 import { isLowConfidence } from "@/lib/ai";
 import { AI_QUOTA_MESSAGE } from "@/lib/ai-throttle";
+import { photoDocumentTypeLabel } from "@/lib/constants";
 import { formatIls } from "@/lib/format";
 
 type Props = {
@@ -13,6 +14,7 @@ type Props = {
   confidence: number | null;
   reason: string | null;
   status: string | null;
+  documentType?: string | null;
   suggestedAccount: { code: string; name: string; parentName: string } | null;
   branches?: BranchOption[];
   defaultBranchId?: string | null;
@@ -26,6 +28,7 @@ export function AiSuggestionCard({
   confidence,
   reason,
   status,
+  documentType,
   suggestedAccount,
   branches = [],
   defaultBranchId,
@@ -107,6 +110,12 @@ export function AiSuggestionCard({
           <div className="flex justify-between gap-2">
             <dt className="text-muted-foreground">סכום</dt>
             <dd>{formatIls(totalIls)}</dd>
+          </div>
+        ) : null}
+        {documentType ? (
+          <div className="flex justify-between gap-2">
+            <dt className="text-muted-foreground">סוג</dt>
+            <dd>{photoDocumentTypeLabel(documentType)}</dd>
           </div>
         ) : null}
         {suggestedAccount ? (

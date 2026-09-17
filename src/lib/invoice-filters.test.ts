@@ -4,11 +4,13 @@ import { monthKeyFromDate } from "./months";
 import {
   invoicesFilterQuery,
   matchesClassifiedFilters,
+  matchesDocumentTypeFilter,
   matchesPendingFilters,
   parseInvoiceFilters,
   photoDateKey,
   photoPeriodMonth,
   uniqueSupplierNames,
+  matchesSearch,
   type InvoiceFilterPhoto,
 } from "./invoice-filters";
 
@@ -25,6 +27,7 @@ function photo(overrides: Partial<InvoiceFilterPhoto> = {}): InvoiceFilterPhoto 
     aiSupplierName: "ירקות השרון",
     supplierName: null,
     branchId: "br_kiryat",
+    documentType: "INVOICE",
     ...overrides,
   };
 }
@@ -38,6 +41,7 @@ test("parseInvoiceFilters defaults to current month and all statuses", () => {
   assert.equal(filters.to, "");
   assert.equal(filters.q, "");
   assert.equal(filters.branch, "");
+  assert.equal(filters.documentType, "all");
 });
 
 test("parseInvoiceFilters accepts all-months, date range, and classified status", () => {
@@ -48,6 +52,7 @@ test("parseInvoiceFilters accepts all-months, date range, and classified status"
     category: "acc_food_misc",
     status: "classified",
     q: "  245 ",
+    documentType: "RECEIPT",
   });
   assert.equal(filters.month, "all");
   assert.equal(filters.from, "2026-09-01");
@@ -55,6 +60,7 @@ test("parseInvoiceFilters accepts all-months, date range, and classified status"
   assert.equal(filters.category, "acc_food_misc");
   assert.equal(filters.status, "classified");
   assert.equal(filters.q, "245");
+  assert.equal(filters.documentType, "RECEIPT");
 });
 
 test("parseInvoiceFilters ignores invalid dates", () => {
@@ -124,4 +130,27 @@ test("invoicesFilterQuery omits default all-status and empty fields", () => {
     invoicesFilterQuery({ month: "all", from: "2026-09-01", category: "acc_food_misc", q: "245" }),
     "/invoices?month=all&from=2026-09-01&category=acc_food_misc&q=245",
   );
+  assert.equal(
+    invoicesFilterQuery({ month: "2026-09", documentType: "RECEIPT" }),
+    "/invoices?month=2026-09&documentType=RECEIPT",
+  );
+});
+
+test("document type filter matches INVOICE/RECEIPT/UNKNOWN and ignores all", () => {
+  const base = parseInvoiceFilters({ month: "2026-09", status: "all" });
+  const invoice = photo({ documentType: "INVOICE" });
+  const receipt = photo({ documentType: "RECEIPT" });
+  const unknown = photo({ documentType: "UNKNOWN" });
+  assert.equal(matchesDocumentTypeFilter(invoice, "all"), true);
+  assert.equal(matchesDocumentTypeFilter(invoice, "INVOICE"), true);
+  assert.equal(matchesDocumentTypeFilter(invoice, "RECEIPT"), false);
+  assert.equal(matchesClassifiedFilters(invoice, { ...base, documentType: "INVOICE" }), true);
+  assert.equal(matchesClassifiedFilters(invoice, { ...base, documentType: "RECEIPT" }), false);
+  assert.equal(matchesClassifiedFilters(receipt, { ...base, documentType: "RECEIPT" }), true);
+  assert.equal(matchesClassifiedFilters(unknown, { ...base, documentType: "UNKNOWN" }), true);
+  assert.equal(matchesClassifiedFilters(unknown, { ...base, documentType: "INVOICE" }), false);
+  assert.equal(matchesPendingFilters(photo({ accountId: null, documentType: "RECEIPT" }), { ...base, documentType: "RECEIPT" }), true);
+  assert.equal(matchesPendingFilters(photo({ accountId: null, documentType: "INVOICE" }), { ...base, documentType: "RECEIPT" }), false);
+  assert.equal(matchesSearch(receipt, "קבלה"), true);
+  assert.equal(matchesSearch(invoice, "קבלה"), false);
 });

@@ -574,6 +574,7 @@ export async function seedDemo(prisma: PrismaClient) {
             mimeType: "image/svg+xml",
             periodMonth: "2026-08",
             source: "RECEIPT",
+            documentType: "INVOICE",
             classifiedAt: new Date("2026-08-18T08:00:00"),
           },
         },
@@ -592,6 +593,7 @@ export async function seedDemo(prisma: PrismaClient) {
           voiceNoteText: "חשבונית תנובה מהבוקר, גבינות ומוצרי חלב",
           periodMonth: "2026-08",
           source: "RECEIPT",
+          documentType: "INVOICE",
           classifiedAt: new Date("2026-08-18T08:00:00"),
         },
     });
@@ -609,6 +611,7 @@ export async function seedDemo(prisma: PrismaClient) {
       amountIls: 1840,
       voiceNoteText: "חשמל חודש אוגוסט סניף הרצליה",
       title: "חשבונית חשמל",
+      documentType: "INVOICE",
     },
     {
       id: "photo_kitchen_wages",
@@ -616,8 +619,9 @@ export async function seedDemo(prisma: PrismaClient) {
       originalName: "שכר-מטבח-אוגוסט.svg",
       accountId: "acc_payroll_kitchen",
       amountIls: 12600,
-      voiceNoteText: "משכורות עובדי מטבח אוגוסט",
-      title: "שכר עובדי מטבח",
+      voiceNoteText: "קבלה משכורות עובדי מטבח אוגוסט",
+      title: "קבלה שכר מטבח",
+      documentType: "RECEIPT",
     },
     {
       id: "photo_produce_aug",
@@ -627,6 +631,7 @@ export async function seedDemo(prisma: PrismaClient) {
       amountIls: 2140,
       voiceNoteText: "ירקות השרון אוגוסט",
       title: "חשבונית ירקות",
+      documentType: "INVOICE",
     },
     {
       id: "photo_rent_aug",
@@ -636,6 +641,7 @@ export async function seedDemo(prisma: PrismaClient) {
       amountIls: 18500,
       voiceNoteText: "שכר דירה חנות אוגוסט",
       title: "שכר דירה חנות",
+      documentType: "UNKNOWN",
     },
   ];
 
@@ -655,6 +661,7 @@ export async function seedDemo(prisma: PrismaClient) {
         originalName: doc.originalName,
         periodMonth: "2026-08",
         source: "MANUAL",
+        documentType: doc.documentType,
         classifiedAt: new Date("2026-08-28T10:00:00"),
       },
       create: {
@@ -667,6 +674,7 @@ export async function seedDemo(prisma: PrismaClient) {
         mimeType: "image/svg+xml",
         periodMonth: "2026-08",
         source: "MANUAL",
+        documentType: doc.documentType,
         classifiedAt: new Date("2026-08-28T10:00:00"),
       },
     });

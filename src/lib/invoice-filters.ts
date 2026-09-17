@@ -1,3 +1,10 @@
+import {
+  PHOTO_DOCUMENT_TYPE,
+  PHOTO_DOCUMENT_TYPES,
+  parsePhotoDocumentType,
+  photoDocumentTypeLabel,
+  type PhotoDocumentType,
+} from "@/lib/constants";
 import { monthKeyFromDate, resolvedPeriodMonth } from "@/lib/months";
 
 export const INVOICE_STATUS_FILTERS = [
@@ -8,6 +15,13 @@ export const INVOICE_STATUS_FILTERS = [
 
 export type InvoiceStatusFilter = (typeof INVOICE_STATUS_FILTERS)[number]["value"];
 
+export const INVOICE_DOCUMENT_TYPE_FILTERS = [
+  { value: "all", label: "הכול" },
+  ...PHOTO_DOCUMENT_TYPES,
+] as const;
+
+export type InvoiceDocumentTypeFilter = (typeof INVOICE_DOCUMENT_TYPE_FILTERS)[number]["value"];
+
 export type InvoiceListFilters = {
   month: string;
   from: string;
@@ -16,6 +30,7 @@ export type InvoiceListFilters = {
   supplier: string;
   branch: string;
   status: InvoiceStatusFilter;
+  documentType: InvoiceDocumentTypeFilter;
   q: string;
 };
 
@@ -31,6 +46,7 @@ export type InvoiceFilterPhoto = {
   aiSupplierName: string | null;
   supplierName: string | null;
   branchId: string | null;
+  documentType: string | null;
 };
 
 const MONTH_RE = /^\d{4}-\d{2}$/;
@@ -44,12 +60,21 @@ export function parseInvoiceFilters(params: {
   supplier?: string;
   branch?: string;
   status?: string;
+  documentType?: string;
   q?: string;
 }): InvoiceListFilters {
   const monthRaw = params.month?.trim() ?? "";
   const statusRaw = params.status?.trim() ?? "";
   const status: InvoiceStatusFilter =
     statusRaw === "classified" || statusRaw === "pending" || statusRaw === "all" ? statusRaw : "all";
+  const documentTypeRaw = params.documentType?.trim() ?? "";
+  const documentType: InvoiceDocumentTypeFilter =
+    documentTypeRaw === "all" ||
+    documentTypeRaw === PHOTO_DOCUMENT_TYPE.INVOICE ||
+    documentTypeRaw === PHOTO_DOCUMENT_TYPE.RECEIPT ||
+    documentTypeRaw === PHOTO_DOCUMENT_TYPE.UNKNOWN
+      ? documentTypeRaw
+      : "all";
   const from = DATE_RE.test(params.from?.trim() ?? "") ? params.from!.trim() : "";
   const to = DATE_RE.test(params.to?.trim() ?? "") ? params.to!.trim() : "";
 
@@ -61,6 +86,7 @@ export function parseInvoiceFilters(params: {
     supplier: params.supplier?.trim() ?? "",
     branch: params.branch?.trim() ?? "",
     status,
+    documentType,
     q: params.q?.trim() ?? "",
   };
 }
@@ -112,6 +138,8 @@ export function matchesSearch(photo: InvoiceFilterPhoto, q: string) {
     photo.fileName,
     photoSupplierName(photo),
     photo.aiInvoiceDate ?? "",
+    photoDocumentTypeLabel(photo.documentType),
+    parsePhotoDocumentType(photo.documentType),
     amount != null ? String(amount) : "",
     amount != null ? amount.toFixed(2) : "",
   ]
@@ -127,10 +155,23 @@ export function matchesDateRange(photo: InvoiceFilterPhoto, filters: Pick<Invoic
   return true;
 }
 
+export function photoDocumentType(photo: Pick<InvoiceFilterPhoto, "documentType">): PhotoDocumentType {
+  return parsePhotoDocumentType(photo.documentType);
+}
+
+export function matchesDocumentTypeFilter(
+  photo: Pick<InvoiceFilterPhoto, "documentType">,
+  documentType: InvoiceDocumentTypeFilter,
+) {
+  if (documentType === "all") return true;
+  return photoDocumentType(photo) === documentType;
+}
+
 function matchesSharedFilters(photo: InvoiceFilterPhoto, filters: InvoiceListFilters) {
   if (filters.month !== "all" && photoPeriodMonth(photo) !== filters.month) return false;
   if (filters.supplier && photoSupplierName(photo) !== filters.supplier) return false;
   if (filters.branch && photo.branchId !== filters.branch) return false;
+  if (!matchesDocumentTypeFilter(photo, filters.documentType)) return false;
   return matchesDateRange(photo, filters) && matchesSearch(photo, filters.q);
 }
 
@@ -157,6 +198,7 @@ export function invoicesFilterQuery(filters: Partial<InvoiceListFilters>) {
   if (filters.supplier) params.set("supplier", filters.supplier);
   if (filters.branch) params.set("branch", filters.branch);
   if (filters.status && filters.status !== "all") params.set("status", filters.status);
+  if (filters.documentType && filters.documentType !== "all") params.set("documentType", filters.documentType);
   if (filters.q) params.set("q", filters.q);
   const query = params.toString();
   return query ? `/invoices?${query}` : "/invoices";

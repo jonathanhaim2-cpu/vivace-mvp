@@ -257,6 +257,9 @@ model InvoicePhoto {
   paid           Boolean       @default(false)
   paidAt         DateTime?
   sentToAccountant Boolean     @default(false)
+  /// INVOICE | RECEIPT | UNKNOWN. Default UNKNOWN so Railway `db push` backfills existing rows.
+  documentType   String        @default("UNKNOWN")
+  aiDocumentType String?
   aiSupplierName String?
   aiInvoiceDate  String?
   aiTotalIls     Float?

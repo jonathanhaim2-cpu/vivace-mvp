@@ -5,6 +5,7 @@ import { AiSuggestionCard } from "@/components/ai-suggestion-card";
 import { AnalyzeInvoiceButton } from "@/components/analyze-invoice-button";
 import { BranchSelect, type BranchOption } from "@/components/branches/branch-select";
 import { InvoiceDocumentPreview } from "@/components/invoices/invoice-document-preview";
+import { DocumentTypeBadge, DocumentTypeSelect } from "@/components/invoices/document-type-control";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,8 @@ export type PendingInvoicePhoto = {
   aiReason: string | null;
   aiStatus: string | null;
   branchId: string | null;
+  documentType: string;
+  aiDocumentType: string | null;
 };
 
 export function PendingInvoiceCard({
@@ -63,6 +66,9 @@ export function PendingInvoiceCard({
               {formatDateTime(photo.createdAt)} · {invoiceSourceLabel(photo.source)}
               {reportMonth ? ` · ${monthLabel(reportMonth)}` : ""}
             </p>
+            <div className="mt-1">
+              <DocumentTypeBadge value={photo.documentType} />
+            </div>
           </div>
           <AuditInfoButton stamp={auditStamp} />
         </div>
@@ -81,6 +87,7 @@ export function PendingInvoiceCard({
             confidence={photo.aiConfidence}
             reason={photo.aiReason}
             status={photo.aiStatus}
+            documentType={photo.aiDocumentType ?? photo.documentType}
             suggestedAccount={chartLeafMeta(photo.aiAccountId)}
             branches={branches}
             defaultBranchId={photo.branchId}
@@ -135,6 +142,13 @@ export function PendingInvoiceCard({
             <Field>
               <FieldLabel htmlFor={field("accountId")}>קטגוריה</FieldLabel>
               <GroupedAccountSelect id={field("accountId")} defaultValue={photo.aiAccountId} />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor={field("documentType")}>סוג מסמך</FieldLabel>
+              <DocumentTypeSelect
+                id={field("documentType")}
+                defaultValue={photo.documentType || photo.aiDocumentType}
+              />
             </Field>
             <Field>
               <FieldLabel htmlFor={field("branchId")}>סניף</FieldLabel>

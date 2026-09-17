@@ -1,4 +1,5 @@
 import { duplicateInvoiceData, findExistingDuplicateOriginal } from "@/lib/invoice-duplicates";
+import { PHOTO_DOCUMENT_TYPE, parsePhotoDocumentType } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 
 export async function createUploadedInvoicePhoto(input: {
@@ -9,6 +10,7 @@ export async function createUploadedInvoicePhoto(input: {
   voiceNoteText?: string | null;
   periodMonth: string | null;
   source: string;
+  documentType?: string | null;
 }) {
   const original = await findExistingDuplicateOriginal({
     contentHash: input.saved.contentHash,
@@ -27,6 +29,7 @@ export async function createUploadedInvoicePhoto(input: {
       contentHash: input.saved.contentHash,
       periodMonth: input.periodMonth,
       source: input.source,
+      documentType: parsePhotoDocumentType(input.documentType ?? PHOTO_DOCUMENT_TYPE.UNKNOWN),
       classifiedAt: input.accountId && !duplicate ? new Date() : null,
       ...(duplicate ?? { isDuplicate: false, duplicateOfId: null, duplicateStatus: null }),
     },

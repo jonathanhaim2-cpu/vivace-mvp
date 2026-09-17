@@ -7,6 +7,7 @@ import {
   parseInvoiceDateInput,
   toDateInputValue,
 } from "./invoice-form";
+import { parsePhotoDocumentType, PHOTO_DOCUMENT_TYPE } from "./constants";
 
 test("parseInvoiceDateInput keeps ISO dates", () => {
   assert.equal(parseInvoiceDateInput("2026-09-15"), "2026-09-15");
@@ -61,6 +62,7 @@ test("invoiceClassificationFromForm maps pending-queue fields", () => {
     accountId: "acc_food_produce",
     periodMonth: "2026-08",
     branchId: "br_kiryat",
+    documentType: "UNKNOWN",
   });
 });
 
@@ -69,4 +71,25 @@ test("invoiceClassificationFromForm treats missing branch as null", () => {
   form.set("accountId", "acc_food_dairy");
   form.set("periodMonth", "2026-09");
   assert.equal(invoiceClassificationFromForm(form).branchId, null);
+  assert.equal(invoiceClassificationFromForm(form).documentType, "UNKNOWN");
+});
+
+test("invoiceClassificationFromForm reads document type", () => {
+  const form = new FormData();
+  form.set("accountId", "acc_food_produce");
+  form.set("periodMonth", "2026-09");
+  form.set("documentType", "RECEIPT");
+  assert.equal(invoiceClassificationFromForm(form).documentType, "RECEIPT");
+  form.set("documentType", "חשבונית");
+  assert.equal(invoiceClassificationFromForm(form).documentType, "INVOICE");
+});
+
+test("parsePhotoDocumentType maps Hebrew and English aliases", () => {
+  assert.equal(parsePhotoDocumentType("INVOICE"), PHOTO_DOCUMENT_TYPE.INVOICE);
+  assert.equal(parsePhotoDocumentType("receipt"), PHOTO_DOCUMENT_TYPE.RECEIPT);
+  assert.equal(parsePhotoDocumentType("קבלה"), PHOTO_DOCUMENT_TYPE.RECEIPT);
+  assert.equal(parsePhotoDocumentType("חשבונית"), PHOTO_DOCUMENT_TYPE.INVOICE);
+  assert.equal(parsePhotoDocumentType("לא ידוע"), PHOTO_DOCUMENT_TYPE.UNKNOWN);
+  assert.equal(parsePhotoDocumentType(""), PHOTO_DOCUMENT_TYPE.UNKNOWN);
+  assert.equal(parsePhotoDocumentType("nope"), PHOTO_DOCUMENT_TYPE.UNKNOWN);
 });

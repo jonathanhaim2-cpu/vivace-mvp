@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { analyzeInvoiceDocument, getAiRuntime } from "@/lib/ai";
 import { aiFailureReason } from "@/lib/ai-throttle";
+import { PHOTO_DOCUMENT_TYPE } from "@/lib/constants";
 import { markPhotoIfDuplicate } from "@/lib/invoice-duplicates";
 import { resolvedPeriodMonth } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
@@ -37,6 +38,7 @@ export async function analyzeStoredPhoto(photoId: string) {
     }
 
     const periodMonth = resolvedPeriodMonth(photo.periodMonth, suggestion.invoiceDate);
+    const keepExistingType = photo.documentType !== PHOTO_DOCUMENT_TYPE.UNKNOWN;
     await prisma.invoicePhoto.update({
       where: { id: photoId },
       data: {
@@ -44,10 +46,14 @@ export async function analyzeStoredPhoto(photoId: string) {
         aiInvoiceDate: suggestion.invoiceDate,
         aiTotalIls: suggestion.totalIls,
         aiAccountId: suggestion.accountId,
+        aiDocumentType: suggestion.documentType,
         aiConfidence: suggestion.confidence,
         aiReason: suggestion.reason,
         aiStatus: "SUGGESTED",
         amountIls: photo.amountIls ?? suggestion.totalIls,
+        ...(keepExistingType || suggestion.documentType === PHOTO_DOCUMENT_TYPE.UNKNOWN
+          ? {}
+          : { documentType: suggestion.documentType }),
         ...(periodMonth ? { periodMonth } : {}),
       },
     });

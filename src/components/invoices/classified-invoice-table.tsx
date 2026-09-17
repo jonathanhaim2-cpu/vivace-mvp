@@ -2,6 +2,7 @@ import { updateInvoiceCategory } from "@/actions/invoices";
 import { AuditInfoButton } from "@/components/audit-info-button";
 import { BranchSelect, type BranchOption } from "@/components/branches/branch-select";
 import { InvoicePreviewButton } from "@/components/invoices/invoice-preview-button";
+import { DocumentTypeBadge, DocumentTypeSelect } from "@/components/invoices/document-type-control";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
 import { EmptyState } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ export type ClassifiedInvoiceRow = {
   auditStamp: string;
   branchId: string | null;
   branchName: string | null;
+  documentType: string;
 };
 
 export function ClassifiedInvoiceTable({
@@ -51,6 +53,7 @@ export function ClassifiedInvoiceTable({
         <TableRow>
           <TableHead>תאריך</TableHead>
           <TableHead>קובץ</TableHead>
+          <TableHead>סוג</TableHead>
           <TableHead>קטגוריה</TableHead>
           <TableHead>סניף</TableHead>
           <TableHead>סכום</TableHead>
@@ -86,6 +89,9 @@ export function ClassifiedInvoiceTable({
                   <AuditInfoButton stamp={row.auditStamp} />
                 </div>
               </TableCell>
+              <TableCell>
+                <DocumentTypeBadge value={row.documentType} />
+              </TableCell>
               <TableCell className="max-w-[12rem] whitespace-normal">
                 <p className="font-medium">{expenseCategoryLabel(row.accountId)}</p>
               </TableCell>
@@ -105,6 +111,7 @@ export function ClassifiedInvoiceTable({
                   />
                   <form action={updateInvoiceCategory.bind(null, row.id)} className="flex min-w-[12rem] flex-1 flex-wrap items-center gap-2">
                     <GroupedAccountSelect defaultValue={row.accountId} />
+                    <DocumentTypeSelect defaultValue={row.documentType} className="w-[7.5rem]" />
                     <BranchSelect
                       branches={branches}
                       defaultValue={row.branchId}

@@ -1,5 +1,6 @@
 import { isRateLimitError, withRateLimitRetry } from "@/lib/ai-throttle";
 import { CHART_OF_ACCOUNTS, isChartLeafId } from "@/lib/chart-of-accounts";
+import { parsePhotoDocumentType, type PhotoDocumentType } from "@/lib/constants";
 import { monthKeyFromDate } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 
@@ -8,6 +9,7 @@ export type AiSuggestion = {
   invoiceDate: string | null;
   totalIls: number | null;
   accountId: string | null;
+  documentType: PhotoDocumentType;
   confidence: number;
   reason: string;
 };
@@ -107,11 +109,16 @@ function chartPrompt() {
 }
 
 function buildPrompt() {
-  return `אתה מנתח חשבוניות למסעדת Vivac'e / ויואצ'ה (עוסק מורשה 204754121) בישראל.
-חלץ מהמסמך: שם ספק, תאריך חשבונית, סכום כולל בשקלים אם נראה.
+  return `אתה מנתח חשבוניות וקבלות למסעדת Vivac'e / ויואצ'ה (עוסק מורשה 204754121) בישראל.
+חלץ מהמסמך: שם ספק, תאריך, סכום כולל בשקלים אם נראה, וסוג מסמך.
+סוג מסמך (documentType) — חובה אחד מ:
+- INVOICE = חשבונית / חשבונית מס / tax invoice / חשבונית מס-קבלה
+- RECEIPT = קבלה בלבד (אישור תשלום בלי חשבונית מס)
+- UNKNOWN = לא ברור
+חשבונית ≠ קבלה. אם כתוב במפורש רק קבלה — RECEIPT. אם כתוב חשבונית — INVOICE.
 הצע את הקטגוריה (LEAF בכרטסת) המתאימה ביותר. אסור לבחור קטגוריית אב.
 החזר JSON בלבד במבנה:
-{"supplierName":"","invoiceDate":"YYYY-MM-DD או ריק","totalIls":0,"accountId":"acc_...","confidence":0.0,"reason":"משפט קצר בעברית"}
+{"supplierName":"","invoiceDate":"YYYY-MM-DD או ריק","totalIls":0,"accountId":"acc_...","documentType":"INVOICE","confidence":0.0,"reason":"משפט קצר בעברית"}
 confidence בין 0 ל-1. אם לא בטוח — confidence נמוך מ-0.55.
 
 קטגוריות מותרות (רק מזהי עלים):
@@ -132,6 +139,7 @@ function parseSuggestion(raw: string): AiSuggestion | null {
       invoiceDate: typeof parsed.invoiceDate === "string" ? parsed.invoiceDate || null : null,
       totalIls: Number.isFinite(total) ? total : null,
       accountId,
+      documentType: parsePhotoDocumentType(parsed.documentType),
       confidence: Number.isFinite(confidence) ? Math.min(1, Math.max(0, confidence)) : 0,
       reason: typeof parsed.reason === "string" ? parsed.reason : "",
     };

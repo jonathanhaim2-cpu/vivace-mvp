@@ -5,6 +5,7 @@ import { GroupedAccountSelect } from "@/components/accounts/grouped-account-sele
 import { InvoiceAiTip } from "@/components/ai-helper-tip";
 import { AiMissingBanner } from "@/components/ai-missing-banner";
 import { BranchSelect } from "@/components/branches/branch-select";
+import { DocumentTypeSelect } from "@/components/invoices/document-type-control";
 import { InvoiceCaptureField } from "@/components/invoices/invoice-capture-field";
 import { ClassifiedInvoiceTable } from "@/components/invoices/classified-invoice-table";
 import { DuplicateInvoiceCard } from "@/components/invoices/duplicate-invoice-card";
@@ -59,6 +60,7 @@ export default async function InvoicesPage({
     status?: string;
     q?: string;
     branch?: string;
+    documentType?: string;
   }>;
 }) {
   await scanExistingInvoiceDuplicates();
@@ -103,6 +105,7 @@ export default async function InvoicesPage({
     aiSupplierName: photo.aiSupplierName,
     supplierName: photo.goodsReceipt?.order.supplier.name ?? null,
     branchId: resolvedInvoiceBranchId(photo),
+    documentType: photo.documentType,
   }));
 
   const pending = uniquePhotos.filter((_, index) => matchesPendingFilters(filterPhotos[index], filters));
@@ -178,7 +181,7 @@ export default async function InvoicesPage({
 
       <CompactPanel
         title="סינון מסמכים"
-        description="קודם בוחרים סינון (חודש, תאריך, קטגוריה, סטטוס, חיפוש) — ואז רואים רשימה קומפקטית. תמונה רק בלחיצה על «תצוגה»."
+        description="קודם בוחרים סינון (חודש, תאריך, קטגוריה, סוג מסמך, סטטוס, חיפוש) — ואז רואים רשימה קומפקטית. תמונה רק בלחיצה על «תצוגה»."
       >
         <InvoiceFilterBar filters={filters} months={months} suppliers={suppliers} branches={branches} />
       </CompactPanel>
@@ -251,13 +254,14 @@ export default async function InvoicesPage({
             auditStamp: stampFor(photo.id),
             branchId: resolvedInvoiceBranchId(photo),
             branchName: photo.branch?.name ?? photo.goodsReceipt?.order.branch.name ?? null,
+            documentType: photo.documentType,
           }))}
           branches={branches}
           emptyTitle={classifiedTotal === 0 ? "אין חשבוניות משובצות" : "אין תוצאות לסינון"}
           emptyDescription={
             classifiedTotal === 0
               ? "העלו או ייבאו מסמך ושייכו לקטגוריה."
-              : "שנו חודש, תאריך, קטגוריה או חיפוש — או אפסו לחודש הנוכחי."
+              : "שנו חודש, תאריך, קטגוריה, סוג מסמך או חיפוש — או אפסו לחודש הנוכחי."
           }
         />
       </CompactPanel>
@@ -279,6 +283,9 @@ export default async function InvoicesPage({
           <div className="min-w-[16rem] flex-1">
             <InvoiceCaptureField compact required />
           </div>
+          <CompactField label="סוג מסמך" htmlFor="documentType">
+            <DocumentTypeSelect id="documentType" />
+          </CompactField>
           <CompactField label="חודש לדיווח" htmlFor="periodMonth">
             <NativeSelect id="periodMonth" name="periodMonth" defaultValue={monthKeyFromDate()}>
               {monthOptions.map((key) => (
