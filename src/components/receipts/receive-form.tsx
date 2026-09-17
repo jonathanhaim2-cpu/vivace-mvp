@@ -3,9 +3,11 @@
 import { useMemo, useState, useTransition } from "react";
 import { scanReceiptDocument } from "@/actions/receipt-scan";
 import { submitGoodsReceipt } from "@/actions/receipts";
+import { ReceiptAiTip } from "@/components/ai-helper-tip";
 import { AiMissingBanner } from "@/components/ai-missing-banner";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
 import { Button } from "@/components/ui/button";
+import { CompactField, NativeSelect } from "@/components/ui/compact-form";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -99,6 +101,7 @@ export function ReceiveForm({
   return (
     <form action={action} onSubmit={continueToReview} className="space-y-6">
       {!aiAvailable ? <AiMissingBanner /> : null}
+      <ReceiptAiTip />
       {scanMessage ? <p className="text-sm text-primary">{scanMessage}</p> : null}
 
       <div className={cn("space-y-3", step === 2 && "hidden")}>
@@ -167,47 +170,43 @@ export function ReceiveForm({
                     }
                   />
                 </Field>
-                <label className="flex items-end gap-2 pb-1 text-sm">
-                  <input
-                    type="checkbox"
+                <CompactField label="סטטוס הגעה" htmlFor={`missing:${line.id}`}>
+                  <NativeSelect
+                    id={`missing:${line.id}`}
                     name={`missing:${line.id}`}
-                    checked={Boolean(missing[line.id])}
+                    value={missing[line.id] ? "on" : "off"}
                     onChange={(event) =>
-                      setMissing((current) => ({ ...current, [line.id]: event.target.checked }))
+                      setMissing((current) => ({ ...current, [line.id]: event.target.value === "on" }))
                     }
-                  />
-                  מוצר חסר / לא הגיע
-                </label>
+                  >
+                    <option value="off">הגיע</option>
+                    <option value="on">חסר / לא הגיע</option>
+                  </NativeSelect>
+                </CompactField>
               </div>
               {shortage ? (
-                <fieldset className="mt-3 space-y-2 rounded-lg border border-amber-300 bg-white/70 p-3 text-sm dark:bg-background/40">
-                  <legend className="px-1 text-xs font-medium text-amber-900 dark:text-amber-200">
-                    האם בחשבונית חויבתם בסכום המלא ({formatIls(orderedTotal)}) או רק לפי מה שהתקבל (
-                    {formatIls(receivedTotal)})?
-                  </legend>
-                  <label className="flex items-start gap-2">
-                    <input
-                      type="radio"
-                      name={`billedAsUi:${line.id}`}
-                      value={BILLED_AS.FULL_ORDERED}
-                      checked={billed === BILLED_AS.FULL_ORDERED}
-                      onChange={() => setBilledAs((current) => ({ ...current, [line.id]: BILLED_AS.FULL_ORDERED }))}
-                    />
-                    <span>חוייבנו לפי כל הכמות שהוזמנה ({formatIls(orderedTotal)})</span>
-                  </label>
-                  <label className="flex items-start gap-2">
-                    <input
-                      type="radio"
-                      name={`billedAsUi:${line.id}`}
-                      value={BILLED_AS.RECEIVED_ONLY}
-                      checked={billed === BILLED_AS.RECEIVED_ONLY}
-                      onChange={() =>
-                        setBilledAs((current) => ({ ...current, [line.id]: BILLED_AS.RECEIVED_ONLY }))
-                      }
-                    />
-                    <span>חוייבנו רק לפי מה שהתקבל ({formatIls(receivedTotal)})</span>
-                  </label>
-                </fieldset>
+                <CompactField
+                  label={`חיוב בחשבונית · מלא ${formatIls(orderedTotal)} / התקבל ${formatIls(receivedTotal)}`}
+                  htmlFor={`billedAsUi:${line.id}`}
+                  className="mt-3 min-w-full"
+                >
+                  <NativeSelect
+                    id={`billedAsUi:${line.id}`}
+                    value={billed}
+                    required
+                    onChange={(event) =>
+                      setBilledAs((current) => ({ ...current, [line.id]: event.target.value }))
+                    }
+                  >
+                    <option value="">בחירת סוג חיוב</option>
+                    <option value={BILLED_AS.FULL_ORDERED}>
+                      חוייבנו לפי כל הכמות שהוזמנה ({formatIls(orderedTotal)})
+                    </option>
+                    <option value={BILLED_AS.RECEIVED_ONLY}>
+                      חוייבנו רק לפי מה שהתקבל ({formatIls(receivedTotal)})
+                    </option>
+                  </NativeSelect>
+                </CompactField>
               ) : null}
             </div>
           );
@@ -235,57 +234,31 @@ export function ReceiveForm({
                   {amount > 0 ? ` · הפרש ${formatIls(amount)}` : ""}
                 </p>
                 <input type="hidden" name={`billedAs:${line.id}`} value={billed} />
-                <fieldset className="mt-2 space-y-2">
-                  {billed === BILLED_AS.FULL_ORDERED ? (
-                    <label className="flex items-start gap-2">
-                      <input
-                        type="radio"
-                        name={`mismatchAction:${line.id}`}
-                        value={EXCEPTION_KIND.CREDIT_REQUEST}
-                        checked={chosen === EXCEPTION_KIND.CREDIT_REQUEST}
-                        onChange={() =>
-                          setMismatchAction((current) => ({
-                            ...current,
-                            [line.id]: EXCEPTION_KIND.CREDIT_REQUEST,
-                          }))
-                        }
-                        required
-                      />
-                      <span>
-                        לשלוח בקשת זיכוי לספק על {line.product.name}
-                        {amount > 0 ? ` בסכום ${formatIls(amount)}` : ""}
-                      </span>
-                    </label>
-                  ) : null}
-                  <label className="flex items-start gap-2">
-                    <input
-                      type="radio"
-                      name={`mismatchAction:${line.id}`}
-                      value={EXCEPTION_KIND.ON_THE_WAY}
-                      checked={chosen === EXCEPTION_KIND.ON_THE_WAY}
-                      onChange={() =>
-                        setMismatchAction((current) => ({ ...current, [line.id]: EXCEPTION_KIND.ON_THE_WAY }))
-                      }
-                      required
-                    />
-                    <span>הספק אמר שהפריט בדרך — בלי זיכוי, למעקב בדשבורד</span>
-                  </label>
-                  <label className="flex items-start gap-2">
-                    <input
-                      type="radio"
-                      name={`mismatchAction:${line.id}`}
-                      value={EXCEPTION_KIND.MISSING_NO_CREDIT}
-                      checked={chosen === EXCEPTION_KIND.MISSING_NO_CREDIT}
-                      onChange={() =>
-                        setMismatchAction((current) => ({
-                          ...current,
-                          [line.id]: EXCEPTION_KIND.MISSING_NO_CREDIT,
-                        }))
-                      }
-                    />
-                    <span>לא לבקש זיכוי (יופיע בדשבורד: חסר פריט ולא ביקשנו זיכוי)</span>
-                  </label>
-                </fieldset>
+                <CompactField label="טיפול בחוסר" htmlFor={`mismatchAction:${line.id}`} className="mt-2 min-w-full">
+                  <NativeSelect
+                    id={`mismatchAction:${line.id}`}
+                    name={`mismatchAction:${line.id}`}
+                    value={chosen ?? ""}
+                    required
+                    onChange={(event) =>
+                      setMismatchAction((current) => ({
+                        ...current,
+                        [line.id]: event.target.value as ActionChoice,
+                      }))
+                    }
+                  >
+                    <option value="">בחירת טיפול</option>
+                    {billed === BILLED_AS.FULL_ORDERED ? (
+                      <option value={EXCEPTION_KIND.CREDIT_REQUEST}>
+                        בקשת זיכוי{amount > 0 ? ` · ${formatIls(amount)}` : ""}
+                      </option>
+                    ) : null}
+                    <option value={EXCEPTION_KIND.ON_THE_WAY}>בדרך — בלי זיכוי, למעקב בדשבורד</option>
+                    <option value={EXCEPTION_KIND.MISSING_NO_CREDIT}>
+                      לא לבקש זיכוי (חסר ולא ביקשנו)
+                    </option>
+                  </NativeSelect>
+                </CompactField>
               </div>
             );
           })}

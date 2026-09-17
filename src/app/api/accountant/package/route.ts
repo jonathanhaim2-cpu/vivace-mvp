@@ -17,6 +17,7 @@ export async function GET(request: Request) {
   const photos = await prisma.invoicePhoto.findMany({
     where: {
       accountId: { not: null },
+      isDuplicate: false,
       OR: [{ periodMonth: month }, { periodMonth: null, createdAt: { gte: start, lt: end } }],
     },
     include: { account: { include: { parent: true } } },

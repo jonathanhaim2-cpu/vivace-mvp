@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { CutoffReminderBanner } from "@/components/cutoff-reminder-banner";
 import { SendToSuppliersToggle } from "@/components/orders/send-to-suppliers-toggle";
 import type { DueCutoffReminder } from "@/lib/reminders";
+import type { ChatPanelState } from "@/lib/chat-types";
 
 const NAV: { href: string; label: string; icon: typeof Home; permission: PermissionKey }[] = [
   { href: "/", label: "בית", icon: Home, permission: "nav.home" },
@@ -51,7 +52,7 @@ export function AppShell({
   branches,
   authEnabled,
   aiAvailable,
-  chatMessages,
+  chatPanel,
   dueReminders = [],
   sendToSuppliers = false,
 }: {
@@ -63,7 +64,7 @@ export function AppShell({
   branches: Branch[];
   authEnabled: boolean;
   aiAvailable: boolean;
-  chatMessages: { id: string; role: string; content: string }[];
+  chatPanel: ChatPanelState;
   dueReminders?: DueCutoffReminder[];
   sendToSuppliers?: boolean;
 }) {
@@ -213,7 +214,7 @@ export function AppShell({
       </nav>
       {canChat ? (
         <div className="print:hidden">
-          <AppChat messages={chatMessages} aiAvailable={aiAvailable} />
+          <AppChat panel={chatPanel} aiAvailable={aiAvailable} />
         </div>
       ) : null}
     </div>

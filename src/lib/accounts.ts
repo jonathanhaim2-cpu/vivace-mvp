@@ -1,4 +1,5 @@
 import { CHART_OF_ACCOUNTS, isChartLeafId } from "@/lib/chart-of-accounts";
+import { INVOICE_IN_TOTALS_WHERE, scanExistingInvoiceDuplicates } from "@/lib/invoice-duplicates";
 import { monthRangeUtc } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 
@@ -82,12 +83,16 @@ export type AccountRollupRow = {
 };
 
 export async function getAccountRollup(month?: string): Promise<AccountRollupRow[]> {
+  await scanExistingInvoiceDuplicates();
   const photos = await prisma.invoicePhoto.findMany({
-    where: month
-      ? {
-          OR: [{ periodMonth: month }, { periodMonth: null, createdAt: inMonth(month) }],
-        }
-      : undefined,
+    where: {
+      ...INVOICE_IN_TOTALS_WHERE,
+      ...(month
+        ? {
+            OR: [{ periodMonth: month }, { periodMonth: null, createdAt: inMonth(month) }],
+          }
+        : {}),
+    },
     include: {
       account: true,
       goodsReceipt: { include: { lines: true } },

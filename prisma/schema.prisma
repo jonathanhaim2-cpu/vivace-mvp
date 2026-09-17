@@ -240,6 +240,12 @@ model InvoicePhoto {
   fileName       String
   originalName   String
   mimeType       String
+  contentHash    String?
+  isDuplicate    Boolean       @default(false)
+  duplicateStatus String?
+  duplicateOfId  String?
+  duplicateOf    InvoicePhoto? @relation("InvoicePhotoDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicates     InvoicePhoto[] @relation("InvoicePhotoDuplicates")
   periodMonth    String?
   source         String        @default("MANUAL")
   classifiedAt   DateTime?
@@ -254,6 +260,9 @@ model InvoicePhoto {
   aiConfidence   Float?
   aiReason       String?
   aiStatus       String?
+
+  @@index([contentHash])
+  @@index([isDuplicate])
 }
 
 model InventoryCount {
@@ -328,12 +337,28 @@ model WasteEntry {
   createdAt      DateTime @default(now())
 }
 
+/// One conversation. Additive: existing ChatMessage rows stay valid with nullable threadId.
+model ChatThread {
+  id        String        @id @default(cuid())
+  title     String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  /// True for the one-time archive of pre-thread history («קודם»).
+  archived  Boolean       @default(false)
+  messages  ChatMessage[]
+}
+
 model ChatMessage {
-  id        String   @id @default(cuid())
+  id        String      @id @default(cuid())
   role      String
   content   String
   path      String?
-  createdAt DateTime @default(now())
+  createdAt DateTime    @default(now())
+  /// Optional for Railway `db push` on existing SQLite rows; backfilled at runtime.
+  threadId  String?
+  thread    ChatThread? @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
 }
 
 model AppSetting {

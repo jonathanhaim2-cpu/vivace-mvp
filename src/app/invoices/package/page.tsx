@@ -1,7 +1,7 @@
 import { AccountRollup } from "@/components/accounts/account-rollup";
 import { PageHeader } from "@/components/page-header";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CompactField, CompactPanel, FilterBar, NativeSelect } from "@/components/ui/compact-form";
 import { accountantMailto, accountantPackageText } from "@/lib/accountant-package";
 import { getAccountRollup } from "@/lib/accounts";
 import { monthLabel, previousMonthKey, recentMonthKeys } from "@/lib/months";
@@ -26,50 +26,36 @@ export default async function AccountantPackagePage({
         description={`איסוף כל החשבוניות המשובצות לחודש ${monthLabel(month)} · ZIP + טיוטת מייל בעברית.`}
       />
 
-      <form className="flex flex-wrap items-end gap-2">
-        <label className="text-sm">
-          <span className="mb-1 block text-muted-foreground">חודש</span>
-          <select
-            name="month"
-            defaultValue={month}
-            className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm"
-          >
+      <FilterBar submitLabel="הצגת חודש">
+        <CompactField label="חודש" htmlFor="pkg-month">
+          <NativeSelect id="pkg-month" name="month" defaultValue={month}>
             {recentMonthKeys().map((key) => (
               <option key={key} value={key}>
                 {monthLabel(key)}
               </option>
             ))}
-          </select>
-        </label>
-        <button type="submit" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
-          הצגת חודש
-        </button>
-      </form>
+          </NativeSelect>
+        </CompactField>
+      </FilterBar>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{classifiedDocs} מסמכים משובצים</CardTitle>
-          <CardDescription>רק קטגוריות. סיכומי האב מופיעים בגוף המייל ובקובץ הסיכום שב-ZIP.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          <a href={`/api/accountant/package?month=${month}`} className={cn(buttonVariants())}>
+      <CompactPanel
+        title={`${classifiedDocs} מסמכים משובצים`}
+        description="רק קטגוריות. סיכומי האב מופיעים בגוף המייל ובקובץ הסיכום שב-ZIP."
+      >
+        <div className="flex flex-wrap gap-2">
+          <a href={`/api/accountant/package?month=${month}`} className={cn(buttonVariants({ size: "sm" }))}>
             הורדת ZIP
           </a>
-          <a href={mailto} className={cn(buttonVariants({ variant: "outline" }))}>
+          <a href={mailto} className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
             טיוטת מייל להנה״ח
           </a>
-        </CardContent>
-      </Card>
+        </div>
+      </CompactPanel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>נושא וגוף המייל</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm font-medium">{subject}</p>
-          <pre className="mt-3 overflow-x-auto rounded-lg bg-muted p-3 text-xs whitespace-pre-wrap">{body}</pre>
-        </CardContent>
-      </Card>
+      <CompactPanel title="נושא וגוף המייל">
+        <p className="text-sm font-medium">{subject}</p>
+        <pre className="mt-2 overflow-x-auto rounded-lg bg-muted p-3 text-xs whitespace-pre-wrap">{body}</pre>
+      </CompactPanel>
 
       <AccountRollup rows={rollup} />
     </div>

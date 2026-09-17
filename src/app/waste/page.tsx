@@ -2,10 +2,9 @@ import { createWasteEntry, deleteWasteEntry } from "@/actions/waste";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { ReportExportButtons } from "@/components/report-export-buttons";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { CompactField, CompactForm, CompactPanel, FilterBar, NativeSelect } from "@/components/ui/compact-form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDate, formatIls } from "@/lib/format";
 import { monthKeyFromDate, monthLabel, monthRangeUtc, recentMonthKeys } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
@@ -17,16 +16,21 @@ export const dynamic = "force-dynamic";
 export default async function WastePage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string; view?: string }>;
+  searchParams: Promise<{ month?: string; view?: string; branch?: string }>;
 }) {
   const session = await getAppSession();
-  const { month: requested } = await searchParams;
-  const month = requested && /^\d{4}-\d{2}$/.test(requested) ? requested : monthKeyFromDate();
+  const params = await searchParams;
+  const month = params.month && /^\d{4}-\d{2}$/.test(params.month) ? params.month : monthKeyFromDate();
+  const branchId = params.branch?.trim() ?? "";
   const { start, end } = monthRangeUtc(month);
   const entries = await prisma.wasteEntry.findMany({
     where: {
       occurredOn: { gte: start, lt: end },
-      ...(session.isNetwork ? {} : { branchId: session.branchId ?? undefined }),
+      ...(session.isNetwork
+        ? branchId
+          ? { branchId }
+          : {}
+        : { branchId: session.branchId ?? undefined }),
     },
     include: { branch: true, product: true },
     orderBy: { occurredOn: "desc" },
@@ -40,27 +44,35 @@ export default async function WastePage({
       <p className="text-sm text-muted-foreground">
         פחת יומי ומכולת נרשמים כאן (stub ללא ML) ונכנסים לחישוב תקן אחרי ספירת סוף חודש.
       </p>
-      <ReportExportButtons report="waste" month={month} />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>סה״כ {monthLabel(month)}</CardTitle>
-          <CardDescription>{formatIls(total)} · {entries.length} רישומים</CardDescription>
-        </CardHeader>
-      </Card>
-
-      <form className="flex flex-wrap gap-2">
-        <select name="month" defaultValue={month} className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm">
-          {recentMonthKeys().map((key) => (
-            <option key={key} value={key}>
-              {monthLabel(key)}
-            </option>
-          ))}
-        </select>
-        <Button type="submit" size="sm" variant="outline">
-          הצגה
-        </Button>
-      </form>
+      <FilterBar submitLabel="הצגה">
+        <CompactField label="חודש" htmlFor="waste-month">
+          <NativeSelect id="waste-month" name="month" defaultValue={month}>
+            {recentMonthKeys().map((key) => (
+              <option key={key} value={key}>
+                {monthLabel(key)}
+              </option>
+            ))}
+          </NativeSelect>
+        </CompactField>
+        {session.isNetwork ? (
+          <CompactField label="סניף" htmlFor="waste-branch">
+            <NativeSelect id="waste-branch" name="branch" defaultValue={branchId}>
+              <option value="">כל הסניפים</option>
+              {session.branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {branch.name}
+                </option>
+              ))}
+            </NativeSelect>
+          </CompactField>
+        ) : null}
+      </FilterBar>
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="text-sm text-muted-foreground">
+          סה״כ {monthLabel(month)}: {formatIls(total)} · {entries.length} רישומים
+        </p>
+        <ReportExportButtons report="waste" month={month} />
+      </div>
 
       {!session.branchId && session.branches.length === 0 ? (
         <EmptyState
@@ -69,95 +81,86 @@ export default async function WastePage({
           action={{ href: "/settings", label: "הוספת סניף" }}
         />
       ) : (
-      <Card>
-        <CardHeader>
-          <CardTitle>רישום פחת</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form action={createWasteEntry} className="grid gap-3 sm:grid-cols-2">
+      <CompactPanel title="רישום פחת">
+          <CompactForm action={createWasteEntry}>
             {session.isNetwork ? (
-              <Field>
-                <FieldLabel htmlFor="branchId">סניף</FieldLabel>
-                <select
-                  id="branchId"
-                  name="branchId"
-                  defaultValue={session.branchId ?? ""}
-                  className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
-                >
+              <CompactField label="סניף" htmlFor="branchId">
+                <NativeSelect id="branchId" name="branchId" defaultValue={session.branchId ?? ""}>
                   {session.branches.map((branch) => (
                     <option key={branch.id} value={branch.id}>
                       {branch.name}
                     </option>
                   ))}
-                </select>
-              </Field>
+                </NativeSelect>
+              </CompactField>
             ) : (
               <input type="hidden" name="branchId" value={session.branchId ?? ""} />
             )}
-            <Field>
-              <FieldLabel htmlFor="occurredOn">תאריך</FieldLabel>
+            <CompactField label="תאריך" htmlFor="occurredOn">
               <Input id="occurredOn" name="occurredOn" type="date" required />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="productId">מוצר (אופציונלי)</FieldLabel>
-              <select id="productId" name="productId" className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm">
+            </CompactField>
+            <CompactField label="מוצר" htmlFor="productId" grow>
+              <NativeSelect id="productId" name="productId">
                 <option value="">ללא — רק הערה</option>
                 {products.map((product) => (
                   <option key={product.id} value={product.id}>
                     {product.name} · {product.supplier.name}
                   </option>
                 ))}
-              </select>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="qty">כמות</FieldLabel>
+              </NativeSelect>
+            </CompactField>
+            <CompactField label="כמות" htmlFor="qty">
               <Input id="qty" name="qty" type="number" min={0} step={1} defaultValue={1} />
-            </Field>
-            <Field className="sm:col-span-2">
-              <FieldLabel htmlFor="notes">הערה</FieldLabel>
-              <Textarea id="notes" name="notes" rows={2} />
-            </Field>
-            <Field className="sm:col-span-2">
-              <FieldLabel htmlFor="voice">הערת קול (אופציונלי)</FieldLabel>
+            </CompactField>
+            <CompactField label="הערה" htmlFor="notes" grow>
+              <Input id="notes" name="notes" />
+            </CompactField>
+            <CompactField label="הערת קול" htmlFor="voice" hint="נשמר מקומית. אין תמלול אוטומטי ב-MVP.">
               <Input id="voice" name="voice" type="file" accept="audio/*" />
-              <FieldDescription>נשמר מקומית. אין תמלול אוטומטי ב-MVP.</FieldDescription>
-            </Field>
+            </CompactField>
             <Button type="submit">שמירת פחת</Button>
-          </form>
-        </CardContent>
-      </Card>
+          </CompactForm>
+      </CompactPanel>
       )}
 
-      <div className="space-y-2">
-        {entries.length === 0 ? (
-          <p className="text-sm text-muted-foreground">אין פחת בחודש זה.</p>
-        ) : (
-          entries.map((entry) => (
-            <Card key={entry.id} size="sm">
-              <CardContent className="flex flex-col gap-2 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p>
-                    {formatDate(entry.occurredOn)} · {entry.branch.name}
-                    {entry.product ? ` · ${entry.product.name} × ${entry.qty}` : ""}
-                  </p>
-                  <p className="text-muted-foreground">
-                    {formatIls(entry.estimatedCost)}
-                    {entry.notes ? ` · ${entry.notes}` : ""}
-                  </p>
+      {entries.length === 0 ? (
+        <p className="text-sm text-muted-foreground">אין פחת בחודש זה.</p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>תאריך</TableHead>
+              <TableHead>סניף</TableHead>
+              <TableHead>פריט</TableHead>
+              <TableHead>עלות</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {entries.map((entry) => (
+              <TableRow key={entry.id}>
+                <TableCell className="whitespace-nowrap">{formatDate(entry.occurredOn)}</TableCell>
+                <TableCell>{entry.branch.name}</TableCell>
+                <TableCell>
+                  <p>{entry.product ? `${entry.product.name} × ${entry.qty}` : "הערה בלבד"}</p>
+                  {entry.notes ? <p className="text-xs text-muted-foreground">{entry.notes}</p> : null}
                   {entry.voiceFileName ? (
                     <audio controls className="mt-1 max-w-full" src={publicFileUrl(entry.voiceFileName)} />
                   ) : null}
-                </div>
-                <form action={deleteWasteEntry.bind(null, entry.id)}>
-                  <Button type="submit" size="sm" variant="ghost">
-                    מחיקה
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+                </TableCell>
+                <TableCell>{formatIls(entry.estimatedCost)}</TableCell>
+                <TableCell className="text-end">
+                  <form action={deleteWasteEntry.bind(null, entry.id)}>
+                    <Button type="submit" size="sm" variant="ghost">
+                      מחיקה
+                    </Button>
+                  </form>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
     </div>
   );
 }

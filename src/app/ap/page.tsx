@@ -2,7 +2,8 @@ import { approveSupplierPayment, requestKarteset, toggleExpenseFlags } from "@/a
 import { PageHeader } from "@/components/page-header";
 import { ReportExportButtons } from "@/components/report-export-buttons";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CompactField, CompactPanel, FilterBar, NativeSelect } from "@/components/ui/compact-form";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getNonProcurementChecklist, getSupplierApRows, payMethodLabel } from "@/lib/ap";
 import { PAYMENT_METHODS } from "@/lib/constants";
 import { formatIls } from "@/lib/format";
@@ -27,108 +28,119 @@ export default async function ApPage({
         description={`כרטסת ל־${monthLabel(month)}. בקשת כרטסת נכנסת לתור מייל (אין מיילר ב-MVP).`}
       />
 
-      <form className="flex flex-wrap items-end gap-2">
-        <label className="text-sm">
-          <span className="mb-1 block text-muted-foreground">חודש</span>
-          <select name="month" defaultValue={month} className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm">
+      <FilterBar submitLabel="הצגה">
+        <CompactField label="חודש" htmlFor="ap-month">
+          <NativeSelect id="ap-month" name="month" defaultValue={month}>
             {recentMonthKeys().map((key) => (
               <option key={key} value={key}>
                 {monthLabel(key)}
               </option>
             ))}
-          </select>
-        </label>
-        <Button type="submit" size="sm" variant="outline">
-          הצגה
-        </Button>
-        <ReportExportButtons report="ap" month={month} />
-      </form>
+          </NativeSelect>
+        </CompactField>
+      </FilterBar>
+      <ReportExportButtons report="ap" month={month} />
 
-      <div className="space-y-3">
-        {rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">אין רכש בחודש זה.</p>
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">אין רכש בחודש זה.</p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>ספק</TableHead>
+              <TableHead>לתשלום</TableHead>
+              <TableHead>רכש</TableHead>
+              <TableHead>סטטוס</TableHead>
+              <TableHead>פעולות</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <TableRow key={row.supplier.id}>
+                <TableCell>
+                  <p className="font-medium">{row.supplier.name}</p>
+                  {row.supplier.accountingEmail ? (
+                    <p className="text-xs text-muted-foreground">{row.supplier.accountingEmail}</p>
+                  ) : null}
+                </TableCell>
+                <TableCell>{formatIls(row.amountDue)}</TableCell>
+                <TableCell>{formatIls(row.purchased)}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {row.ap?.approvedForPayment ? `אושר (${payMethodLabel(row.ap.payMethod)})` : "ממתין"}
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <form action={requestKarteset.bind(null, row.supplier.id)}>
+                      <input type="hidden" name="month" value={month} />
+                      <Button type="submit" size="sm" variant="outline">
+                        {row.ap?.kartesetStatus === "QUEUED" ? "כרטסת בתור" : "כרטסת"}
+                      </Button>
+                    </form>
+                    <form action={approveSupplierPayment.bind(null, row.supplier.id)} className="flex items-center gap-1.5">
+                      <input type="hidden" name="month" value={month} />
+                      <NativeSelect
+                        name="payMethod"
+                        defaultValue={row.ap?.payMethod ?? row.supplier.paymentMethod ?? "TRANSFER"}
+                        className="w-32"
+                      >
+                        {PAYMENT_METHODS.map((method) => (
+                          <option key={method.value} value={method.value}>
+                            {method.label}
+                          </option>
+                        ))}
+                      </NativeSelect>
+                      <Button type="submit" size="sm">
+                        אישור
+                      </Button>
+                    </form>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+
+      <CompactPanel
+        title="הוצאות לא מרכש"
+        description="שולם + נשלח להנה״ח. אחרי ה-10 לחודש, פריטים שלא סומנו אדומים בבית."
+      >
+        {expenses.length === 0 ? (
+          <p className="text-sm text-muted-foreground">אין הוצאות ידניות בחודש זה.</p>
         ) : (
-          rows.map((row) => (
-            <Card key={row.supplier.id}>
-              <CardHeader>
-                <CardTitle>{row.supplier.name}</CardTitle>
-                <CardDescription>
-                  לתשלום {formatIls(row.amountDue)} · רכש בפועל {formatIls(row.purchased)}
-                  {row.ap?.approvedForPayment ? ` · אושר לתשלום (${payMethodLabel(row.ap.payMethod)})` : ""}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-2">
-                <form action={requestKarteset.bind(null, row.supplier.id)}>
-                  <input type="hidden" name="month" value={month} />
-                  <Button type="submit" size="sm" variant="outline">
-                    {row.ap?.kartesetStatus === "QUEUED" ? "כרטסת בתור מייל" : "בקשת כרטסת (1 לחודש)"}
-                  </Button>
-                </form>
-                {row.supplier.accountingEmail ? (
-                  <span className="self-center text-xs text-muted-foreground">{row.supplier.accountingEmail}</span>
-                ) : null}
-                <form action={approveSupplierPayment.bind(null, row.supplier.id)} className="flex flex-wrap items-center gap-2">
-                  <input type="hidden" name="month" value={month} />
-                  <select
-                    name="payMethod"
-                    defaultValue={row.ap?.payMethod ?? row.supplier.paymentMethod ?? "TRANSFER"}
-                    className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm"
-                  >
-                    {PAYMENT_METHODS.map((method) => (
-                      <option key={method.value} value={method.value}>
-                        {method.label}
-                      </option>
-                    ))}
-                  </select>
-                  <Button type="submit" size="sm">
-                    אישור לתשלום
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>הוצאות לא מרכש</CardTitle>
-          <CardDescription>שולם + נשלח להנה״ח. אחרי ה-10 לחודש, פריטים שלא סומנו אדומים בבית.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {expenses.length === 0 ? (
-            <p className="text-sm text-muted-foreground">אין הוצאות ידניות בחודש זה.</p>
-          ) : (
-            expenses.map((item) => (
-              <form
-                key={item.id}
-                action={toggleExpenseFlags.bind(null, item.id)}
-                className="flex flex-col gap-2 rounded-lg border p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <p className="font-medium">{item.originalName}</p>
+          <div className="space-y-2">
+            {expenses.map((item) => (
+              <form key={item.id} action={toggleExpenseFlags.bind(null, item.id)} className="flex flex-wrap items-end gap-2">
+                <div className="min-w-[10rem] flex-1">
+                  <p className="text-sm font-medium">{item.originalName}</p>
                   <p className="text-xs text-muted-foreground">
                     {expenseCategoryLabel(item.accountId)} · {item.amountIls != null ? formatIls(item.amountIls) : "ללא סכום"}
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <label className="flex items-center gap-1">
-                    <input type="checkbox" name="paid" defaultChecked={item.paid} />
-                    שולם
-                  </label>
-                  <label className="flex items-center gap-1">
-                    <input type="checkbox" name="sentToAccountant" defaultChecked={item.sentToAccountant} />
-                    נשלח להנה״ח
-                  </label>
-                  <Button type="submit" size="sm" variant="outline">
-                    שמירה
-                  </Button>
-                </div>
+                <CompactField label="תשלום" htmlFor={`paid-${item.id}`}>
+                  <NativeSelect id={`paid-${item.id}`} name="paid" defaultValue={item.paid ? "on" : "off"}>
+                    <option value="off">לא שולם</option>
+                    <option value="on">שולם</option>
+                  </NativeSelect>
+                </CompactField>
+                <CompactField label="הנה״ח" htmlFor={`sent-${item.id}`}>
+                  <NativeSelect
+                    id={`sent-${item.id}`}
+                    name="sentToAccountant"
+                    defaultValue={item.sentToAccountant ? "on" : "off"}
+                  >
+                    <option value="off">לא נשלח</option>
+                    <option value="on">נשלח</option>
+                  </NativeSelect>
+                </CompactField>
+                <Button type="submit" size="sm" variant="outline">
+                  שמירה
+                </Button>
               </form>
-            ))
-          )}
-        </CardContent>
-      </Card>
+            ))}
+          </div>
+        )}
+      </CompactPanel>
     </div>
   );
 }

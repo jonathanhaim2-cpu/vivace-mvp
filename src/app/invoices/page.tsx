@@ -1,34 +1,72 @@
 import Link from "next/link";
-import { uploadStandaloneInvoice, updateInvoiceCategory } from "@/actions/invoices";
-import { AccountPicker } from "@/components/accounts/account-picker";
+import { uploadStandaloneInvoice } from "@/actions/invoices";
 import { AccountRollup } from "@/components/accounts/account-rollup";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
+import { InvoiceAiTip } from "@/components/ai-helper-tip";
 import { AiMissingBanner } from "@/components/ai-missing-banner";
-import { AiSuggestionCard } from "@/components/ai-suggestion-card";
-import { AnalyzeInvoiceButton } from "@/components/analyze-invoice-button";
-import { EmptyState, PageHeader } from "@/components/page-header";
+import { ClassifiedInvoiceTable } from "@/components/invoices/classified-invoice-table";
+import { DuplicateInvoiceCard } from "@/components/invoices/duplicate-invoice-card";
+import { ImportSuccessBanner } from "@/components/invoices/import-success-banner";
+import { InvoiceFilterBar } from "@/components/invoices/invoice-filter-bar";
+import { PendingInvoiceCard } from "@/components/invoices/pending-invoice-card";
+import { PageHeader } from "@/components/page-header";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { CompactField, CompactForm, CompactPanel, NativeSelect } from "@/components/ui/compact-form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { getAccountRollup } from "@/lib/accounts";
 import { getAiRuntime } from "@/lib/ai";
-import { chartLeafMeta } from "@/lib/chart-of-accounts";
-import { expenseCategoryLabel, formatDateTime, formatIls } from "@/lib/format";
-import { monthKeyFromDate, monthLabel, recentMonthKeys, resolvedPeriodMonth } from "@/lib/months";
+import { scanExistingInvoiceDuplicates } from "@/lib/invoice-duplicates";
+import {
+  matchesClassifiedFilters,
+  matchesPendingFilters,
+  parseInvoiceFilters,
+  photoPeriodMonth,
+  photoSupplierName,
+  uniquePeriodMonths,
+  uniqueSupplierNames,
+  type InvoiceFilterPhoto,
+} from "@/lib/invoice-filters";
+import { monthKeyFromDate, monthLabel, recentMonthKeys } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { publicFileUrl } from "@/lib/uploads";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function InvoicesPage() {
+function importedCountFromParam(imported: string | undefined) {
+  if (!imported || !/^\d+$/.test(imported)) return 0;
+  return Number(imported);
+}
+
+export default async function InvoicesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    imported?: string;
+    dup?: string;
+    month?: string;
+    from?: string;
+    to?: string;
+    category?: string;
+    supplier?: string;
+    status?: string;
+    q?: string;
+  }>;
+}) {
+  await scanExistingInvoiceDuplicates();
+  const params = await searchParams;
+  const importedCount = importedCountFromParam(params.imported);
+  const duplicateNotice = Number.parseInt(params.dup ?? "", 10);
+  const filters = parseInvoiceFilters(params);
+
   const [photos, rollup, runtime] = await Promise.all([
     prisma.invoicePhoto.findMany({
       include: {
         account: { include: { parent: true } },
         goodsReceipt: { include: { order: { include: { supplier: true } } } },
+        duplicateOf: true,
       },
       orderBy: { createdAt: "desc" },
     }),
@@ -36,19 +74,67 @@ export default async function InvoicesPage() {
     getAiRuntime(),
   ]);
 
-  const counts = Object.fromEntries(rollup.flatMap((parent) => parent.children.map((child) => [child.id, child.documents])));
-  const pending = photos.filter((photo) => !photo.accountId);
-  const classified = photos.filter((photo) => photo.accountId);
-  const months = recentMonthKeys();
+  const duplicates = photos.filter((photo) => photo.isDuplicate);
+  const uniquePhotos = photos.filter((photo) => !photo.isDuplicate);
+  const filterPhotos: InvoiceFilterPhoto[] = uniquePhotos.map((photo) => ({
+    accountId: photo.accountId,
+    originalName: photo.originalName,
+    fileName: photo.fileName,
+    periodMonth: photo.periodMonth,
+    createdAt: photo.createdAt,
+    amountIls: photo.amountIls,
+    aiTotalIls: photo.aiTotalIls,
+    aiInvoiceDate: photo.aiInvoiceDate,
+    aiSupplierName: photo.aiSupplierName,
+    supplierName: photo.goodsReceipt?.order.supplier.name ?? null,
+  }));
+
+  const pending = uniquePhotos.filter((_, index) => matchesPendingFilters(filterPhotos[index], filters));
+  const classified = uniquePhotos.filter((_, index) => matchesClassifiedFilters(filterPhotos[index], filters));
+  const classifiedTotal = uniquePhotos.filter((photo) => photo.accountId).length;
+  const months = uniquePeriodMonths(filterPhotos, recentMonthKeys());
+  const suppliers = uniqueSupplierNames(filterPhotos);
+  const monthOptions = recentMonthKeys();
+  const monthSummary = filters.month === "all" ? "כל החודשים" : monthLabel(filters.month);
+  const rollupDocuments = uniquePhotos.flatMap((photo) =>
+    photo.accountId
+      ? [
+          {
+            id: photo.id,
+            accountId: photo.accountId,
+            originalName: photo.originalName,
+            fileUrl: publicFileUrl(photo.fileName),
+            mimeType: photo.mimeType,
+            createdAt: photo.createdAt.toISOString(),
+            invoiceDate: photo.aiInvoiceDate,
+            supplierName: photo.aiSupplierName ?? photo.goodsReceipt?.order.supplier.name ?? null,
+            amountIls: photo.amountIls ?? photo.aiTotalIls,
+          },
+        ]
+      : [],
+  );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       <PageHeader
         title="חשבוניות וסיווג"
         description="שיבוץ לקטגוריה בתבנית הנה״ח של יונתן. האב נמדד בדוח ובחבילת רואה החשבון."
       />
 
+      {importedCount > 0 ? <ImportSuccessBanner count={importedCount} /> : null}
       {runtime.reason === "no_key" ? <AiMissingBanner /> : null}
+      <InvoiceAiTip />
+
+      {Number.isFinite(duplicateNotice) && duplicateNotice > 0 ? (
+        <Alert>
+          <AlertTitle>כפילות — לא יובא שוב</AlertTitle>
+          <AlertDescription>
+            {duplicateNotice === 1
+              ? "הקובץ כבר קיים במערכת. הוא נשמר ב«כפילויות» ולא נספר בסיכומי כרטיסים או בחבילת הנה״ח."
+              : `${duplicateNotice} קבצים כבר קיימים. הם נשמרו ב«כפילויות» ולא נספרים בסיכומים.`}
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
         <Link href="/invoices/import" className={cn(buttonVariants({ variant: "outline" }))}>
@@ -63,178 +149,121 @@ export default async function InvoicesPage() {
         <Link href="/ap" className={cn(buttonVariants({ variant: "outline" }))}>
           תשלומים וכרטסת
         </Link>
-          <Link href="/reports" className={cn(buttonVariants({ variant: "ghost" }))}>
-            דוח חודשי
-          </Link>
-          <Link href="/waste" className={cn(buttonVariants({ variant: "ghost" }))}>
-            דוח פחת
-          </Link>
+        <Link href="/reports" className={cn(buttonVariants({ variant: "ghost" }))}>
+          דוח חודשי
+        </Link>
+        <Link href="/waste" className={cn(buttonVariants({ variant: "ghost" }))}>
+          דוח פחת
+        </Link>
         <Link href="/settings" className={cn(buttonVariants({ variant: "ghost" }))}>
           שימוש AI
         </Link>
       </div>
 
+      <CompactPanel
+        title="סינון מסמכים"
+        description="קודם בוחרים סינון (חודש, תאריך, קטגוריה, סטטוס, חיפוש) — ואז רואים רשימה קומפקטית. תמונה רק בלחיצה על «תצוגה»."
+      >
+        <InvoiceFilterBar filters={filters} months={months} suppliers={suppliers} />
+      </CompactPanel>
+
       {pending.length > 0 ? (
-        <Card>
+        <Card id="pending-classification" className="scroll-mt-24">
           <CardHeader>
             <CardTitle>ממתינות לסיווג · {pending.length}</CardTitle>
             <CardDescription>
-              ייבוא והעלאה בלי קטגוריה נכנסים לכאן. ה-AI מציע קטגוריה ותאריך לכל מסמך — מאשרים בלחיצה או מתקנים ידנית.
+              ייבוא והעלאה בלי קטגוריה נכנסים לכאן. רואים את המסמך, מאשרים הצעת AI, או ממלאים תאריך/ספק/סכום ומשבצים ידנית.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {pending.map((photo) => {
-              const suggested = chartLeafMeta(photo.aiAccountId);
-              const reportMonth = resolvedPeriodMonth(photo.periodMonth, photo.aiInvoiceDate);
-              return (
-                <div key={photo.id} className="space-y-3 rounded-lg border p-3">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <p className="font-medium">{photo.originalName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDateTime(photo.createdAt)} · {photo.source === "BULK_IMPORT" ? "ייבוא תיקייה" : "העלאה"}
-                        {reportMonth ? ` · ${monthLabel(reportMonth)}` : ""}
-                      </p>
-                    </div>
-                    {photo.aiStatus !== "SUGGESTED" && photo.aiStatus !== "CONFIRMED" ? (
-                      <AnalyzeInvoiceButton photoId={photo.id} />
-                    ) : null}
-                  </div>
-                  <AiSuggestionCard
-                    photoId={photo.id}
-                    supplierName={photo.aiSupplierName}
-                    invoiceDate={photo.aiInvoiceDate}
-                    totalIls={photo.aiTotalIls}
-                    confidence={photo.aiConfidence}
-                    reason={photo.aiReason}
-                    status={photo.aiStatus}
-                    suggestedAccount={suggested}
-                  />
-                  <form
-                    action={updateInvoiceCategory.bind(null, photo.id)}
-                    className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end"
-                  >
-                    <GroupedAccountSelect defaultValue={photo.aiAccountId} />
-                    <input type="hidden" name="periodMonth" value={reportMonth ?? monthKeyFromDate()} />
-                    <Button type="submit" size="sm" variant="outline">
-                      שיבוץ ידני
-                    </Button>
-                  </form>
-                </div>
-              );
-            })}
+            {pending.map((photo) => (
+              <PendingInvoiceCard key={photo.id} photo={photo} months={monthOptions} />
+            ))}
           </CardContent>
         </Card>
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>העלאה + ניתוח</CardTitle>
-          <CardDescription>
-            אפשר לבחור קטגוריה מראש, או להעלות בלי שיבוץ ולקבל הצעת AI לאישור.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form action={uploadStandaloneInvoice} className="space-y-5">
-            <AccountPicker defaultValue="" counts={counts} allowEmpty />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field className="sm:col-span-2">
-                <FieldLabel htmlFor="photo">צילום / קובץ</FieldLabel>
-                <Input id="photo" name="photo" type="file" accept="image/*,application/pdf" required />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="periodMonth">חודש לדיווח</FieldLabel>
-                <select
-                  id="periodMonth"
-                  name="periodMonth"
-                  defaultValue={monthKeyFromDate()}
-                  className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
-                >
-                  {months.map((key) => (
-                    <option key={key} value={key}>
-                      {monthLabel(key)}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="amountIls">סכום ללא מע״מ</FieldLabel>
-                <Input id="amountIls" name="amountIls" type="number" min={0} step="0.01" />
-              </Field>
-              <Field className="sm:col-span-2">
-                <FieldLabel htmlFor="voiceNoteText">תמליל הערת קול (זמני)</FieldLabel>
-                <Textarea id="voiceNoteText" name="voiceNoteText" placeholder="למשל: ירקות השרון אוגוסט" />
-                <FieldDescription>במקום הקלטה אמיתית.</FieldDescription>
-              </Field>
-            </div>
-            <Button type="submit">העלאה וניתוח</Button>
-          </form>
-        </CardContent>
-      </Card>
+      {duplicates.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>כפילויות · {duplicates.length}</CardTitle>
+            <CardDescription>
+              חשודים כהעתק של מסמך שכבר יובא. לא נספרים בכרטיסים, בדוח החודשי או בחבילת רואה החשבון עד שתאשרו שהם ייחודיים.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {duplicates.map((photo) => (
+              <DuplicateInvoiceCard key={photo.id} photo={photo} />
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
-      <div>
-        <h2 className="mb-3 font-heading text-lg font-semibold">מסמכים משובצים</h2>
-        {classified.length === 0 ? (
-          <EmptyState title="אין חשבוניות משובצות" description="העלו או ייבאו מסמך ושייכו לקטגוריה." />
-        ) : (
-          <div className="grid gap-3 md:grid-cols-2">
-            {classified.map((photo) => {
-              const fileUrl = publicFileUrl(photo.fileName);
-              return (
-                <Card key={photo.id}>
-                  <CardHeader>
-                    <CardTitle className="text-base">{photo.originalName}</CardTitle>
-                    <CardDescription>
-                      {formatDateTime(photo.createdAt)}
-                      {photo.periodMonth ? ` · ${monthLabel(photo.periodMonth)}` : ""}
-                      {photo.goodsReceipt ? ` · קליטה מול ${photo.goodsReceipt.order.supplier.name}` : ""}
-                      {photo.amountIls != null ? ` · ${formatIls(photo.amountIls)}` : ""}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <a href={fileUrl} target="_blank" rel="noreferrer">
-                      {photo.mimeType.startsWith("image/") ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={fileUrl}
-                          alt={photo.originalName}
-                          className="h-40 w-full rounded-lg border object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-24 items-center justify-center rounded-lg border bg-muted text-sm">
-                          קובץ מצורף
-                        </div>
-                      )}
-                    </a>
-                    <p className="text-sm font-medium">{expenseCategoryLabel(photo.accountId)}</p>
-                    {photo.aiStatus === "CONFIRMED" ? (
-                      <AiSuggestionCard
-                        photoId={photo.id}
-                        supplierName={photo.aiSupplierName}
-                        invoiceDate={photo.aiInvoiceDate}
-                        totalIls={photo.aiTotalIls}
-                        confidence={photo.aiConfidence}
-                        reason={photo.aiReason}
-                        status={photo.aiStatus}
-                        suggestedAccount={chartLeafMeta(photo.aiAccountId)}
-                      />
-                    ) : null}
-                    <form action={updateInvoiceCategory.bind(null, photo.id)} className="flex items-center gap-2">
-                      <GroupedAccountSelect defaultValue={photo.accountId} />
-                      {photo.periodMonth ? <input type="hidden" name="periodMonth" value={photo.periodMonth} /> : null}
-                      <Button type="submit" size="sm" variant="outline">
-                        שינוי
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      <CompactPanel
+        title="מסמכים משובצים"
+        description={`${classified.length} תוצאות · ${monthSummary}${
+          filters.from || filters.to ? ` · ${filters.from || "…"}–${filters.to || "…"}` : ""
+        }${classifiedTotal > 0 ? ` · ${classifiedTotal} משובצים במערכת` : ""}`}
+      >
+        <ClassifiedInvoiceTable
+          rows={classified.map((photo) => ({
+            id: photo.id,
+            originalName: photo.originalName,
+            fileName: photo.fileName,
+            mimeType: photo.mimeType,
+            createdAt: photo.createdAt,
+            periodMonth: photoPeriodMonth({
+              periodMonth: photo.periodMonth,
+              createdAt: photo.createdAt,
+              aiInvoiceDate: photo.aiInvoiceDate,
+            }),
+            accountId: photo.accountId as string,
+            amountIls: photo.amountIls,
+            aiTotalIls: photo.aiTotalIls,
+            aiConfidence: photo.aiConfidence,
+            aiStatus: photo.aiStatus,
+            supplierName: photoSupplierName({
+              supplierName: photo.goodsReceipt?.order.supplier.name ?? null,
+              aiSupplierName: photo.aiSupplierName,
+            }),
+          }))}
+          emptyTitle={classifiedTotal === 0 ? "אין חשבוניות משובצות" : "אין תוצאות לסינון"}
+          emptyDescription={
+            classifiedTotal === 0
+              ? "העלו או ייבאו מסמך ושייכו לקטגוריה."
+              : "שנו חודש, תאריך, קטגוריה או חיפוש — או אפסו לחודש הנוכחי."
+          }
+        />
+      </CompactPanel>
 
-      <AccountRollup rows={rollup} />
+      <CompactPanel title="העלאה + ניתוח" description="אפשר לבחור קטגוריה מראש, או להעלות בלי שיבוץ ולקבל הצעת AI.">
+        <CompactForm action={uploadStandaloneInvoice}>
+          <CompactField label="קטגוריה" htmlFor="accountId" className="min-w-[14rem]">
+            <GroupedAccountSelect id="accountId" defaultValue="" allowEmpty required={false} />
+          </CompactField>
+          <CompactField label="קובץ" htmlFor="photo" grow>
+            <Input id="photo" name="photo" type="file" accept="image/*,application/pdf" required />
+          </CompactField>
+          <CompactField label="חודש לדיווח" htmlFor="periodMonth">
+            <NativeSelect id="periodMonth" name="periodMonth" defaultValue={monthKeyFromDate()}>
+              {monthOptions.map((key) => (
+                <option key={key} value={key}>
+                  {monthLabel(key)}
+                </option>
+              ))}
+            </NativeSelect>
+          </CompactField>
+          <CompactField label="סכום ללא מע״מ" htmlFor="amountIls">
+            <Input id="amountIls" name="amountIls" type="number" min={0} step="0.01" />
+          </CompactField>
+          <CompactField label="הערה" htmlFor="voiceNoteText" grow>
+            <Input id="voiceNoteText" name="voiceNoteText" placeholder="למשל: ירקות השרון אוגוסט" />
+          </CompactField>
+          <Button type="submit">העלאה וניתוח</Button>
+        </CompactForm>
+      </CompactPanel>
+
+      <AccountRollup rows={rollup} documents={rollupDocuments} />
     </div>
   );
 }

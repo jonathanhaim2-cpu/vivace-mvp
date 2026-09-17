@@ -5,8 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { SettingsNav } from "@/components/settings/settings-nav";
 import { AiMissingBanner } from "@/components/ai-missing-banner";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, FieldLabel } from "@/components/ui/field";
+import { CompactField, CompactForm, CompactPanel } from "@/components/ui/compact-form";
 import { Input } from "@/components/ui/input";
 import { getAiRuntime } from "@/lib/ai";
 import { isAuthEnabled } from "@/lib/auth";
@@ -31,7 +30,7 @@ export default async function SettingsPage() {
     runtime.provider === "google" ? "Google Gemini Flash" : runtime.provider === "openai" ? "OpenAI" : "אין ספק";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <SettingsNav permissions={session.permissions} />
       <PageHeader
         title="הגדרות"
@@ -40,239 +39,141 @@ export default async function SettingsPage() {
 
       {runtime.reason === "no_key" ? <AiMissingBanner /> : null}
 
-          {sessionCan(session, "action.manage_users") || sessionCan(session, "action.manage_permissions") || sessionCan(session, "nav.activity") ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {sessionCan(session, "action.manage_users") ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>משתמשים</CardTitle>
-                <CardDescription>יצירה, עריכה, השבתה ואיפוס סיסמה לפי תפקיד וסניף.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/settings/users" className={cn(buttonVariants())}>
-                  ניהול משתמשים
-                </Link>
-              </CardContent>
-            </Card>
-          ) : null}
-          {sessionCan(session, "action.manage_permissions") ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>הרשאות</CardTitle>
-                <CardDescription>טבלת שליטה: מה כל תפקיד רואה ומה מותר לו לבצע.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/settings/permissions" className={cn(buttonVariants())}>
-                  טבלת שליטה
-                </Link>
-              </CardContent>
-            </Card>
-          ) : null}
-          {sessionCan(session, "nav.activity") ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>פעילות</CardTitle>
-                <CardDescription>מי ביצע הזמנות, קליטות, ביטולי קליטה, חשבוניות ושינויי משתמש.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/settings/activity" className={cn(buttonVariants())}>
-                  לוג פעילות
-                </Link>
-              </CardContent>
-            </Card>
-          ) : null}
-        </div>
+      {sessionCan(session, "action.manage_users") ||
+      sessionCan(session, "action.manage_permissions") ||
+      sessionCan(session, "nav.activity") ? (
+        <CompactPanel title="ניהול גישה">
+          <div className="flex flex-wrap gap-2">
+            {sessionCan(session, "action.manage_users") ? (
+              <Link href="/settings/users" className={cn(buttonVariants({ size: "sm" }))}>
+                משתמשים
+              </Link>
+            ) : null}
+            {sessionCan(session, "action.manage_permissions") ? (
+              <Link href="/settings/permissions" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
+                טבלת הרשאות
+              </Link>
+            ) : null}
+            {sessionCan(session, "nav.activity") ? (
+              <Link href="/settings/activity" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
+                לוג פעילות
+              </Link>
+            ) : null}
+            {sessionCan(session, "action.manage_settings") ? (
+              <Link href="/categories" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
+                קטגוריות מוצרים
+              </Link>
+            ) : null}
+            <Link href="/ap" className={cn(buttonVariants({ size: "sm", variant: "ghost" }))}>
+              תשלומים להנה״ח
+            </Link>
+          </div>
+        </CompactPanel>
       ) : null}
 
       {sessionCan(session, "action.toggle_send_to_suppliers") ? (
-      <Card>
-        <CardHeader>
-          <CardTitle>שליחה לספקים</CardTitle>
-          <CardDescription>
-            כבוי (ברירת מחדל): קישורי וואטסאפ נפתחים למספר של רועי 0526408537. דולק: כל הזמנה נשלחת למספר האמיתי של הספק מהמחירון.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
+        <CompactPanel
+          title="שליחה לספקים"
+          description="כבוי: וואטסאפ נפתח למספר של רועי. דולק: כל הזמנה נשלחת למספר האמיתי של הספק."
+        >
           <SendToSuppliersToggle enabled={sendToSuppliers} />
-          <p className="text-sm text-muted-foreground">
-            ההגדרה נשמרת ב־AppSetting <span dir="ltr">orders.sendToSuppliers</span> ושורדת רענון. חל על הזמנות ועל בקשות זיכוי בוואטסאפ.
-          </p>
-        </CardContent>
-      </Card>
+        </CompactPanel>
       ) : null}
 
       {sessionCan(session, "action.manage_settings") ? (
-        <>
-      <Card>
-        <CardHeader>
-          <CardTitle>מחזור מכירות חזוי</CardTitle>
-          <CardDescription>קלט חודשי לדשבורד מילוי קטגוריות. נשמר בהגדרה dashboard.forecastTurnoverIls.</CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CompactPanel
+          title="מחזור מכירות חזוי"
+          description="קלט חודשי לדשבורד מילוי קטגוריות."
+        >
           <ForecastInputForm forecast={forecast} />
-        </CardContent>
-      </Card>
+        </CompactPanel>
+      ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>סניפים</CardTitle>
-          <CardDescription>
-            סניפי הרשת: בית שמש וקרית יערים. אפשר להוסיף סניף נוסף כאן.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {session.branches.length === 0 ? (
-            <p className="text-sm text-muted-foreground">אין סניפים עדיין.</p>
-          ) : (
-            <ul className="space-y-1 text-sm">
-              {session.branches.map((branch) => (
-                <li key={branch.id}>
-                  <span className="font-medium">{branch.name}</span>
-                  {branch.address ? <span className="text-muted-foreground"> · {branch.address}</span> : null}
-                  {branch.phone ? <span className="text-muted-foreground"> · {branch.phone}</span> : null}
-                  {branch.contactName ? <span className="text-muted-foreground"> · {branch.contactName}</span> : null}
-                </li>
-              ))}
-            </ul>
-          )}
-          {sessionCan(session, "action.manage_settings") ? (
-          <form action={createBranch} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 sm:items-end">
-            <Field>
-              <FieldLabel htmlFor="name">שם סניף</FieldLabel>
+      <CompactPanel
+        title="סניפים"
+        description={
+          sessionCan(session, "action.manage_settings")
+            ? "סניפי הרשת: בית שמש וקרית יערים. אפשר להוסיף סניף נוסף כאן."
+            : undefined
+        }
+      >
+        {session.branches.length === 0 ? (
+          <p className="mb-2 text-sm text-muted-foreground">אין סניפים עדיין.</p>
+        ) : (
+          <ul className="mb-2 space-y-0.5 text-sm">
+            {session.branches.map((branch) => (
+              <li key={branch.id}>
+                <span className="font-medium">{branch.name}</span>
+                {branch.address ? <span className="text-muted-foreground"> · {branch.address}</span> : null}
+                {branch.phone ? <span className="text-muted-foreground"> · {branch.phone}</span> : null}
+                {branch.contactName ? <span className="text-muted-foreground"> · {branch.contactName}</span> : null}
+              </li>
+            ))}
+          </ul>
+        )}
+        {sessionCan(session, "action.manage_settings") ? (
+          <CompactForm action={createBranch}>
+            <CompactField label="שם סניף" htmlFor="name">
               <Input id="name" name="name" required placeholder="למשל: בית שמש" />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="address">כתובת</FieldLabel>
+            </CompactField>
+            <CompactField label="כתובת" htmlFor="address">
               <Input id="address" name="address" placeholder="יצחק 27" />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="phone">טלפון</FieldLabel>
+            </CompactField>
+            <CompactField label="טלפון" htmlFor="phone">
               <Input id="phone" name="phone" placeholder="0526408537" />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="contactName">איש קשר</FieldLabel>
+            </CompactField>
+            <CompactField label="איש קשר" htmlFor="contactName">
               <Input id="contactName" name="contactName" placeholder="רועי" />
-            </Field>
-            <Button type="submit" className="sm:col-span-2 lg:col-span-4">
-              הוספת סניף
-            </Button>
-          </form>
-          ) : null}
-        </CardContent>
-      </Card>
+            </CompactField>
+            <Button type="submit">הוספת סניף</Button>
+          </CompactForm>
+        ) : null}
+      </CompactPanel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>קטגוריות מוצרים</CardTitle>
-          <CardDescription>אב ותת־קטגוריה לשיבוץ במחירון. לא מעמיסים את התפריט הראשי.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link href="/categories" className={cn(buttonVariants())}>
-            ניהול קטגוריות
-          </Link>
-        </CardContent>
-      </Card>
-        </>
-      ) : (
-      <Card>
-        <CardHeader>
-          <CardTitle>סניפים</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {session.branches.length === 0 ? (
-            <p className="text-sm text-muted-foreground">אין סניפים עדיין.</p>
-          ) : (
-            <ul className="space-y-1 text-sm">
-              {session.branches.map((branch) => (
-                <li key={branch.id}>
-                  <span className="font-medium">{branch.name}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-      )}
+      <CompactPanel
+        title="מועצת הצמחים"
+        description="אין משיכה אוטומטית של מחירון יומי ב-MVP. מסמנים «רלוונטי» אצל הספק; המוצרים יורשים וניתן לכבות למוצר בודד."
+      >
+        <p className="text-sm text-muted-foreground">
+          עריכה בכרטיס הספק. ברירת מחדל:{" "}
+          <a href="https://www.plants.org.il/" className="text-primary hover:underline" target="_blank" rel="noreferrer">
+            plants.org.il
+          </a>
+        </p>
+      </CompactPanel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>מועצת הצמחים</CardTitle>
-          <CardDescription>
-            אין משיכה אוטומטית של מחירון יומי ב-MVP. מסמנים «רלוונטי» אצל הספק (ברירת מחדל כבוי); המוצרים יורשים וניתן לכבות למוצר בודד.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-sm">
-          <p>
-            עריכה בכרטיס הספק, תחת «סניפים + מועצת הצמחים». השדות מופיעים רק אחרי סימון רלוונטי. ברירת מחדל לקישור:{" "}
-            <a href="https://www.plants.org.il/" className="text-primary hover:underline" target="_blank" rel="noreferrer">
-              plants.org.il
-            </a>
-          </p>
-        </CardContent>
-      </Card>
+      <CompactPanel
+        title={`שימוש ב-AI · ${monthLabel(runtime.month)}`}
+        description={`${providerLabel} · ${runtime.available ? "מוכן לניתוח" : runtime.reason === "budget" ? "חריגה מתקציב" : "שיוך ידני"}`}
+      >
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+          <span>קריאות {runtime.calls}</span>
+          <span>עלות משוערת ${runtime.estimatedUsd.toFixed(3)}</span>
+          <span>
+            תקרה {runtime.budgetUsd != null ? `$${runtime.budgetUsd}` : "ללא (AI_MONTHLY_BUDGET_USD)"}
+          </span>
+        </div>
+      </CompactPanel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>תשלומים להנה״ח</CardTitle>
-          <CardDescription>כרטסת לספקים, אישור לתשלום, וצ׳קליסט הוצאות לא מרכש.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link href="/ap" className={cn(buttonVariants())}>
-            לוח AP
-          </Link>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>שימוש ב-AI</CardTitle>
-          <CardDescription>
-            ספירה גסה של קריאות ניתוח חשבוניות בחודש {monthLabel(runtime.month)}.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <Stat label="ספק פעיל" value={providerLabel} />
-          <Stat label="סטטוס" value={runtime.available ? "מוכן לניתוח" : runtime.reason === "budget" ? "חריגה מתקציב" : "שיוך ידני"} />
-          <Stat label="קריאות החודש" value={String(runtime.calls)} />
-          <Stat label="עלות משוערת" value={`$${runtime.estimatedUsd.toFixed(3)}`} />
-          <Stat
-            label="תקרה חודשית"
-            value={runtime.budgetUsd != null ? `$${runtime.budgetUsd}` : "ללא (AI_MONTHLY_BUDGET_USD)"}
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>כניסה למערכת</CardTitle>
-          <CardDescription>
-            כל משתמש נכנס עם שם משתמש וסיסמה. המשתמשים הראשונים (jonathan / roi) נוצרים אוטומטית מ־APP_PASSWORD בפריסה הראשונה.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <p>
+      <CompactPanel
+        title="כניסה למערכת"
+        description="כל משתמש נכנס עם שם משתמש וסיסמה. jonathan / roi נוצרים מ־APP_PASSWORD בפריסה הראשונה."
+      >
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <p className="text-muted-foreground">
             {isAuthEnabled()
-              ? "שער הכניסה פעיל. אחרי ההתחברות מוצג תפקיד המשתמש, והתפריט מותאם להרשאות."
-              : "שער הכניסה כבוי (אין APP_PASSWORD) — מתאים לפיתוח מקומי בלבד, עם תפקיד אדמין."}
+              ? "שער הכניסה פעיל. התפריט מותאם להרשאות."
+              : "שער הכניסה כבוי (אין APP_PASSWORD) — פיתוח מקומי, תפקיד אדמין."}
           </p>
           {isAuthEnabled() ? (
             <form action={logout}>
-              <Button type="submit" variant="outline">
+              <Button type="submit" size="sm" variant="outline">
                 יציאה
               </Button>
             </form>
           ) : null}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border px-3 py-2">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 font-medium">{value}</p>
+        </div>
+      </CompactPanel>
     </div>
   );
 }

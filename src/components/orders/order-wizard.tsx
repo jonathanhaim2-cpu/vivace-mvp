@@ -7,7 +7,6 @@ import { NextOrderNotice } from "@/components/orders/next-order-notice";
 import { OrderCompanyHeader } from "@/components/orders/order-company-header";
 import { ClockTime } from "@/components/clock-time";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +15,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { CompactField, CompactPanel } from "@/components/ui/compact-form";
 import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import {
   describePackaging,
@@ -92,6 +93,8 @@ export function OrderWizard({
   const [lateOpen, setLateOpen] = useState(false);
   const [mergeOpen, setMergeOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [supplierQuery, setSupplierQuery] = useState("");
+  const [productQuery, setProductQuery] = useState("");
 
   const windowInfo = selected
     ? nextDeliveryInfo(
@@ -174,67 +177,95 @@ export function OrderWizard({
   }
 
   if (!selected) {
+    const filtered = suppliers.filter(
+      (supplier) =>
+        !supplierQuery ||
+        supplier.name.includes(supplierQuery) ||
+        (supplier.driverName ?? "").includes(supplierQuery),
+    );
     return (
-      <div className="grid gap-3 sm:grid-cols-2">
-        {suppliers.map((supplier) => {
-          const info = nextDeliveryInfo(
-            parseDeliveryDays(supplier.deliveryDays),
-            supplier.orderCutoffTime,
-            resolveOrderDays(supplier.orderDays, supplier.deliveryDays),
-          );
-          const nextOrder = nextOrderWindow(
-            resolveOrderDays(supplier.orderDays, supplier.deliveryDays),
-            supplier.orderCutoffTime,
-            supplier.reminderHoursBefore,
-          );
-          return (
-            <Link key={supplier.id} href={`/orders/new?supplierId=${supplier.id}`} className="block">
-              <Card className="h-full transition-colors hover:bg-accent/40">
-                <CardHeader>
-                  <CardTitle>{supplier.name}</CardTitle>
-                  <CardDescription>{documentTypeLabel(supplier.documentType)}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-1 text-sm">
-                  <p>אספקה: {formatDeliveryDays(supplier.deliveryDays) || "אין ימי אספקה"}</p>
-                  <p>
-                    הזמנה:{" "}
-                    {formatWeekdays(resolveOrderDays(supplier.orderDays, supplier.deliveryDays)) || "—"} · עד{" "}
-                    <ClockTime value={supplier.orderCutoffTime} />
-                  </p>
-                  <p className={info.open ? "text-primary" : "text-destructive"}>{info.label}</p>
-                  <NextOrderNotice info={nextOrder} className="text-xs" />
-                  {supplier.driverName ? <p className="text-muted-foreground">מפיץ: {supplier.driverName}</p> : null}
-                </CardContent>
-              </Card>
-            </Link>
-          );
-        })}
+      <div className="space-y-3">
+        <CompactField label="חיפוש ספק" htmlFor="order-supplier-q" className="max-w-sm">
+          <Input
+            id="order-supplier-q"
+            value={supplierQuery}
+            onChange={(event) => setSupplierQuery(event.target.value)}
+            placeholder="שם ספק או מפיץ"
+          />
+        </CompactField>
+        {filtered.length === 0 ? (
+          <p className="text-sm text-muted-foreground">אין ספקים שתואמים לחיפוש.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ספק</TableHead>
+                <TableHead>מסמך</TableHead>
+                <TableHead>הזמנה / אספקה</TableHead>
+                <TableHead>חלון</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((supplier) => {
+                const info = nextDeliveryInfo(
+                  parseDeliveryDays(supplier.deliveryDays),
+                  supplier.orderCutoffTime,
+                  resolveOrderDays(supplier.orderDays, supplier.deliveryDays),
+                );
+                const nextOrder = nextOrderWindow(
+                  resolveOrderDays(supplier.orderDays, supplier.deliveryDays),
+                  supplier.orderCutoffTime,
+                  supplier.reminderHoursBefore,
+                );
+                return (
+                  <TableRow key={supplier.id}>
+                    <TableCell>
+                      <Link href={`/orders/new?supplierId=${supplier.id}`} className="font-medium hover:underline">
+                        {supplier.name}
+                      </Link>
+                      {supplier.driverName ? (
+                        <p className="text-xs text-muted-foreground">מפיץ: {supplier.driverName}</p>
+                      ) : null}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{documentTypeLabel(supplier.documentType)}</TableCell>
+                    <TableCell className="text-xs">
+                      <p>
+                        {formatWeekdays(resolveOrderDays(supplier.orderDays, supplier.deliveryDays)) || "—"} · עד{" "}
+                        <ClockTime value={supplier.orderCutoffTime} />
+                      </p>
+                      <p className="text-muted-foreground">
+                        אספקה: {formatDeliveryDays(supplier.deliveryDays) || "אין ימי אספקה"}
+                      </p>
+                    </TableCell>
+                    <TableCell>
+                      <p className={info.open ? "text-primary" : "text-destructive"}>{info.label}</p>
+                      <NextOrderNotice info={nextOrder} className="text-xs" />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{selected.name}</CardTitle>
-          <CardDescription>
-            הזמנה עבור {branchName} · וואטסאפ {selected.whatsappPhone}
-            {sendToSuppliers ? "" : " · מצב בדיקה"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
+    <div className="space-y-4">
+      <CompactPanel
+        title={selected.name}
+        description={`הזמנה עבור ${branchName} · וואטסאפ ${selected.whatsappPhone}${sendToSuppliers ? "" : " · מצב בדיקה"}`}
+      >
+        <div className="space-y-1.5 text-sm">
           {!sendToSuppliers ? <RoiTestModeBadge /> : null}
           <p className={windowInfo?.open ? "text-primary" : "text-destructive"}>{windowInfo?.label}</p>
           {nextOrder ? <NextOrderNotice info={nextOrder} /> : null}
           <p>
             ימי הזמנה: {formatWeekdays(resolveOrderDays(selected.orderDays, selected.deliveryDays)) || "—"} · סגירה{" "}
             <ClockTime value={selected.orderCutoffTime} />
-          </p>
-          <p>ימי אספקה: {formatDeliveryDays(selected.deliveryDays) || "—"}</p>
-          <p className="text-muted-foreground">
-            תזכורת למנהל הסניף {selected.reminderHoursBefore} שעות לפני{" "}
-            <ClockTime value={selected.orderCutoffTime} />.
+            {" · "}
+            אספקה: {formatDeliveryDays(selected.deliveryDays) || "—"}
           </p>
           {selected.weeklyBudgetIls != null ? (
             <p>
@@ -255,50 +286,63 @@ export function OrderWizard({
               יש הזמנה פתוחה לספק זה ({openOrder.lineCount} שורות). אחרי אישור אפשר למזג או לפתוח תעודת משלוח נפרדת.
             </p>
           ) : null}
-          <div className="flex flex-wrap gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={fillSuggested}>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button type="button" variant="outline" size="sm" onClick={fillSuggested}>
               מילוי לפי מלאי תקן
             </Button>
-            <Link href="/orders/new" className={cn(buttonVariants({ variant: "ghost" }))}>
+            <Link href="/orders/new" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
               החלפת ספק
             </Link>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </CompactPanel>
 
-      <div className="space-y-3">
+      <CompactField label="חיפוש מוצר" htmlFor="order-product-q" className="max-w-sm">
+        <Input
+          id="order-product-q"
+          value={productQuery}
+          onChange={(event) => setProductQuery(event.target.value)}
+          placeholder="שם או מק״ט"
+        />
+      </CompactField>
+
+      <div className="space-y-1.5">
         {products.length === 0 ? (
           <p className="text-sm text-muted-foreground">לספק זה אין מוצרים. הוסיפו מוצרים תחילה.</p>
         ) : (
-          products.map((product) => {
-            const suggested = suggestOrderQty(
-              product.stockStandard,
-              parseDeliveryDays(selected.deliveryDays),
-              selected.orderCutoffTime,
-              resolveOrderDays(selected.orderDays, selected.deliveryDays),
-            );
-            const value = qty[product.id] ?? 0;
-            const pack = describePackaging(value || suggested, product.cartonToBags, product.bagsToUnits);
-            return (
-              <Card key={product.id} size="sm">
-                <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          products
+            .filter(
+              (product) =>
+                !productQuery ||
+                product.name.includes(productQuery) ||
+                (product.sku ?? "").includes(productQuery),
+            )
+            .map((product) => {
+              const suggested = suggestOrderQty(
+                product.stockStandard,
+                parseDeliveryDays(selected.deliveryDays),
+                selected.orderCutoffTime,
+                resolveOrderDays(selected.orderDays, selected.deliveryDays),
+              );
+              const value = qty[product.id] ?? 0;
+              const pack = describePackaging(value || suggested, product.cartonToBags, product.bagsToUnits);
+              return (
+                <div
+                  key={product.id}
+                  className="grid items-center gap-2 rounded-lg border bg-card px-3 py-1.5 sm:grid-cols-[1fr_auto]"
+                >
                   <div>
-                    <p className="font-medium">{product.name}</p>
+                    <p className="text-sm font-medium">{product.name}</p>
                     <p className="text-xs text-muted-foreground">
                       {product.sku ? `${product.sku} · ` : ""}
                       אחרי הנחה {formatIls(lineTotal(1, product.agreedPrice, product.discountPercent))}
                       {product.discountPercent ? ` · הנחה ${product.discountPercent}%` : ""}
                       {product.vatIncluded ? " · כולל מע״מ" : " · לפני מע״מ"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      מלאי תקן {product.stockStandard} · הצעה {suggested}
+                      {` · תקן ${product.stockStandard} · הצעה ${suggested}`}
                       {pack ? ` · ${pack}` : ""}
                     </p>
-                    {product.packagingNotes ? (
-                      <p className="text-xs text-muted-foreground">{product.packagingNotes}</p>
-                    ) : null}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <Button
                       type="button"
                       variant="outline"
@@ -339,18 +383,14 @@ export function OrderWizard({
                       +
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })
+                </div>
+              );
+            })
         )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>סיכום הזמנה</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <CompactPanel title="סיכום הזמנה">
+        <div className="space-y-3">
           {branch ? <OrderCompanyHeader branch={branch} /> : <p className="text-sm">הזמנה עבור {branchName}</p>}
           {lines.length === 0 ? (
             <p className="text-sm text-muted-foreground">עדיין לא נבחרו מוצרים.</p>
@@ -368,7 +408,7 @@ export function OrderWizard({
           )}
           <p className="text-base font-medium">סה״כ משוער: {formatIls(total)}</p>
           <div>
-            <label htmlFor="notes" className="mb-1 block text-sm font-medium">
+            <label htmlFor="notes" className="mb-1 block text-[11px] font-medium text-muted-foreground">
               הערות למפיץ
             </label>
             <Textarea
@@ -381,8 +421,8 @@ export function OrderWizard({
           <Button type="button" disabled={lines.length === 0 || submitting} onClick={handleConfirmClick}>
             {windowInfo?.open ? "אישור הזמנה" : "שליחה בכל זאת"}
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </CompactPanel>
 
       <Dialog open={lateOpen} onOpenChange={setLateOpen}>
         <DialogContent className="sm:max-w-md">

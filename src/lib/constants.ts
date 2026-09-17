@@ -111,3 +111,9 @@ export const EXCEPTION_STATUS = {
   ARRIVED: "ARRIVED",
   CANCELLED: "CANCELLED",
 } as const;
+
+/** InvoicePhoto.duplicateStatus — suspected copies are stored but excluded from totals. */
+export const INVOICE_DUPLICATE_STATUS = {
+  DUPLICATE: "DUPLICATE",
+  CONFIRMED_UNIQUE: "CONFIRMED_UNIQUE",
+} as const;
