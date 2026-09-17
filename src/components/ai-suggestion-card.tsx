@@ -67,7 +67,14 @@ export function AiSuggestionCard({
       </div>
     );
   }
-  if (!suggestedAccount && !supplierName) return null;
+  const hasSuggestion =
+    Boolean(suggestedAccount) ||
+    Boolean(supplierName) ||
+    Boolean(invoiceDate) ||
+    totalIls != null ||
+    Boolean(reason) ||
+    confidence != null;
+  if (!hasSuggestion) return null;
 
   const low = isLowConfidence(confidence);
 
