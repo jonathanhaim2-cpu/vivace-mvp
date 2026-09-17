@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { monthKeyFromInvoiceDate, resolvedPeriodMonth } from "./months";
+import { monthKeyFromInvoiceDate, parseMonthParam, resolvedPeriodMonth } from "./months";
 
 test("monthKeyFromInvoiceDate reads YYYY-MM-DD", () => {
   assert.equal(monthKeyFromInvoiceDate("2026-08-17"), "2026-08");
@@ -27,4 +27,10 @@ test("resolvedPeriodMonth falls back to the invoice date when override is empty"
   assert.equal(resolvedPeriodMonth("", "2026-08-03"), "2026-08");
   assert.equal(resolvedPeriodMonth(null, "2026-08-03"), "2026-08");
   assert.equal(resolvedPeriodMonth("  ", null), null);
+});
+
+test("parseMonthParam treats all as no filter and invalid as fallback", () => {
+  assert.equal(parseMonthParam("all", "2026-09"), null);
+  assert.equal(parseMonthParam("2026-08", "2026-09"), "2026-08");
+  assert.equal(parseMonthParam("nope", "2026-09"), "2026-09");
 });

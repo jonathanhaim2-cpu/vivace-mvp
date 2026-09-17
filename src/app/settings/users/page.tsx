@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/page-header";
 import { SettingsNav } from "@/components/settings/settings-nav";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CompactPanel } from "@/components/ui/compact-form";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateUserPanel } from "@/components/users/user-form";
 import { UsersAdmin } from "@/components/users/users-admin";
 import { requirePagePermission } from "@/lib/access";
@@ -19,29 +20,23 @@ export default async function UsersSettingsPage() {
   ]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <SettingsNav permissions={session.permissions} />
       <PageHeader
         title="משתמשים"
         description="כל אחד נכנס עם שם משתמש וסיסמה משלו. התפקיד קובע מה רואים ומה מותר לבצע."
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>משתמש חדש</CardTitle>
-          <CardDescription>
-            אחרי היצירה תופיע כרטיס סיסמה זמנית להעתקה. אין שליחת מייל כרגע — מוסרים את הפרטים ידנית.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <CreateUserPanel branches={branches} />
-        </CardContent>
-      </Card>
+      <CompactPanel
+        title="משתמש חדש"
+        description="אחרי יצירה מופיעה סיסמה זמנית להעתקה — מוסרים ידנית, אין מייל."
+      >
+        <CreateUserPanel branches={branches} />
+      </CompactPanel>
 
-      <Card>
-        <CardHeader>
+      <Card size="sm">
+        <CardHeader className="border-b">
           <CardTitle>כל המשתמשים</CardTitle>
-          <CardDescription>עריכה, השבתה ואיפוס סיסמה. אי אפשר להשבית את האדמין הפעיל האחרון.</CardDescription>
         </CardHeader>
         <CardContent>
           <UsersAdmin

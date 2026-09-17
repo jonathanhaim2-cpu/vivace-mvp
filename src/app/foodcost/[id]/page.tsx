@@ -3,9 +3,9 @@ import { addDishComponent, removeDishComponent, updateDishPricing } from "@/acti
 import { PageHeader } from "@/components/page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, FieldLabel } from "@/components/ui/field";
+import { CompactField, CompactForm, CompactPanel, NativeSelect } from "@/components/ui/compact-form";
 import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { computeDishCost, foodCostPercent } from "@/lib/foodcost";
 import { formatIls } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
@@ -53,132 +53,118 @@ export default async function DishDetailPage({ params }: { params: Promise<{ id:
         </Alert>
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>עלות תיאורטית {formatIls(cost)}</CardTitle>
-          <CardDescription>
-            {dish.kind === "INTERMEDIATE"
-              ? "מנת ביניים בלי מחיר מכירה — רק עלות רכיבים"
-              : percent != null
-                ? `${percent.toFixed(1)}% ממחיר המכירה`
-                : "הזינו מחיר מכירה לחישוב אחוז"}
-            {` · תקן ${dish.standardCostPercent}%`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form action={updateDishPricing.bind(null, dish.id)} className="grid gap-3 sm:grid-cols-3 sm:items-end">
-            {dish.kind === "INTERMEDIATE" ? (
-              <p className="text-sm text-muted-foreground sm:col-span-2">מנת ביניים — אין שדה מחיר מכירה.</p>
-            ) : (
-              <Field>
-                <FieldLabel htmlFor="sellPrice">מחיר מכירה</FieldLabel>
-                <Input
-                  id="sellPrice"
-                  name="sellPrice"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  defaultValue={dish.sellPrice ?? ""}
-                />
-              </Field>
-            )}
-            <Field>
-              <FieldLabel htmlFor="standardCostPercent">תקן %</FieldLabel>
+      <CompactPanel
+        title={`עלות תיאורטית ${formatIls(cost)}`}
+        description={
+          dish.kind === "INTERMEDIATE"
+            ? `מנת ביניים בלי מחיר מכירה — רק עלות רכיבים · תקן ${dish.standardCostPercent}%`
+            : percent != null
+              ? `${percent.toFixed(1)}% ממחיר המכירה · תקן ${dish.standardCostPercent}%`
+              : `הזינו מחיר מכירה לחישוב אחוז · תקן ${dish.standardCostPercent}%`
+        }
+      >
+        <CompactForm action={updateDishPricing.bind(null, dish.id)}>
+          {dish.kind === "INTERMEDIATE" ? (
+            <p className="flex h-8 items-center text-xs text-muted-foreground">מנת ביניים — אין שדה מחיר מכירה.</p>
+          ) : (
+            <CompactField label="מחיר מכירה" htmlFor="sellPrice">
               <Input
-                id="standardCostPercent"
-                name="standardCostPercent"
+                id="sellPrice"
+                name="sellPrice"
                 type="number"
                 min={0}
-                max={100}
-                step="0.1"
-                defaultValue={dish.standardCostPercent}
+                step="0.01"
+                defaultValue={dish.sellPrice ?? ""}
               />
-            </Field>
-            <Button type="submit">עדכון</Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>רכיבי מתכון</CardTitle>
-          <CardDescription>גלם ממחירון הספק, או מנת ביניים עם עץ משלה.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {lines.length === 0 ? (
-            <p className="text-sm text-muted-foreground">אין רכיבים עדיין.</p>
-          ) : (
-            <ul className="space-y-1 text-sm">
-              {lines.map((line, index) => (
-                <li key={`${line.name}-${index}`} className="flex justify-between gap-3">
-                  <span>
-                    {line.name} × {line.qty}
-                    {line.kind === "dish" ? " (ביניים)" : ""}
-                    {line.notes ? ` · ${line.notes}` : ""}
-                  </span>
-                  <span>{formatIls(line.lineCost)}</span>
-                </li>
-              ))}
-            </ul>
+            </CompactField>
           )}
-          {dish.components.map((component) => (
-            <form key={component.id} action={removeDishComponent.bind(null, component.id, dish.id)}>
-              <Button type="submit" size="sm" variant="ghost">
-                הסרת {component.product?.name ?? component.componentDish?.name}
-              </Button>
-            </form>
-          ))}
-        </CardContent>
-      </Card>
+          <CompactField label="תקן %" htmlFor="standardCostPercent">
+            <Input
+              id="standardCostPercent"
+              name="standardCostPercent"
+              type="number"
+              min={0}
+              max={100}
+              step="0.1"
+              defaultValue={dish.standardCostPercent}
+            />
+          </CompactField>
+          <Button type="submit">עדכון</Button>
+        </CompactForm>
+      </CompactPanel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>הוספת רכיב</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form action={addDishComponent.bind(null, dish.id)} className="grid gap-3 sm:grid-cols-2">
-            <Field>
-              <FieldLabel htmlFor="productId">מוצר גלם</FieldLabel>
-              <select
-                id="productId"
-                name="productId"
-                className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
-              >
+      <CompactPanel title="רכיבי מתכון" description="גלם ממחירון הספק, או מנת ביניים עם עץ משלה.">
+        {lines.length === 0 ? (
+          <p className="text-sm text-muted-foreground">אין רכיבים עדיין.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>רכיב</TableHead>
+                <TableHead>כמות</TableHead>
+                <TableHead>עלות</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {dish.components.map((component) => {
+                const name = component.product?.name ?? component.componentDish?.name ?? "—";
+                const line = lines.find((item) => item.name === name);
+                return (
+                  <TableRow key={component.id}>
+                    <TableCell>
+                      {name}
+                      {component.componentDishId ? " (ביניים)" : ""}
+                      {component.notes ? ` · ${component.notes}` : ""}
+                    </TableCell>
+                    <TableCell>{component.qty}</TableCell>
+                    <TableCell>{line ? formatIls(line.lineCost) : "—"}</TableCell>
+                    <TableCell className="text-end">
+                      <form action={removeDishComponent.bind(null, component.id, dish.id)}>
+                        <Button type="submit" size="sm" variant="ghost">
+                          הסרה
+                        </Button>
+                      </form>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
+      </CompactPanel>
+
+      <CompactPanel title="הוספת רכיב">
+          <CompactForm action={addDishComponent.bind(null, dish.id)}>
+            <CompactField label="מוצר גלם" htmlFor="productId" grow>
+              <NativeSelect id="productId" name="productId">
                 <option value="">—</option>
                 {products.map((product) => (
                   <option key={product.id} value={product.id}>
                     {product.name} · {product.supplier.name}
                   </option>
                 ))}
-              </select>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="componentDishId">או מנת ביניים</FieldLabel>
-              <select
-                id="componentDishId"
-                name="componentDishId"
-                className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
-              >
+              </NativeSelect>
+            </CompactField>
+            <CompactField label="או מנת ביניים" htmlFor="componentDishId" grow>
+              <NativeSelect id="componentDishId" name="componentDishId">
                 <option value="">—</option>
                 {intermediates.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name}
                   </option>
                 ))}
-              </select>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="qty">כמות ביחידות רכש / מנה</FieldLabel>
+              </NativeSelect>
+            </CompactField>
+            <CompactField label="כמות" htmlFor="qty">
               <Input id="qty" name="qty" type="number" min={0} step="0.001" required defaultValue={1} />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="notes">הערת המרה</FieldLabel>
+            </CompactField>
+            <CompactField label="הערת המרה" htmlFor="notes" grow>
               <Input id="notes" name="notes" placeholder="למשל: 500ג מתוך שק 25ק״ג" />
-            </Field>
+            </CompactField>
             <Button type="submit">הוספה</Button>
-          </form>
-        </CardContent>
-      </Card>
+          </CompactForm>
+      </CompactPanel>
     </div>
   );
 }

@@ -21,7 +21,7 @@ export function SettingsNav({ permissions }: { permissions: readonly string[] })
   if (items.length < 2) return null;
 
   return (
-    <div className="mb-6 inline-flex flex-wrap rounded-full border border-border bg-card p-0.5">
+    <div className="mb-3 inline-flex flex-wrap rounded-full border border-border bg-card p-0.5">
       {items.map((item) => {
         const active =
           item.match === "exact" ? pathname === item.href : pathname.startsWith(item.href);

@@ -16,14 +16,14 @@ export function CredentialsCard({
   const created = credentials.mode === "created";
 
   return (
-    <Card className="border-primary/30 bg-primary/5">
+    <Card size="sm" className="border-primary/30 bg-primary/5">
       <CardHeader>
         <CardTitle>{created ? "משתמש נוצר" : "סיסמה זמנית חדשה"}</CardTitle>
         <CardDescription>
-          העתיקו את הסיסמה עכשיו — היא לא תוצג שוב. אין עדיין שליחת מייל, אז מוסרים אותה ידנית.
+          העתיקו עכשיו — לא תוצג שוב. אין מייל, מוסרים ידנית.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-2">
         <p className="text-sm">
           <span className="text-muted-foreground">שם: </span>
           {credentials.name}
@@ -50,7 +50,7 @@ function CopyRow({ label, value, secret }: { label: string; value: string; secre
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-2.5 py-1.5">
       <div className="min-w-0">
         <p className="text-[11px] text-muted-foreground">{label}</p>
         <p className="truncate font-mono text-sm" dir="ltr">

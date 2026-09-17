@@ -1,3 +1,5 @@
+import { NativeSelect } from "@/components/ui/compact-form";
+
 export function CategorySelect({
   name = "categoryId",
   id,
@@ -16,12 +18,7 @@ export function CategorySelect({
   parentsOnly?: boolean;
 }) {
   return (
-    <select
-      id={id}
-      name={name}
-      defaultValue={defaultValue ?? ""}
-      className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
-    >
+    <NativeSelect id={id} name={name} defaultValue={defaultValue ?? ""}>
       {allowEmpty ? <option value="">{emptyLabel}</option> : null}
       {tree.map((parent) =>
         parentsOnly ? (
@@ -39,6 +36,6 @@ export function CategorySelect({
           </optgroup>
         ),
       )}
-    </select>
+    </NativeSelect>
   );
 }

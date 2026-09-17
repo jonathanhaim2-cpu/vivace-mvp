@@ -44,11 +44,11 @@ export function PermissionMatrix({ initial }: { initial: Matrix }) {
           </Button>
         </form>
       </div>
-      <div className="overflow-x-auto rounded-2xl border border-border bg-card">
+      <div className="overflow-x-auto rounded-xl border border-border bg-card">
         <table className="w-full min-w-[44rem] text-sm">
           <thead>
             <tr className="border-b bg-muted/40">
-              <th className="sticky start-0 z-10 bg-muted/40 px-3 py-2.5 text-start font-medium">הרשאה</th>
+              <th className="sticky start-0 z-10 bg-muted/40 px-3 py-1.5 text-start font-medium">הרשאה</th>
               {APP_ROLES.map((role) => (
                 <th key={role} className="px-2 py-2.5 text-center font-medium">
                   {APP_ROLE_LABELS[role]}

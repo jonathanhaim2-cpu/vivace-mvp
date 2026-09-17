@@ -2,7 +2,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CompactPanel } from "@/components/ui/compact-form";
 import { COMPANY } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -22,18 +22,16 @@ export default function MailConnectionPage() {
         </AlertDescription>
       </Alert>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>מה יקרה בחיבור האמיתי</CardTitle>
-          <CardDescription>תיבת {COMPANY.accountantEmail} או תיבה ייעודית של הסניף</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm leading-6">
-          <p>1. מנהל הרשת מאשר גישה לקריאה בלבד לתיקיית «חשבוניות».</p>
-          <p>2. כל קובץ מצורף (PDF / תמונה) נכנס לתור הסיווג כמו ייבוא מתיקייה.</p>
-          <p>3. אחרי שיבוץ לקטגוריה אפשר לכלול אותו בחבילת החודש לרואה החשבון.</p>
-          <p className="text-muted-foreground">דגל FEATURE_IMAP לא פעיל ב-MVP הזה בכוונה — בלי מחצית מחבר.</p>
-        </CardContent>
-      </Card>
+      <CompactPanel title="מה יקרה בחיבור האמיתי" description={`תיבת ${COMPANY.accountantEmail} או תיבה ייעודית של הסניף`}>
+        <ol className="list-decimal space-y-1 ps-5 text-sm leading-6">
+          <li>מנהל הרשת מאשר גישה לקריאה בלבד לתיקיית «חשבוניות».</li>
+          <li>כל קובץ מצורף (PDF / תמונה) נכנס לתור הסיווג כמו ייבוא מתיקייה.</li>
+          <li>אחרי שיבוץ לקטגוריה אפשר לכלול אותו בחבילת החודש לרואה החשבון.</li>
+        </ol>
+        <p className="mt-2 text-sm text-muted-foreground">
+          דגל FEATURE_IMAP לא פעיל ב-MVP הזה בכוונה — בלי מחצית מחבר.
+        </p>
+      </CompactPanel>
 
       <div className="flex flex-wrap gap-2">
         <Link href="/invoices/import" className={cn(buttonVariants())}>

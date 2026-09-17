@@ -4,16 +4,21 @@ import { EmptyState, PageHeader } from "@/components/page-header";
 import { ReportExportButtons } from "@/components/report-export-buttons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, FieldLabel } from "@/components/ui/field";
+import { CompactField, CompactForm, CompactPanel, FilterBar, NativeSelect } from "@/components/ui/compact-form";
 import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { computeDishCost, foodCostPercent, hierarchicalFoodCost } from "@/lib/foodcost";
 import { formatIls } from "@/lib/format";
 import { monthKeyFromDate } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
-export default async function FoodCostPage() {
+export default async function FoodCostPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ kind?: string }>;
+}) {
+  const { kind = "" } = await searchParams;
   const [dishes, products, recurring] = await Promise.all([
     prisma.dish.findMany({
       include: { components: true },
@@ -31,6 +36,7 @@ export default async function FoodCostPage() {
     standardCostPercent: dish.standardCostPercent,
     components: dish.components,
   }));
+  const listed = kind ? dishes.filter((dish) => dish.kind === kind) : dishes;
   const tree = hierarchicalFoodCost(costDishes, products);
   const income = recurring.filter((row) => row.kind === "INCOME").reduce((sum, row) => sum + row.amountIls, 0);
   const expense = recurring.filter((row) => row.kind === "EXPENSE").reduce((sum, row) => sum + row.amountIls, 0);
@@ -42,6 +48,15 @@ export default async function FoodCostPage() {
         description="עלות תיאורטית ממחירון הספקים. מנות ביניים בלי מחיר מכירה. רולאפ: סה״כ → מחלקה → תת־קטגוריה → מנה."
         action={{ href: "/foodcost/new", label: "מנה חדשה" }}
       />
+      <FilterBar>
+        <CompactField label="סוג מנה" htmlFor="fc-kind">
+          <NativeSelect id="fc-kind" name="kind" defaultValue={kind}>
+            <option value="">הכל</option>
+            <option value="DISH">מנה למכירה</option>
+            <option value="INTERMEDIATE">מנת ביניים</option>
+          </NativeSelect>
+        </CompactField>
+      </FilterBar>
       <ReportExportButtons report="foodcost" month={monthKeyFromDate()} />
 
       <Alert>
@@ -51,16 +66,11 @@ export default async function FoodCostPage() {
         </AlertDescription>
       </Alert>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {tree.name} · {tree.percent != null ? `${tree.percent.toFixed(1)}%` : "אין %"}
-          </CardTitle>
-          <CardDescription>
-            עלות {formatIls(tree.cost)} מול מכירה {formatIls(tree.sell)}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm">
+      <CompactPanel
+        title={`${tree.name} · ${tree.percent != null ? `${tree.percent.toFixed(1)}%` : "אין %"}`}
+        description={`עלות ${formatIls(tree.cost)} מול מכירה ${formatIls(tree.sell)}`}
+      >
+        <div className="space-y-2 text-sm">
           {tree.children.length === 0 ? (
             <p className="text-muted-foreground">אין מנות למכירה עם רכיבים.</p>
           ) : (
@@ -91,98 +101,108 @@ export default async function FoodCostPage() {
               </details>
             ))
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </CompactPanel>
 
-      {dishes.length === 0 ? (
+      {listed.length === 0 ? (
         <EmptyState title="אין מנות" description="הוסיפו מנה או מנת ביניים עם רכיבים." action={{ href: "/foodcost/new", label: "יצירת מנה" }} />
       ) : (
-        <div className="space-y-3">
-          {dishes.map((dish) => {
-            const { cost } = computeDishCost(dish.id, costDishes, products);
-            const percent = foodCostPercent(cost, dish.sellPrice);
-            const over = percent != null && percent > dish.standardCostPercent;
-            const prep = dish.kind === "INTERMEDIATE";
-            return (
-              <Link key={dish.id} href={`/foodcost/${dish.id}`}>
-                <Card className={over ? "ring-1 ring-destructive/40" : "transition-colors hover:bg-accent/40"}>
-                  <CardHeader>
-                    <CardTitle>{dish.name}</CardTitle>
-                    <CardDescription>{prep ? "מנת ביניים / עיבוד · בלי מחיר מכירה" : "מנה למכירה"}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex flex-wrap gap-4 text-sm">
-                    <span>עלות {formatIls(cost)}</span>
-                    {prep ? null : <span>מכירה {dish.sellPrice != null ? formatIls(dish.sellPrice) : "לא הוגדרה"}</span>}
-                    {prep ? null : (
-                      <span className={over ? "text-destructive" : ""}>
-                        {percent != null ? `${percent.toFixed(1)}%` : "אין %"}
-                        {` · תקן ${dish.standardCostPercent}%`}
-                      </span>
-                    )}
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>מנה</TableHead>
+              <TableHead>סוג</TableHead>
+              <TableHead>עלות</TableHead>
+              <TableHead>מכירה</TableHead>
+              <TableHead>%</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {listed.map((dish) => {
+              const { cost } = computeDishCost(dish.id, costDishes, products);
+              const percent = foodCostPercent(cost, dish.sellPrice);
+              const over = percent != null && percent > dish.standardCostPercent;
+              const prep = dish.kind === "INTERMEDIATE";
+              return (
+                <TableRow key={dish.id} className={over ? "text-destructive" : undefined}>
+                  <TableCell>
+                    <Link href={`/foodcost/${dish.id}`} className="font-medium hover:underline">
+                      {dish.name}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{prep ? "ביניים" : "למכירה"}</TableCell>
+                  <TableCell>{formatIls(cost)}</TableCell>
+                  <TableCell>{prep ? "—" : dish.sellPrice != null ? formatIls(dish.sellPrice) : "לא הוגדרה"}</TableCell>
+                  <TableCell>
+                    {prep ? "—" : `${percent != null ? `${percent.toFixed(1)}%` : "אין %"} · תקן ${dish.standardCostPercent}%`}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>הכנסות והוצאות קבועות / משתנות</CardTitle>
-          <CardDescription>
-            הכנסות {formatIls(income)} · הוצאות {formatIls(expense)} · נטו {formatIls(income - expense)}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <CompactPanel
+        title="הכנסות והוצאות קבועות / משתנות"
+        description={`הכנסות ${formatIls(income)} · הוצאות ${formatIls(expense)} · נטו ${formatIls(income - expense)}`}
+      >
+        <div className="space-y-3">
           {recurring.length === 0 ? (
             <p className="text-sm text-muted-foreground">אין שורות עדיין.</p>
           ) : (
-            <ul className="space-y-2 text-sm">
-              {recurring.map((row) => (
-                <li key={row.id} className="flex items-center justify-between gap-2">
-                  <span>
-                    {row.name} · {row.kind === "INCOME" ? "הכנסה" : "הוצאה"} · {row.cadence === "FIXED" ? "קבוע" : "משתנה"} ·{" "}
-                    {formatIls(row.amountIls)}
-                  </span>
-                  <form action={deleteRecurringLine.bind(null, row.id)}>
-                    <Button type="submit" size="sm" variant="ghost">
-                      מחיקה
-                    </Button>
-                  </form>
-                </li>
-              ))}
-            </ul>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>שם</TableHead>
+                  <TableHead>סוג</TableHead>
+                  <TableHead>קצב</TableHead>
+                  <TableHead>סכום</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recurring.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell className="font-medium">{row.name}</TableCell>
+                    <TableCell>{row.kind === "INCOME" ? "הכנסה" : "הוצאה"}</TableCell>
+                    <TableCell>{row.cadence === "FIXED" ? "קבוע" : "משתנה"}</TableCell>
+                    <TableCell>{formatIls(row.amountIls)}</TableCell>
+                    <TableCell className="text-end">
+                      <form action={deleteRecurringLine.bind(null, row.id)}>
+                        <Button type="submit" size="sm" variant="ghost">
+                          מחיקה
+                        </Button>
+                      </form>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
-          <form action={createRecurringLine} className="grid gap-3 sm:grid-cols-2">
-            <Field>
-              <FieldLabel htmlFor="name">שם</FieldLabel>
+          <CompactForm action={createRecurringLine}>
+            <CompactField label="שם" htmlFor="name" grow>
               <Input id="name" name="name" required placeholder="שכירות חנות" />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="amountIls">סכום חודשי (₪)</FieldLabel>
+            </CompactField>
+            <CompactField label="סכום חודשי (₪)" htmlFor="amountIls">
               <Input id="amountIls" name="amountIls" type="number" step="0.01" required />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="kind">סוג</FieldLabel>
-              <select id="kind" name="kind" className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm">
+            </CompactField>
+            <CompactField label="סוג" htmlFor="kind">
+              <NativeSelect id="kind" name="kind">
                 <option value="EXPENSE">הוצאה</option>
                 <option value="INCOME">הכנסה</option>
-              </select>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="cadence">קבוע / משתנה</FieldLabel>
-              <select id="cadence" name="cadence" className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm">
+              </NativeSelect>
+            </CompactField>
+            <CompactField label="קבוע / משתנה" htmlFor="cadence">
+              <NativeSelect id="cadence" name="cadence">
                 <option value="FIXED">קבוע</option>
                 <option value="VARIABLE">משתנה</option>
-              </select>
-            </Field>
-            <Button type="submit" className="sm:col-span-2">
-              הוספה
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              </NativeSelect>
+            </CompactField>
+            <Button type="submit">הוספה</Button>
+          </CompactForm>
+        </div>
+      </CompactPanel>
 
       <Link href="/reports" className={cn(buttonVariants({ variant: "ghost" }))}>
         דוחות חודשיים

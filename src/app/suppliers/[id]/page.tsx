@@ -5,7 +5,9 @@ import { deleteProduct } from "@/actions/products";
 import { PageHeader } from "@/components/page-header";
 import { ProductImportForm } from "@/components/products/product-import-form";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CompactField, CompactPanel, FilterBar, NativeSelect } from "@/components/ui/compact-form";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { NextOrderNotice } from "@/components/orders/next-order-notice";
 import { ClockTime } from "@/components/clock-time";
 import { categoryPathLabel } from "@/lib/categories";
@@ -34,10 +36,10 @@ export default async function SupplierDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ category?: string; imported?: string }>;
+  searchParams: Promise<{ category?: string; imported?: string; q?: string }>;
 }) {
   const { id } = await params;
-  const { category: categoryFilter, imported } = await searchParams;
+  const { category: categoryFilter, imported, q } = await searchParams;
   const session = await getAppSession();
   const supplier = await prisma.supplier.findUnique({
     where: { id },
@@ -51,6 +53,21 @@ export default async function SupplierDetailPage({
   if (!supplier) notFound();
   if (!session.isNetwork && !supplierVisibleToBranch(supplier, session.branchId)) notFound();
 
+  const parentCategories = Array.from(
+    new Map(
+      supplier.products
+        .map((p) => p.category?.parent ?? p.category)
+        .filter(Boolean)
+        .map((c) => [c!.id, c!]),
+    ).values(),
+  );
+  const listedProducts = supplier.products.filter((product) => {
+    if (categoryFilter && product.categoryId !== categoryFilter && product.category?.parentId !== categoryFilter) {
+      return false;
+    }
+    if (q && !`${product.name} ${product.sku ?? ""}`.includes(q)) return false;
+    return true;
+  });
   const days = parseDeliveryDays(supplier.deliveryDays);
   const orderDays = resolveOrderDays(supplier.orderDays, supplier.deliveryDays);
   const windowInfo = nextDeliveryInfo(days, supplier.orderCutoffTime, orderDays);
@@ -97,12 +114,8 @@ export default async function SupplierDetailPage({
       </div>
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>פרטי ספק</CardTitle>
-          <CardDescription>{windowInfo.label}</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-2 text-sm sm:grid-cols-2">
+      <CompactPanel title="פרטי ספק" description={windowInfo.label}>
+        <div className="grid gap-1.5 text-sm sm:grid-cols-2">
           <div className="sm:col-span-2">
             <NextOrderNotice info={nextOrder} />
           </div>
@@ -153,121 +166,113 @@ export default async function SupplierDetailPage({
             </p>
           ) : null}
           <p className="sm:col-span-2">{supplier.notes || "אין הערות"}</p>
-        </CardContent>
-      </Card>
+        </div>
+      </CompactPanel>
 
       <div>
         <h2 className="mb-1 font-heading text-lg font-semibold">מוצרים תחת {supplier.name}</h2>
         <p className="mb-3 text-xs text-muted-foreground">
           מחירון זכיין בלבד בסניף. משרד הרשת רואה גם ריבייט/פלוס.
         </p>
-        <div className="mb-3 flex flex-wrap gap-2 text-xs">
-          <Link
-            href={`/suppliers/${supplier.id}`}
-            className={cn("rounded-full border px-2.5 py-1", !categoryFilter && "border-primary bg-primary/10")}
-          >
-            הכל
-          </Link>
-          {Array.from(
-            new Map(
-              supplier.products
-                .map((p) => p.category?.parent ?? p.category)
-                .filter(Boolean)
-                .map((c) => [c!.id, c!]),
-            ).values(),
-          ).map((cat) => (
-            <Link
-              key={cat.id}
-              href={`/suppliers/${supplier.id}?category=${cat.id}`}
-              className={cn(
-                "rounded-full border px-2.5 py-1",
-                categoryFilter === cat.id && "border-primary bg-primary/10",
-              )}
-            >
-              {cat.name}
-            </Link>
-          ))}
-        </div>
-        {supplier.products.length === 0 ? (
-          <p className="text-sm text-muted-foreground">אין מוצרים. הוסיפו ידנית או ייבאו Excel.</p>
+        <FilterBar>
+          <CompactField label="קטגוריה" htmlFor="sup-cat">
+            <NativeSelect id="sup-cat" name="category" defaultValue={categoryFilter ?? ""}>
+              <option value="">הכל</option>
+              {parentCategories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </NativeSelect>
+          </CompactField>
+          <CompactField label="חיפוש" htmlFor="sup-prod-q" grow>
+            <Input id="sup-prod-q" name="q" defaultValue={q ?? ""} placeholder="שם או מק״ט" />
+          </CompactField>
+        </FilterBar>
+        {listedProducts.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            {supplier.products.length === 0 ? "אין מוצרים. הוסיפו ידנית או ייבאו Excel." : "אין מוצרים שתואמים לסינון."}
+          </p>
         ) : (
-          <div className="space-y-3">
-            {supplier.products
-              .filter((product) => {
-                if (!categoryFilter) return true;
-                return product.categoryId === categoryFilter || product.category?.parentId === categoryFilter;
-              })
-              .map((product) => {
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>מוצר</TableHead>
+                <TableHead>מחיר</TableHead>
+                <TableHead>תקן</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {listedProducts.map((product) => {
                 const suggested = suggestOrderQty(product.stockStandard, days, supplier.orderCutoffTime);
                 const pack = describePackaging(suggested, product.cartonToBags, product.bagsToUnits);
                 const price = visiblePrice(product);
                 const hqNet = networkNetPrice(product);
                 return (
-                  <Card key={product.id} size="sm">
-                    <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <p className="font-medium">{product.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {product.sku ? `${product.sku} · ` : ""}
-                          {categoryPathLabel(product.category)}
+                  <TableRow key={product.id}>
+                    <TableCell>
+                      <p className="font-medium">{product.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {product.sku ? `${product.sku} · ` : ""}
+                        {categoryPathLabel(product.category)}
+                        {isPlantsCouncilRelevant(supplier, product) ? ` · ${PLANTS_COUNCIL.nameHe}` : ""}
+                      </p>
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      <p>
+                        לפני מע״מ {formatIls(price.beforeVat)} · הנחה {price.discountPercent}% · אחרי{" "}
+                        {formatIls(price.afterDiscount)}
+                      </p>
+                      {price.cartonPrice ? (
+                        <p className="text-muted-foreground">
+                          קרטון {formatIls(price.cartonPrice)} ({formatIls(price.afterDiscount)} × {price.packUnits})
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          לפני מע״מ {formatIls(price.beforeVat)} · הנחה {price.discountPercent}% · אחרי{" "}
-                          {formatIls(price.afterDiscount)}
-                          {price.cartonPrice
-                            ? ` · קרטון ${formatIls(price.cartonPrice)} (${formatIls(price.afterDiscount)} × ${price.packUnits})`
-                            : ""}
-                        </p>
-                        {session.isNetwork && (product.networkRebatePercent || product.networkPlusPercent) ? (
-                          <p className="text-xs text-muted-foreground">
-                            רשת בלבד: ריבייט {product.networkRebatePercent}% · פלוס {product.networkPlusPercent}% · נטו{" "}
-                            {formatIls(hqNet)}
-                          </p>
-                        ) : null}
-                        <p className="text-xs text-muted-foreground">
-                          מלאי תקן {product.stockStandard} · הצעת הזמנה {suggested}
-                          {pack ? ` · ${pack}` : ""}
-                        </p>
-                        {isPlantsCouncilRelevant(supplier, product) ? (
-                          <p className="text-xs text-muted-foreground">{PLANTS_COUNCIL.nameHe}</p>
-                        ) : null}
-                      </div>
-                      {sessionCan(session, "action.edit_prices") || sessionCan(session, "action.edit_suppliers") ? (
-                      <div className="flex gap-2">
-                        {sessionCan(session, "action.edit_prices") ? (
-                          <Link
-                            href={`/products/${product.id}/edit`}
-                            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-                          >
-                            עריכה
-                          </Link>
-                        ) : null}
-                        {sessionCan(session, "action.edit_suppliers") ? (
-                          <form action={deleteProduct.bind(null, product.id)}>
-                            <Button type="submit" size="sm" variant="ghost">
-                              מחיקה
-                            </Button>
-                          </form>
-                        ) : null}
-                      </div>
                       ) : null}
-                    </CardContent>
-                  </Card>
+                      {session.isNetwork && (product.networkRebatePercent || product.networkPlusPercent) ? (
+                        <p className="text-muted-foreground">
+                          רשת: ריבייט {product.networkRebatePercent}% · פלוס {product.networkPlusPercent}% · נטו{" "}
+                          {formatIls(hqNet)}
+                        </p>
+                      ) : null}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {product.stockStandard} · הצעה {suggested}
+                      {pack ? ` · ${pack}` : ""}
+                    </TableCell>
+                    <TableCell className="text-end">
+                      {sessionCan(session, "action.edit_prices") || sessionCan(session, "action.edit_suppliers") ? (
+                        <div className="flex justify-end gap-1.5">
+                          {sessionCan(session, "action.edit_prices") ? (
+                            <Link
+                              href={`/products/${product.id}/edit`}
+                              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                            >
+                              עריכה
+                            </Link>
+                          ) : null}
+                          {sessionCan(session, "action.edit_suppliers") ? (
+                            <form action={deleteProduct.bind(null, product.id)}>
+                              <Button type="submit" size="sm" variant="ghost">
+                                מחיקה
+                              </Button>
+                            </form>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-          </div>
+            </TableBody>
+          </Table>
         )}
       </div>
 
       {sessionCan(session, "action.edit_suppliers") ? (
-      <Card>
-        <CardHeader>
-          <CardTitle>ייבוא מהיר</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CompactPanel title="ייבוא מהיר">
           <ProductImportForm supplierId={supplier.id} />
-        </CardContent>
-      </Card>
+        </CompactPanel>
       ) : null}
     </div>
   );

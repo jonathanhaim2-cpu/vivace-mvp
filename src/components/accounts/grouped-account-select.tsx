@@ -1,3 +1,4 @@
+import { NativeSelect } from "@/components/ui/compact-form";
 import { CHART_OF_ACCOUNTS, DEFAULT_EXPENSE_LEAF_ID, type AccountKind } from "@/lib/chart-of-accounts";
 
 export function GroupedAccountSelect({
@@ -20,12 +21,11 @@ export function GroupedAccountSelect({
   const groups = CHART_OF_ACCOUNTS.filter((parent) => !kinds || kinds.includes(parent.kind));
 
   return (
-    <select
+    <NativeSelect
       id={id}
       name={name}
       required={required}
       defaultValue={defaultValue ?? (allowEmpty ? "" : DEFAULT_EXPENSE_LEAF_ID)}
-      className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
     >
       {allowEmpty ? <option value="">{emptyLabel}</option> : null}
       {groups.map((parent) => (
@@ -37,6 +37,6 @@ export function GroupedAccountSelect({
           ))}
         </optgroup>
       ))}
-    </select>
+    </NativeSelect>
   );
 }

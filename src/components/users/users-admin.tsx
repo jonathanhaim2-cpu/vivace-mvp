@@ -13,8 +13,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { CompactField, NativeSelect } from "@/components/ui/compact-form";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { parseAppRole, type AppRole } from "@/lib/roles";
+import { APP_ROLES, APP_ROLE_LABELS, parseAppRole, type AppRole } from "@/lib/roles";
 
 export type ManagedUser = {
   id: string;
@@ -38,16 +40,69 @@ export function UsersAdmin({
   const [editing, setEditing] = useState<ManagedUser | null>(null);
   const [resetting, setResetting] = useState<ManagedUser | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("active");
+  const [branchFilter, setBranchFilter] = useState("all");
+
+  const visible = users.filter((user) => {
+    const haystack = `${user.name} ${user.username}`.toLowerCase();
+    if (query && !haystack.includes(query.toLowerCase())) return false;
+    if (roleFilter !== "all" && user.role !== roleFilter) return false;
+    if (statusFilter === "active" && !user.active) return false;
+    if (statusFilter === "inactive" && user.active) return false;
+    if (branchFilter !== "all" && !user.branchIds.includes(branchFilter)) return false;
+    return true;
+  });
 
   return (
     <div className="space-y-3">
       {banner ? (
-        <p className="rounded-xl border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p className="rounded-lg border border-destructive/20 bg-destructive/10 px-2.5 py-1.5 text-sm text-destructive">
           {banner}
         </p>
       ) : null}
+      <div className="flex flex-wrap items-end gap-2">
+        <CompactField label="חיפוש" htmlFor="user-q" className="min-w-[10rem] flex-1">
+          <Input
+            id="user-q"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="שם או משתמש"
+          />
+        </CompactField>
+        <CompactField label="תפקיד" htmlFor="user-role">
+          <NativeSelect id="user-role" value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}>
+            <option value="all">הכל</option>
+            {APP_ROLES.map((role) => (
+              <option key={role} value={role}>
+                {APP_ROLE_LABELS[role]}
+              </option>
+            ))}
+          </NativeSelect>
+        </CompactField>
+        <CompactField label="סטטוס" htmlFor="user-status">
+          <NativeSelect id="user-status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+            <option value="all">הכל</option>
+            <option value="active">פעיל</option>
+            <option value="inactive">מושבת</option>
+          </NativeSelect>
+        </CompactField>
+        <CompactField label="סניף" htmlFor="user-branch">
+          <NativeSelect id="user-branch" value={branchFilter} onChange={(event) => setBranchFilter(event.target.value)}>
+            <option value="all">הכל</option>
+            {branches.map((branch) => (
+              <option key={branch.id} value={branch.id}>
+                {branch.name}
+              </option>
+            ))}
+          </NativeSelect>
+        </CompactField>
+      </div>
       {users.length === 0 ? (
         <p className="text-sm text-muted-foreground">עדיין אין משתמשים. צרו את הראשון בטופס למעלה.</p>
+      ) : visible.length === 0 ? (
+        <p className="text-sm text-muted-foreground">אין משתמשים שתואמים לסינון.</p>
       ) : (
         <Table>
           <TableHeader>
@@ -60,7 +115,7 @@ export function UsersAdmin({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => {
+            {visible.map((user) => {
               const role = parseAppRole(user.role) ?? "edge_worker";
               return (
                 <TableRow key={user.id} className={user.active ? "" : "opacity-60"}>
@@ -107,7 +162,7 @@ export function UsersAdmin({
       )}
 
       <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)}>
-        <DialogContent className="sm:max-w-lg" showCloseButton>
+        <DialogContent className="sm:max-w-3xl" showCloseButton>
           <DialogHeader>
             <DialogTitle>עריכת משתמש</DialogTitle>
             <DialogDescription>שינוי שם, תפקיד, סניפים או סטטוס. לסיסמה יש כפתור איפוס נפרד.</DialogDescription>
