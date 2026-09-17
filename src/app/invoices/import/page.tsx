@@ -1,5 +1,6 @@
 import { importInboxFiles } from "@/actions/invoices";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
+import { InvoiceAiTip } from "@/components/ai-helper-tip";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +17,8 @@ export default function InvoiceImportPage() {
         title="ייבוא מתיקייה"
         description="מעלים כמה חשבוניות בבת אחת. כל קובץ נכנס לתור הסיווג, ו-AI מציע תאריך וקטגוריה לאישור — בלי לבחור מראש לכל האצווה."
       />
+
+      <InvoiceAiTip variant="import" />
 
       <Card>
         <CardHeader>
