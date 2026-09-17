@@ -6,15 +6,22 @@ import { analyzeStoredPhoto } from "@/lib/analyze-photo";
 import { AUDIT_ACTIONS, IMAP_AUDIT_ACTOR, actorFromSession, writeAuditLogForActor, type AuditActor } from "@/lib/audit";
 import { INVOICE_SOURCE } from "@/lib/constants";
 import {
-  INVOICE_MAIL_MAX_MESSAGES,
+  INVOICE_MAIL_HISTORICAL_STATUS_KEY,
   INVOICE_MAIL_PROCESSED_HASH,
   INVOICE_MAIL_STATUS_KEY,
+  collectImportedUids,
+  fallbackInvoiceMailMessageId,
   formatInvoiceMailNote,
   getInvoiceMailConfig,
+  getInvoiceMailHistoricalConfig,
+  invoiceMailLookbackSince,
   isInvoiceMailAttachment,
-  normalizeMessageId,
+  mailboxUidSkipMessageId,
+  mergeInvoiceMailSearchUids,
   resolveInvoiceMailMime,
+  saveInvoiceMailHistoricalStatus,
   saveInvoiceMailStatus,
+  selectInvoiceMailUidsToFetch,
   type InvoiceMailConfig,
   type InvoiceMailStatus,
 } from "@/lib/invoice-mail";
@@ -38,12 +45,16 @@ export type InvoiceMailMessage = {
   attachments: InvoiceMailAttachment[];
 };
 
+export type InvoiceMailSyncMode = "live" | "historical" | "all";
+
 export type InvoiceMailSyncResult = InvoiceMailStatus & {
   configured: boolean;
   processedUids: number[];
+  historical?: InvoiceMailStatus & { configured: boolean };
 };
 
 const DEFAULT_ANALYZE_BUDGET_MS = 90_000;
+const DEFAULT_SYNC_BUDGET_MS = 90_000;
 
 let syncInFlight: Promise<InvoiceMailSyncResult> | null = null;
 
@@ -61,6 +72,18 @@ function imapErrorMessage(error: unknown) {
     return `חיבור IMAP נכשל: ${raw}`;
   }
   return raw || "סנכרון המייל נכשל";
+}
+
+function notConfiguredStatus(message: string): InvoiceMailStatus {
+  return {
+    lastSyncAt: new Date().toISOString(),
+    lastError: message,
+    imported: 0,
+    skipped: 0,
+    messages: 0,
+    duplicates: 0,
+    ok: false,
+  };
 }
 
 async function alreadyImported(messageId: string, contentHash: string) {
@@ -81,6 +104,7 @@ async function markAttachmentImported(input: {
   uid: number;
   originalName: string;
   invoicePhotoId?: string | null;
+  mailboxUser: string;
 }) {
   await prisma.invoiceMailImport.upsert({
     where: { messageId_contentHash: { messageId: input.messageId, contentHash: input.contentHash } },
@@ -89,24 +113,52 @@ async function markAttachmentImported(input: {
       uid: input.uid,
       originalName: input.originalName,
       invoicePhotoId: input.invoicePhotoId ?? undefined,
+      mailboxUser: input.mailboxUser,
     },
   });
 }
 
-async function markMessageProcessed(messageId: string, uid: number) {
+async function markMessageProcessed(messageId: string, uid: number, mailboxUser: string) {
   await prisma.invoiceMailImport.upsert({
     where: { messageId_contentHash: { messageId, contentHash: INVOICE_MAIL_PROCESSED_HASH } },
-    create: { messageId, contentHash: INVOICE_MAIL_PROCESSED_HASH, uid, originalName: "" },
-    update: { uid },
+    create: { messageId, contentHash: INVOICE_MAIL_PROCESSED_HASH, uid, originalName: "", mailboxUser },
+    update: { uid, mailboxUser },
   });
+}
+
+async function markMailboxUidProcessed(mailboxUser: string, uid: number) {
+  if (!mailboxUser) return;
+  const messageId = mailboxUidSkipMessageId(mailboxUser, uid);
+  await prisma.invoiceMailImport.upsert({
+    where: { messageId_contentHash: { messageId, contentHash: INVOICE_MAIL_PROCESSED_HASH } },
+    create: { messageId, contentHash: INVOICE_MAIL_PROCESSED_HASH, uid, originalName: "", mailboxUser },
+    update: { uid, mailboxUser },
+  });
+}
+
+async function loadImportedUids(mailboxUser: string, primaryMailboxUser: string | null): Promise<Set<number>> {
+  const includeLegacy = Boolean(primaryMailboxUser && mailboxUser.toLowerCase() === primaryMailboxUser.toLowerCase());
+  const mailboxFilter = includeLegacy
+    ? { in: [mailboxUser, ""] }
+    : mailboxUser;
+  const rows = await prisma.invoiceMailImport.findMany({
+    where: {
+      contentHash: INVOICE_MAIL_PROCESSED_HASH,
+      uid: { not: null },
+      mailboxUser: mailboxFilter,
+    },
+    select: { uid: true, mailboxUser: true, contentHash: true },
+  });
+  return new Set(collectImportedUids(rows, mailboxUser, { includeLegacyEmptyMailbox: includeLegacy }));
 }
 
 export async function importInvoiceMailMessages(
   messages: InvoiceMailMessage[],
-  options?: { analyzeBudgetMs?: number; actor?: AuditActor },
+  options?: { analyzeBudgetMs?: number; actor?: AuditActor; mailboxUser?: string; historical?: boolean },
 ) {
   const actor = options?.actor ?? IMAP_AUDIT_ACTOR;
   const analyzeBudgetMs = options?.analyzeBudgetMs ?? 0;
+  const mailboxUser = options?.mailboxUser?.trim() ?? "";
   let imported = 0;
   let skipped = 0;
   let duplicates = 0;
@@ -115,10 +167,16 @@ export async function importInvoiceMailMessages(
   const errors: string[] = [];
 
   for (const message of messages) {
-    const messageId = normalizeMessageId(message.messageId) || `uid:${message.uid}`;
+    const messageId = fallbackInvoiceMailMessageId({
+      messageId: message.messageId,
+      uid: message.uid,
+      mailboxUser,
+      historical: options?.historical,
+    });
     if (await alreadyImported(messageId, INVOICE_MAIL_PROCESSED_HASH)) {
       skipped += 1;
       processedUids.push(message.uid);
+      await markMailboxUidProcessed(mailboxUser, message.uid);
       continue;
     }
 
@@ -166,6 +224,7 @@ export async function importInvoiceMailMessages(
           uid: message.uid,
           originalName: saved.originalName,
           invoicePhotoId: created.id,
+          mailboxUser,
         });
         imported += 1;
         if (created.isDuplicate) duplicates += 1;
@@ -183,6 +242,8 @@ export async function importInvoiceMailMessages(
             from: message.from,
             subject: message.subject,
             isDuplicate: created.isDuplicate,
+            mailboxUser: mailboxUser || undefined,
+            historical: Boolean(options?.historical),
           },
         });
       } catch (error) {
@@ -193,7 +254,8 @@ export async function importInvoiceMailMessages(
     }
 
     if (!failed) {
-      await markMessageProcessed(messageId, message.uid);
+      await markMessageProcessed(messageId, message.uid, mailboxUser);
+      await markMailboxUidProcessed(mailboxUser, message.uid);
       processedUids.push(message.uid);
       if (attachments.length === 0) skipped += 1;
     }
@@ -222,17 +284,15 @@ async function analyzeImportedPhotos(photoIds: string[], analyzeBudgetMs: number
   }
 }
 
-async function downloadMailboxMessages(client: ImapFlow, config: InvoiceMailConfig) {
-  const { simpleParser } = await import("mailparser");
-  const since = new Date(Date.now() - config.lookbackDays * 24 * 60 * 60 * 1000);
-      const unseen = asUidList(await client.search({ seen: false }, { uid: true }));
+async function listCandidateUids(client: ImapFlow, config: InvoiceMailConfig) {
+  const since = invoiceMailLookbackSince(config.lookbackDays);
+  const unseen = asUidList(await client.search({ seen: false }, { uid: true }));
   const recent = asUidList(await client.search({ since }, { uid: true }));
-  const unseenSet = new Set(unseen);
-  const uids = [
-    ...unseen.sort((a, b) => a - b),
-    ...recent.filter((uid) => !unseenSet.has(uid)).sort((a, b) => a - b),
-  ].slice(0, INVOICE_MAIL_MAX_MESSAGES);
+  return mergeInvoiceMailSearchUids(unseen, recent);
+}
 
+async function fetchMessagesByUid(client: ImapFlow, uids: number[]): Promise<InvoiceMailMessage[]> {
+  const { simpleParser } = await import("mailparser");
   const messages: InvoiceMailMessage[] = [];
   if (uids.length === 0) return messages;
 
@@ -265,103 +325,229 @@ async function downloadMailboxMessages(client: ImapFlow, config: InvoiceMailConf
   return messages;
 }
 
+type MailboxSyncInternals = {
+  imported: number;
+  skipped: number;
+  duplicates: number;
+  messages: number;
+  processedUids: number[];
+  photoIdsToAnalyze: string[];
+  error: string | null;
+};
+
+async function syncConnectedMailbox(
+  config: InvoiceMailConfig,
+  options: {
+    actor: AuditActor;
+    paginate: boolean;
+    untilMs: number;
+    primaryMailboxUser: string | null;
+  },
+): Promise<{ status: InvoiceMailStatus; internals: MailboxSyncInternals }> {
+  const { ImapFlow } = await import("imapflow");
+  const client = new ImapFlow({
+    host: config.host,
+    port: config.port,
+    secure: config.tls,
+    auth: { user: config.user, pass: config.password },
+    logger: false,
+  });
+
+  const totals: MailboxSyncInternals = {
+    imported: 0,
+    skipped: 0,
+    duplicates: 0,
+    messages: 0,
+    processedUids: [],
+    photoIdsToAnalyze: [],
+    error: null,
+  };
+
+  await client.connect();
+  try {
+    const lock = await client.getMailboxLock(config.mailbox);
+    try {
+      const importedUids = await loadImportedUids(config.user, options.primaryMailboxUser);
+      const candidates = await listCandidateUids(client, config);
+
+      while (Date.now() < options.untilMs) {
+        const uids = selectInvoiceMailUidsToFetch(candidates, importedUids, config.maxMessages);
+        if (uids.length === 0) break;
+
+        const messages = await fetchMessagesByUid(client, uids);
+        const fetchedUids = new Set(messages.map((item) => item.uid));
+        for (const uid of uids) {
+          if (!fetchedUids.has(uid)) importedUids.add(uid);
+        }
+
+        totals.messages += messages.length;
+        const imported = await importInvoiceMailMessages(messages, {
+          analyzeBudgetMs: 0,
+          actor: options.actor,
+          mailboxUser: config.user,
+          historical: config.historical,
+        });
+        totals.imported += imported.imported;
+        totals.skipped += imported.skipped;
+        totals.duplicates += imported.duplicates;
+        totals.processedUids.push(...imported.processedUids);
+        totals.photoIdsToAnalyze.push(...imported.photoIdsToAnalyze);
+        if (imported.error && !totals.error) totals.error = imported.error;
+
+        for (const uid of imported.processedUids) importedUids.add(uid);
+        if (imported.processedUids.length > 0) {
+          await client.messageFlagsAdd(imported.processedUids, ["\\Seen"], { uid: true });
+        }
+
+        if (!options.paginate) break;
+        if (imported.processedUids.length === 0) break;
+        if (uids.length < config.maxMessages) break;
+      }
+    } finally {
+      lock.release();
+    }
+  } finally {
+    await client.logout().catch(() => undefined);
+  }
+
+  const status: InvoiceMailStatus = {
+    lastSyncAt: new Date().toISOString(),
+    lastError: totals.error,
+    imported: totals.imported,
+    skipped: totals.skipped,
+    messages: totals.messages,
+    duplicates: totals.duplicates,
+    ok: !totals.error,
+  };
+  return { status, internals: totals };
+}
+
+async function persistMailboxStatus(config: InvoiceMailConfig, status: InvoiceMailStatus, actor: AuditActor) {
+  if (config.historical) await saveInvoiceMailHistoricalStatus(status);
+  else await saveInvoiceMailStatus(status);
+  await writeAuditLogForActor(actor, {
+    action: AUDIT_ACTIONS.INVOICE_IMPORT,
+    entityType: "AppSetting",
+    entityId: config.historical ? INVOICE_MAIL_HISTORICAL_STATUS_KEY : INVOICE_MAIL_STATUS_KEY,
+    summary:
+      status.imported > 0
+        ? `סנכרון מייל · יובאו ${status.imported} קבצים`
+        : "סנכרון מייל · אין קבצים חדשים",
+    meta: {
+      imported: status.imported,
+      skipped: status.skipped,
+      messages: status.messages,
+      duplicates: status.duplicates,
+      mailboxUser: config.user,
+      historical: config.historical,
+      lookbackDays: config.lookbackDays,
+    },
+  });
+}
+
 async function runInvoiceMailboxSync(options?: {
   session?: AppSession | null;
   analyzeBudgetMs?: number;
+  mode?: InvoiceMailSyncMode;
+  syncBudgetMs?: number;
 }): Promise<InvoiceMailSyncResult> {
-  const config = getInvoiceMailConfig();
   const actor = options?.session ? actorFromSession(options.session) : IMAP_AUDIT_ACTOR;
   const analyzeBudgetMs = options?.analyzeBudgetMs ?? DEFAULT_ANALYZE_BUDGET_MS;
-  if (!config) {
-    const status: InvoiceMailStatus = {
-      lastSyncAt: new Date().toISOString(),
-      lastError: "חסרים INVOICE_MAIL_USER או INVOICE_MAIL_PASSWORD",
-      imported: 0,
-      skipped: 0,
-      messages: 0,
-      duplicates: 0,
-      ok: false,
-    };
+  const mode = options?.mode ?? "all";
+  const untilMs = Date.now() + (options?.syncBudgetMs ?? DEFAULT_SYNC_BUDGET_MS);
+  const liveConfig = getInvoiceMailConfig();
+  const historicalConfig = getInvoiceMailHistoricalConfig();
+  const runLive = mode === "live" || mode === "all";
+  const sameMailbox =
+    Boolean(liveConfig && historicalConfig) &&
+    liveConfig!.user.toLowerCase() === historicalConfig!.user.toLowerCase();
+  const runHistorical = (mode === "historical" || mode === "all") && Boolean(historicalConfig) && !sameMailbox;
+
+  if (mode === "historical" && !historicalConfig) {
+    const status = notConfiguredStatus("חסרים INVOICE_MAIL_HISTORICAL_USER או INVOICE_MAIL_HISTORICAL_PASSWORD");
+    await saveInvoiceMailHistoricalStatus(status);
+    return { ...status, configured: false, processedUids: [], historical: { ...status, configured: false } };
+  }
+
+  if (runLive && !liveConfig && !runHistorical) {
+    const status = notConfiguredStatus("חסרים INVOICE_MAIL_USER או INVOICE_MAIL_PASSWORD");
     await saveInvoiceMailStatus(status);
     return { ...status, configured: false, processedUids: [] };
   }
 
-  try {
-    const { ImapFlow } = await import("imapflow");
-    const client = new ImapFlow({
-      host: config.host,
-      port: config.port,
-      secure: config.tls,
-      auth: { user: config.user, pass: config.password },
-      logger: false,
-    });
+  const photoIds: string[] = [];
+  let liveResult: InvoiceMailSyncResult | null = null;
+  let historicalResult: (InvoiceMailStatus & { configured: boolean; processedUids: number[] }) | null = null;
 
-    let imported: Awaited<ReturnType<typeof importInvoiceMailMessages>>;
-    let messageCount = 0;
-    await client.connect();
+  async function runOneMailbox(config: InvoiceMailConfig, paginate: boolean) {
     try {
-      const lock = await client.getMailboxLock(config.mailbox);
-      let messages: InvoiceMailMessage[] = [];
-      try {
-        messages = await downloadMailboxMessages(client, config);
-      } finally {
-        lock.release();
-      }
-      messageCount = messages.length;
-      imported = await importInvoiceMailMessages(messages, { analyzeBudgetMs: 0, actor });
-      if (imported.processedUids.length > 0) {
-        await client.messageFlagsAdd(imported.processedUids, ["\\Seen"], { uid: true });
-      }
-    } finally {
-      await client.logout().catch(() => undefined);
+      const synced = await syncConnectedMailbox(config, {
+        actor,
+        paginate,
+        untilMs,
+        primaryMailboxUser: liveConfig?.user ?? (config.historical ? null : config.user),
+      });
+      await persistMailboxStatus(config, synced.status, actor);
+      photoIds.push(...synced.internals.photoIdsToAnalyze);
+      return {
+        ...synced.status,
+        configured: true as const,
+        processedUids: synced.internals.processedUids,
+      };
+    } catch (error) {
+      const status: InvoiceMailStatus = {
+        lastSyncAt: new Date().toISOString(),
+        lastError: imapErrorMessage(error),
+        imported: 0,
+        skipped: 0,
+        messages: 0,
+        duplicates: 0,
+        ok: false,
+      };
+      await persistMailboxStatus(config, status, actor);
+      return { ...status, configured: true as const, processedUids: [] };
     }
-
-    await analyzeImportedPhotos(imported.photoIdsToAnalyze, analyzeBudgetMs);
-
-    const status: InvoiceMailStatus = {
-      lastSyncAt: new Date().toISOString(),
-      lastError: imported.error,
-      imported: imported.imported,
-      skipped: imported.skipped,
-      messages: messageCount,
-      duplicates: imported.duplicates,
-      ok: !imported.error,
-    };
-    await saveInvoiceMailStatus(status);
-    await writeAuditLogForActor(actor, {
-      action: AUDIT_ACTIONS.INVOICE_IMPORT,
-      entityType: "AppSetting",
-      entityId: INVOICE_MAIL_STATUS_KEY,
-      summary:
-        imported.imported > 0
-          ? `סנכרון מייל · יובאו ${imported.imported} קבצים`
-          : "סנכרון מייל · אין קבצים חדשים",
-      meta: {
-        imported: imported.imported,
-        skipped: imported.skipped,
-        messages: messageCount,
-        duplicates: imported.duplicates,
-      },
-    });
-    return { ...status, configured: true, processedUids: imported.processedUids };
-  } catch (error) {
-    const status: InvoiceMailStatus = {
-      lastSyncAt: new Date().toISOString(),
-      lastError: imapErrorMessage(error),
-      imported: 0,
-      skipped: 0,
-      messages: 0,
-      duplicates: 0,
-      ok: false,
-    };
-    await saveInvoiceMailStatus(status);
-    return { ...status, configured: true, processedUids: [] };
   }
+
+  if (runLive && liveConfig) {
+    liveResult = await runOneMailbox(liveConfig, false);
+  } else if (runLive && !liveConfig) {
+    const status = notConfiguredStatus("חסרים INVOICE_MAIL_USER או INVOICE_MAIL_PASSWORD");
+    await saveInvoiceMailStatus(status);
+    liveResult = { ...status, configured: false, processedUids: [] };
+  }
+
+  if (runHistorical && historicalConfig && Date.now() < untilMs) {
+    historicalResult = await runOneMailbox(historicalConfig, true);
+  }
+
+  await analyzeImportedPhotos(photoIds, analyzeBudgetMs);
+
+  if (mode === "historical") {
+    const historical = historicalResult ?? {
+      ...notConfiguredStatus("חסרים INVOICE_MAIL_HISTORICAL_USER או INVOICE_MAIL_HISTORICAL_PASSWORD"),
+      configured: false,
+      processedUids: [],
+    };
+    return { ...historical, historical: { ...historical, configured: historical.configured } };
+  }
+
+  const live = liveResult ?? {
+    ...notConfiguredStatus("חסרים INVOICE_MAIL_USER או INVOICE_MAIL_PASSWORD"),
+    configured: false,
+    processedUids: [],
+  };
+  return {
+    ...live,
+    historical: historicalResult ? { ...historicalResult, configured: historicalResult.configured } : undefined,
+  };
 }
 
 export function syncInvoiceMailbox(options?: {
   session?: AppSession | null;
   analyzeBudgetMs?: number;
+  mode?: InvoiceMailSyncMode;
+  syncBudgetMs?: number;
 }): Promise<InvoiceMailSyncResult> {
   if (syncInFlight) return syncInFlight;
   syncInFlight = runInvoiceMailboxSync(options).finally(() => {

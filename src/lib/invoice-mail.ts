@@ -1,14 +1,18 @@
 import { prisma } from "@/lib/prisma";
 
 export const INVOICE_MAIL_STATUS_KEY = "invoiceMail.sync";
+export const INVOICE_MAIL_HISTORICAL_STATUS_KEY = "invoiceMail.historical.sync";
 export const INVOICE_MAIL_PROCESSED_HASH = "__processed__";
 export const INVOICE_MAIL_MAX_MESSAGES = 40;
+export const INVOICE_MAIL_HISTORICAL_MAX_MESSAGES = 200;
 export const INVOICE_MAIL_MIN_INLINE_BYTES = 20_000;
+export const DEFAULT_INVOICE_MAIL_LOOKBACK_DAYS = 14;
+export const DEFAULT_INVOICE_MAIL_HISTORICAL_LOOKBACK_DAYS = 2000;
+export const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 const DEFAULT_HOST = "imap.gmail.com";
 const DEFAULT_PORT = 993;
 const DEFAULT_MAILBOX = "INBOX";
-const DEFAULT_LOOKBACK_DAYS = 14;
 
 const MAIL_MIME_BY_EXT: Record<string, string> = {
   ".pdf": "application/pdf",
@@ -30,6 +34,8 @@ export type InvoiceMailConfig = {
   tls: boolean;
   mailbox: string;
   lookbackDays: number;
+  maxMessages: number;
+  historical: boolean;
 };
 
 export type InvoiceMailStatus = {
@@ -49,6 +55,7 @@ export type InvoiceMailConnectionView = {
   port: number;
   tls: boolean;
   mailbox: string;
+  lookbackDays: number;
   missing: string[];
 };
 
@@ -78,7 +85,32 @@ export function getInvoiceMailConfig(env: EnvMap = process.env): InvoiceMailConf
     port: envInt(env.INVOICE_MAIL_PORT, DEFAULT_PORT),
     tls: envFlag(env.INVOICE_MAIL_TLS, true),
     mailbox: env.INVOICE_MAIL_MAILBOX?.trim() || DEFAULT_MAILBOX,
-    lookbackDays: envInt(env.INVOICE_MAIL_LOOKBACK_DAYS, DEFAULT_LOOKBACK_DAYS),
+    lookbackDays: envInt(env.INVOICE_MAIL_LOOKBACK_DAYS, DEFAULT_INVOICE_MAIL_LOOKBACK_DAYS),
+    maxMessages: envInt(env.INVOICE_MAIL_MAX_MESSAGES, INVOICE_MAIL_MAX_MESSAGES),
+    historical: false,
+  };
+}
+
+export function getInvoiceMailHistoricalConfig(env: EnvMap = process.env): InvoiceMailConfig | null {
+  const user = env.INVOICE_MAIL_HISTORICAL_USER?.trim() ?? "";
+  const password = env.INVOICE_MAIL_HISTORICAL_PASSWORD ?? "";
+  if (!user || !password) return null;
+  return {
+    user,
+    password,
+    host:
+      env.INVOICE_MAIL_HISTORICAL_HOST?.trim() ||
+      env.INVOICE_MAIL_HOST?.trim() ||
+      DEFAULT_HOST,
+    port: envInt(env.INVOICE_MAIL_HISTORICAL_PORT, envInt(env.INVOICE_MAIL_PORT, DEFAULT_PORT)),
+    tls: envFlag(env.INVOICE_MAIL_HISTORICAL_TLS, envFlag(env.INVOICE_MAIL_TLS, true)),
+    mailbox: env.INVOICE_MAIL_HISTORICAL_MAILBOX?.trim() || DEFAULT_MAILBOX,
+    lookbackDays: envInt(
+      env.INVOICE_MAIL_HISTORICAL_LOOKBACK_DAYS,
+      DEFAULT_INVOICE_MAIL_HISTORICAL_LOOKBACK_DAYS,
+    ),
+    maxMessages: envInt(env.INVOICE_MAIL_HISTORICAL_MAX_MESSAGES, INVOICE_MAIL_HISTORICAL_MAX_MESSAGES),
+    historical: true,
   };
 }
 
@@ -95,6 +127,31 @@ export function invoiceMailConnectionView(env: EnvMap = process.env): InvoiceMai
     port: envInt(env.INVOICE_MAIL_PORT, DEFAULT_PORT),
     tls: envFlag(env.INVOICE_MAIL_TLS, true),
     mailbox: env.INVOICE_MAIL_MAILBOX?.trim() || DEFAULT_MAILBOX,
+    lookbackDays: envInt(env.INVOICE_MAIL_LOOKBACK_DAYS, DEFAULT_INVOICE_MAIL_LOOKBACK_DAYS),
+    missing,
+  };
+}
+
+export function invoiceMailHistoricalConnectionView(env: EnvMap = process.env): InvoiceMailConnectionView {
+  const user = env.INVOICE_MAIL_HISTORICAL_USER?.trim() || null;
+  const password = env.INVOICE_MAIL_HISTORICAL_PASSWORD;
+  const missing: string[] = [];
+  if (!user) missing.push("INVOICE_MAIL_HISTORICAL_USER");
+  if (!password) missing.push("INVOICE_MAIL_HISTORICAL_PASSWORD");
+  return {
+    configured: missing.length === 0,
+    user,
+    host:
+      env.INVOICE_MAIL_HISTORICAL_HOST?.trim() ||
+      env.INVOICE_MAIL_HOST?.trim() ||
+      DEFAULT_HOST,
+    port: envInt(env.INVOICE_MAIL_HISTORICAL_PORT, envInt(env.INVOICE_MAIL_PORT, DEFAULT_PORT)),
+    tls: envFlag(env.INVOICE_MAIL_HISTORICAL_TLS, envFlag(env.INVOICE_MAIL_TLS, true)),
+    mailbox: env.INVOICE_MAIL_HISTORICAL_MAILBOX?.trim() || DEFAULT_MAILBOX,
+    lookbackDays: envInt(
+      env.INVOICE_MAIL_HISTORICAL_LOOKBACK_DAYS,
+      DEFAULT_INVOICE_MAIL_HISTORICAL_LOOKBACK_DAYS,
+    ),
     missing,
   };
 }
@@ -135,11 +192,24 @@ export async function getInvoiceMailStatus(): Promise<InvoiceMailStatus> {
   return parseInvoiceMailStatus(row?.value);
 }
 
+export async function getInvoiceMailHistoricalStatus(): Promise<InvoiceMailStatus> {
+  const row = await prisma.appSetting.findUnique({ where: { key: INVOICE_MAIL_HISTORICAL_STATUS_KEY } });
+  return parseInvoiceMailStatus(row?.value);
+}
+
 export async function saveInvoiceMailStatus(status: InvoiceMailStatus) {
   await prisma.appSetting.upsert({
     where: { key: INVOICE_MAIL_STATUS_KEY },
     update: { value: JSON.stringify(status) },
     create: { key: INVOICE_MAIL_STATUS_KEY, value: JSON.stringify(status) },
+  });
+}
+
+export async function saveInvoiceMailHistoricalStatus(status: InvoiceMailStatus) {
+  await prisma.appSetting.upsert({
+    where: { key: INVOICE_MAIL_HISTORICAL_STATUS_KEY },
+    update: { value: JSON.stringify(status) },
+    create: { key: INVOICE_MAIL_HISTORICAL_STATUS_KEY, value: JSON.stringify(status) },
   });
 }
 
@@ -205,6 +275,71 @@ export function mailAttachmentAlreadyImported(
     }
   }
   return false;
+}
+
+export function invoiceMailLookbackSince(lookbackDays: number, now = Date.now()): Date {
+  const days =
+    Number.isFinite(lookbackDays) && lookbackDays > 0
+      ? Math.floor(lookbackDays)
+      : DEFAULT_INVOICE_MAIL_LOOKBACK_DAYS;
+  return new Date(now - days * MS_PER_DAY);
+}
+
+export function mergeInvoiceMailSearchUids(unseen: number[], recent: number[]): number[] {
+  const unseenUnique = [...new Set(unseen.filter((uid) => Number.isFinite(uid)))].sort((a, b) => a - b);
+  const unseenSet = new Set(unseenUnique);
+  const recentRest = [...new Set(recent.filter((uid) => Number.isFinite(uid) && !unseenSet.has(uid)))].sort(
+    (a, b) => a - b,
+  );
+  return [...unseenUnique, ...recentRest];
+}
+
+export function selectInvoiceMailUidsToFetch(
+  candidateUids: number[],
+  importedUids: Iterable<number>,
+  maxMessages: number,
+): number[] {
+  const imported = new Set(
+    [...importedUids].filter((uid) => typeof uid === "number" && Number.isFinite(uid)),
+  );
+  const pending = candidateUids.filter((uid) => Number.isFinite(uid) && !imported.has(uid));
+  if (!(maxMessages > 0)) return pending;
+  return pending.slice(0, maxMessages);
+}
+
+export function mailboxUidSkipMessageId(mailboxUser: string, uid: number) {
+  return `imap-uid:${mailboxUser.trim().toLowerCase()}:${uid}`;
+}
+
+export function fallbackInvoiceMailMessageId(input: {
+  messageId?: string | null;
+  uid: number;
+  mailboxUser?: string | null;
+  historical?: boolean;
+}) {
+  const normalized = normalizeMessageId(input.messageId);
+  if (normalized) return normalized;
+  const mailboxUser = input.mailboxUser?.trim().toLowerCase() ?? "";
+  if (input.historical && mailboxUser) return `uid:${mailboxUser}:${input.uid}`;
+  return `uid:${input.uid}`;
+}
+
+export function collectImportedUids(
+  rows: Iterable<{ uid: number | null; mailboxUser?: string | null; contentHash: string }>,
+  mailboxUser: string,
+  options?: { includeLegacyEmptyMailbox?: boolean },
+): number[] {
+  const wanted = new Set<string>([mailboxUser.trim().toLowerCase()]);
+  if (options?.includeLegacyEmptyMailbox) wanted.add("");
+  const uids = new Set<number>();
+  for (const row of rows) {
+    if (row.contentHash !== INVOICE_MAIL_PROCESSED_HASH) continue;
+    if (row.uid == null || !Number.isFinite(row.uid)) continue;
+    const owner = (row.mailboxUser ?? "").trim().toLowerCase();
+    if (!wanted.has(owner)) continue;
+    uids.add(row.uid);
+  }
+  return [...uids].sort((a, b) => a - b);
 }
 
 export function cronTokenFromRequest(request: Request) {

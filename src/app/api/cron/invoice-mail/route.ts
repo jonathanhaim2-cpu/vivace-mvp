@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAuthEnabled } from "@/lib/auth";
 import { cronSecretMatches } from "@/lib/invoice-mail";
-import { syncInvoiceMailbox } from "@/lib/invoice-mail-sync";
+import { syncInvoiceMailbox, type InvoiceMailSyncResult } from "@/lib/invoice-mail-sync";
 import { getAppSession, sessionCan } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -15,12 +15,8 @@ async function isAuthorized(request: Request) {
   return sessionCan(session, "action.accounting_package");
 }
 
-async function run(request: Request) {
-  if (!(await isAuthorized(request))) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
-  const result = await syncInvoiceMailbox({ analyzeBudgetMs: 45_000 });
-  return NextResponse.json({
+function jsonResult(result: InvoiceMailSyncResult) {
+  return {
     ok: result.ok !== false && result.configured,
     configured: result.configured,
     imported: result.imported,
@@ -29,7 +25,27 @@ async function run(request: Request) {
     duplicates: result.duplicates,
     error: result.lastError,
     lastSyncAt: result.lastSyncAt,
-  });
+    historical: result.historical
+      ? {
+          configured: result.historical.configured,
+          imported: result.historical.imported,
+          skipped: result.historical.skipped,
+          messages: result.historical.messages,
+          duplicates: result.historical.duplicates,
+          error: result.historical.lastError,
+          lastSyncAt: result.historical.lastSyncAt,
+          ok: result.historical.ok,
+        }
+      : undefined,
+  };
+}
+
+async function run(request: Request) {
+  if (!(await isAuthorized(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  const result = await syncInvoiceMailbox({ analyzeBudgetMs: 45_000, mode: "all", syncBudgetMs: 70_000 });
+  return NextResponse.json(jsonResult(result));
 }
 
 /** Railway cron or admin session. Prefer `Authorization: Bearer $CRON_SECRET`. */
