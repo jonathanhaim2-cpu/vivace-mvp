@@ -103,3 +103,11 @@ test("parsePhotoDocumentType maps Hebrew and English aliases", () => {
   assert.equal(parsePhotoDocumentType(""), PHOTO_DOCUMENT_TYPE.UNKNOWN);
   assert.equal(parsePhotoDocumentType("nope"), PHOTO_DOCUMENT_TYPE.UNKNOWN);
 });
+
+test("invoiceClassificationFromForm maps רשת sentinel to null branchId", () => {
+  const form = new FormData();
+  form.set("accountId", "acc_admin_consulting");
+  form.set("periodMonth", "2026-09");
+  form.set("branchId", "network");
+  assert.equal(invoiceClassificationFromForm(form).branchId, null);
+});

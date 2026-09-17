@@ -23,6 +23,7 @@ model Branch {
   cutoffReminders     OrderCutoffReminder[]
   userLinks       UserBranch[]
   invoicePhotos   InvoicePhoto[]
+  aiSuggestedPhotos InvoicePhoto[] @relation("InvoiceAiBranch")
 }
 
 model Supplier {
@@ -267,10 +268,16 @@ model InvoicePhoto {
   aiConfidence   Float?
   aiReason       String?
   aiStatus       String?
+  /// Suggested branch from the document; not applied until confirm/classify.
+  aiBranchId     String?
+  aiBranch       Branch?       @relation("InvoiceAiBranch", fields: [aiBranchId], references: [id], onDelete: SetNull)
+  /// True when AI inferred HQ/consulting with no site — confirm should default to רשת.
+  aiNetworkExpense Boolean     @default(false)
 
   @@index([contentHash])
   @@index([isDuplicate])
   @@index([branchId])
+  @@index([aiBranchId])
 }
 
 /// Dedup for IMAP intake: same Message-ID + attachment hash is never imported twice.

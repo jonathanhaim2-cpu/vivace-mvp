@@ -102,7 +102,9 @@ export function InvoiceFilterBar({
             branches={branches}
             defaultValue={filters.branch}
             allowEmpty
+            allowNetwork
             emptyLabel="כל הסניפים"
+            networkLabel="רשת"
           />
         </label>
       ) : null}

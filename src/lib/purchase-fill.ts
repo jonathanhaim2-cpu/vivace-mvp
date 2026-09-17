@@ -54,7 +54,8 @@ export function resolvedInvoiceBranchId(photo: {
   return photo.branchId ?? photo.goodsReceipt?.order?.branchId ?? null;
 }
 
-/** Receipt-linked photos are already counted from GoodsReceipt lines — skip to avoid double count. */
+/** Receipt-linked photos are already counted from GoodsReceipt lines — skip to avoid double count.
+ *  Null branchId is a network expense: counts in network-wide totals, never in a single branch's %. */
 export function standaloneInvoiceCountsForBranch(
   photo: {
     goodsReceiptId?: string | null;

@@ -16,6 +16,7 @@ import { chartLeafMeta } from "@/lib/chart-of-accounts";
 import { invoiceSourceLabel } from "@/lib/constants";
 import { formatDateTime } from "@/lib/format";
 import { toDateInputValue } from "@/lib/invoice-form";
+import { invoiceBranchSelectValue } from "@/lib/invoice-branch";
 import { monthKeyFromDate, monthLabel, resolvedPeriodMonth } from "@/lib/months";
 import { publicFileUrl } from "@/lib/uploads";
 
@@ -39,6 +40,8 @@ export type PendingInvoicePhoto = {
   branchId: string | null;
   documentType: string;
   aiDocumentType: string | null;
+  aiBranchId: string | null;
+  aiNetworkExpense: boolean;
 };
 
 export function PendingInvoiceCard({
@@ -61,6 +64,11 @@ export function PendingInvoiceCard({
   const field = (name: string) => `${name}-${photo.id}`;
   const formId = `classify-${photo.id}`;
   const notInvoice = isAiNotInvoiceSuggestion(photo);
+  const branchSelectValue = invoiceBranchSelectValue({
+    aiBranchId: photo.aiBranchId,
+    aiNetworkExpense: photo.aiNetworkExpense,
+    branchId: photo.branchId,
+  });
 
   return (
     <div className="space-y-3 rounded-lg border p-3">
@@ -96,7 +104,9 @@ export function PendingInvoiceCard({
             documentType={photo.aiDocumentType ?? photo.documentType}
             suggestedAccount={chartLeafMeta(photo.aiAccountId)}
             branches={branches}
-            defaultBranchId={photo.branchId}
+            defaultBranchId={branchSelectValue}
+            suggestedBranchId={photo.aiBranchId}
+            suggestedNetwork={photo.aiNetworkExpense}
           />
 
           <form
@@ -165,9 +175,11 @@ export function PendingInvoiceCard({
               <BranchSelect
                 id={field("branchId")}
                 branches={branches}
-                defaultValue={photo.branchId}
+                defaultValue={branchSelectValue}
                 required
-                allowEmpty={false}
+                allowEmpty={!branchSelectValue}
+                allowNetwork
+                emptyLabel="בחירת סניף"
               />
             </Field>
             <Field className="sm:col-span-2">

@@ -6,6 +6,7 @@ import {
   type PhotoDocumentType,
 } from "@/lib/constants";
 import { monthKeyFromDate, resolvedPeriodMonth } from "@/lib/months";
+import { matchesInvoiceBranchFilter } from "@/lib/invoice-branch";
 
 export const INVOICE_STATUS_FILTERS = [
   { value: "all", label: "הכול" },
@@ -171,7 +172,7 @@ function matchesSharedFilters(
     return false;
   }
   if (filters.supplier && photoSupplierName(photo) !== filters.supplier) return false;
-  if (filters.branch && photo.branchId !== filters.branch) return false;
+  if (!matchesInvoiceBranchFilter(photo.branchId, filters.branch)) return false;
   if (!matchesDocumentTypeFilter(photo, filters.documentType)) return false;
   return matchesDateRange(photo, filters) && matchesSearch(photo, filters.q);
 }

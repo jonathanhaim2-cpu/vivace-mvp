@@ -56,6 +56,7 @@ export default async function InvoiceImportPage() {
                 branches={branches}
                 defaultValue={session.branchId}
                 allowEmpty
+                allowNetwork
                 emptyLabel="לשיבוץ אחר כך"
               />
             </CompactField>

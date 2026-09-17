@@ -7,6 +7,7 @@ import { analyzeStoredPhoto } from "@/lib/analyze-photo";
 import { IMPORT_ANALYZE_GAP_MS, sleep } from "@/lib/ai-throttle";
 import { INVOICE_DUPLICATE_STATUS, INVOICE_SOURCE, PHOTO_DOCUMENT_TYPE, parsePhotoDocumentType } from "@/lib/constants";
 import { invoiceClassificationFromForm } from "@/lib/invoice-form";
+import { resolveInvoiceBranchChoice } from "@/lib/invoice-branch";
 import { invoicesDupRedirect } from "@/lib/invoice-filters";
 import { markPhotoIfDuplicate } from "@/lib/invoice-duplicates";
 import {
@@ -39,32 +40,25 @@ async function optionalLeaf(formData: FormData) {
   return accountId;
 }
 
-async function readBranchId(formData: FormData, required: boolean) {
-  const branchId = String(formData.get("branchId") ?? "").trim();
-  if (!branchId) {
-    if (required) throw new Error("יש לבחור סניף — אחרת החשבונית לא תיכנס לאחוז רכש מול מחזור");
-    return null;
-  }
-  const branch = await prisma.branch.findUnique({ where: { id: branchId }, select: { id: true } });
-  if (!branch) throw new Error("סניף לא נמצא");
-  return branch.id;
-}
-
-/** Form branch, else already stored, else the session's current branch (Roi on קרית יערים, or a branch worker). */
 async function resolveInvoiceBranchId(
   formData: FormData,
   session: AppSession,
   existing?: string | null,
   required = false,
 ) {
-  const fromForm = await readBranchId(formData, false);
-  const branchId = fromForm ?? existing ?? session.branchId ?? null;
-  if (!branchId) {
-    if (required) throw new Error("יש לבחור סניף — אחרת החשבונית לא תיכנס לאחוז רכש מול מחזור");
+  const choice = resolveInvoiceBranchChoice({
+    formValue: String(formData.get("branchId") ?? ""),
+    existing,
+  });
+  if (choice.explicitNetwork) return null;
+  if (!choice.branchId) {
+    if (required) throw new Error("יש לבחור סניף או רשת");
     return null;
   }
-  await requireBranchAccess(branchId, session);
-  return branchId;
+  const branch = await prisma.branch.findUnique({ where: { id: choice.branchId }, select: { id: true } });
+  if (!branch) throw new Error("סניף לא נמצא");
+  await requireBranchAccess(branch.id, session);
+  return branch.id;
 }
 
 function revalidateInvoicePaths() {
@@ -140,8 +134,8 @@ export async function updateInvoiceCategory(photoId: string, formData: FormData)
     data: {
       accountId,
       classifiedAt: new Date(),
+      branchId,
       ...(periodMonth ? { periodMonth } : {}),
-      ...(branchId ? { branchId } : {}),
       ...(documentType ? { documentType } : {}),
     },
   });
@@ -163,7 +157,8 @@ export async function saveInvoiceClassification(photoId: string, formData: FormD
   if (photo?.isDuplicate) {
     throw new Error("חשבונית מסומנת ככפיל — אשרו שהיא ייחודית לפני שיבוץ");
   }
-  const branchId = await resolveInvoiceBranchId(formData, session, photo?.branchId, true);
+  const existingBranchId = photo?.aiNetworkExpense ? null : (photo?.aiBranchId ?? photo?.branchId);
+  const branchId = await resolveInvoiceBranchId(formData, session, existingBranchId, true);
   await prisma.invoicePhoto.update({
     where: { id: photoId },
     data: {
@@ -199,13 +194,16 @@ export async function confirmAiSuggestion(photoId: string, formData?: FormData) 
     throw new Error("חשבונית מסומנת ככפיל — אשרו שהיא ייחודית לפני שיבוץ");
   }
   await assertLeafAccount(photo.aiAccountId);
+  const suggestedBranchId = photo.aiNetworkExpense ? null : (photo.aiBranchId ?? photo.branchId);
   const branchId = formData
-    ? await resolveInvoiceBranchId(formData, session, photo.branchId, true)
-    : photo.branchId ?? session.branchId;
-  if (!branchId) {
-    throw new Error("יש לבחור סניף — אחרת החשבונית לא תיכנס לאחוז רכש מול מחזור");
+    ? await resolveInvoiceBranchId(formData, session, suggestedBranchId, true)
+    : photo.aiNetworkExpense
+      ? null
+      : suggestedBranchId ?? session.branchId;
+  if (formData == null && branchId) await requireBranchAccess(branchId, session);
+  if (formData == null && !branchId && !photo.aiNetworkExpense) {
+    throw new Error("יש לבחור סניף או רשת");
   }
-  if (!formData) await requireBranchAccess(branchId, session);
   const periodMonth = resolvedPeriodMonth(photo.periodMonth, photo.aiInvoiceDate);
   const suggestedType = formData?.has("documentType")
     ? parsePhotoDocumentType(formData.get("documentType"))

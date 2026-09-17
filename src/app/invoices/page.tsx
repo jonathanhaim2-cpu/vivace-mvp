@@ -279,7 +279,7 @@ export default async function InvoicesPage({
         />
       </CompactPanel>
 
-      <CompactPanel title="העלאה + ניתוח" description="צלמו או בחרו קובץ, שייכו סניף כדי שהסכום ייכנס לאחוז רכש מול מחזור.">
+      <CompactPanel title="העלאה + ניתוח" description="צלמו או בחרו קובץ. סניף נכנס לאחוז רכש מול מחזור; רשת = הוצאה רשתית בלי לספור בסניף.">
         <CompactForm action={uploadStandaloneInvoice}>
           <CompactField label="קטגוריה" htmlFor="accountId" className="min-w-[14rem]">
             <GroupedAccountSelect id="accountId" defaultValue="" allowEmpty required={false} />
@@ -291,6 +291,7 @@ export default async function InvoicesPage({
               defaultValue={session.branchId}
               required={branches.length > 0}
               allowEmpty={branches.length === 0}
+              allowNetwork
             />
           </CompactField>
           <div className="min-w-[16rem] flex-1">
