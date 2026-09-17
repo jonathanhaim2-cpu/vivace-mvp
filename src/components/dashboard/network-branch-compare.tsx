@@ -80,6 +80,17 @@ function CategoryCompareChart({ left, right }: { left: BranchComparisonRow; righ
   );
 }
 
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="truncate text-sm tabular-nums" dir="ltr">
+        {value}
+      </p>
+    </div>
+  );
+}
+
 function BranchStatCard({
   branch,
   color,
@@ -93,28 +104,15 @@ function BranchStatCard({
         <span className="size-2.5 rounded-full" style={{ background: color }} />
         <p className="text-sm font-medium">{branch.name}</p>
       </div>
-      <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-        <div className="flex justify-between gap-2">
-          <dt className="text-muted-foreground">רכש</dt>
-          <dd className="tabular-nums">{formatIls(branch.purchaseTotal)}</dd>
-        </div>
-        <div className="flex justify-between gap-2">
-          <dt className="text-muted-foreground">% מחזור</dt>
-          <dd className="tabular-nums">{branch.purchasePercent != null ? `${branch.purchasePercent.toFixed(1)}%` : "—"}</dd>
-        </div>
-        <div className="flex justify-between gap-2">
-          <dt className="text-muted-foreground">חשבוניות</dt>
-          <dd className="tabular-nums">
-            {branch.invoiceCount} · {formatIls(branch.invoiceTotal)}
-          </dd>
-        </div>
-        <div className="flex justify-between gap-2">
-          <dt className="text-muted-foreground">הזמנות</dt>
-          <dd className="tabular-nums">
-            {branch.orderCount} · {formatIls(branch.orderVolume)}
-          </dd>
-        </div>
-      </dl>
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+        <Metric label="רכש" value={formatIls(branch.purchaseTotal)} />
+        <Metric
+          label="% מחזור"
+          value={branch.purchasePercent != null ? `${branch.purchasePercent.toFixed(1)}%` : "—"}
+        />
+        <Metric label="חשבוניות" value={`${branch.invoiceCount} · ${formatIls(branch.invoiceTotal)}`} />
+        <Metric label="הזמנות" value={`${branch.orderCount} · ${formatIls(branch.orderVolume)}`} />
+      </div>
       <div className="space-y-1">
         {branch.fill.map((row) => {
           const fillPct =
@@ -127,7 +125,10 @@ function BranchStatCard({
             <div key={row.id} className="space-y-0.5">
               <div className="flex items-baseline justify-between gap-2 text-[11px]">
                 <span>{row.name}</span>
-                <span className={cn(row.over ? "font-medium text-destructive" : "text-muted-foreground")}>
+                <span
+                  className={cn("tabular-nums", row.over ? "font-medium text-destructive" : "text-muted-foreground")}
+                  dir="ltr"
+                >
                   {row.actualPercent != null ? `${row.actualPercent.toFixed(1)}%` : "—"}
                   {row.targetPercent != null ? ` / ${row.targetPercent}%` : ""}
                 </span>

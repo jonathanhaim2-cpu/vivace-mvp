@@ -120,7 +120,7 @@ export default async function HomePage() {
                   <div key={row.id} className="space-y-1">
                     <div className="flex items-baseline justify-between gap-2 text-sm">
                       <span>{row.name}</span>
-                      <span className={row.over ? "font-medium text-destructive" : "text-muted-foreground"}>
+                      <span className={row.over ? "font-medium text-destructive" : "text-muted-foreground"} dir="ltr">
                         {row.actualPercent != null ? `${row.actualPercent.toFixed(1)}%` : "—"}
                         {row.targetPercent != null ? ` / ${row.targetPercent}%` : ""}
                       </span>
