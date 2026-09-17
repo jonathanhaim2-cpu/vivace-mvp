@@ -75,7 +75,9 @@ export default async function HomePage() {
 
       {session.isNetwork && rogue.branches.length > 0 ? (
         <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm">
-          <p className="font-medium text-destructive">סניפים סוררים (חריגת יעד ≥ {rogue.threshold} נקודות אחוז)</p>
+          <p className="font-medium text-destructive">
+            חריגה מיעד — קטגוריה שחורגת מהיעד ב־{rogue.threshold} נקודות אחוז או יותר
+          </p>
           <ul className="mt-1 space-y-1">
             {rogue.branches.map((branch) => (
               <li key={branch.id}>
@@ -136,11 +138,11 @@ export default async function HomePage() {
               })}
             </div>
             <details className="rounded-lg border bg-muted/30 p-3 text-sm">
-              <summary className="cursor-pointer text-primary">עריכת יעדי קטגוריה וסף סורר</summary>
+              <summary className="cursor-pointer text-primary">עריכת יעדי קטגוריה וסף חריגה</summary>
               <form action={saveDashboardSettings} className="mt-3 grid gap-2 sm:grid-cols-2">
                 <input type="hidden" name="forecastTurnoverIls" value={forecast} />
                 <label className="space-y-1 sm:col-span-2">
-                  <span className="text-xs text-muted-foreground">סף סניף סורר (נקודות אחוז מעל/מתחת ליעד)</span>
+                  <span className="text-xs text-muted-foreground">סף חריגה מיעד (נקודות אחוז מעל/מתחת ליעד)</span>
                   <input
                     name="rogueDeviationPercent"
                     type="number"

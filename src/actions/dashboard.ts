@@ -16,7 +16,7 @@ export async function saveDashboardSettings(formData: FormData) {
   const rogueRaw = String(formData.get("rogueDeviationPercent") ?? "").trim();
   if (rogueRaw) {
     const rogue = Number(rogueRaw);
-    if (!Number.isFinite(rogue) || rogue < 0) throw new Error("סף סורר לא חוקי");
+    if (!Number.isFinite(rogue) || rogue < 0) throw new Error("סף חריגה לא חוקי");
     await saveRogueDeviationPercent(rogue);
   }
 

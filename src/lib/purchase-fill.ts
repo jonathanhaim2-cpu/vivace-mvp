@@ -88,3 +88,21 @@ export function relativeShare(left: number, right: number) {
   if (total <= 0) return { left: 50, right: 50 };
   return { left: (left / total) * 100, right: (right / total) * 100 };
 }
+
+function nonNegative(value: number) {
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+/** Parallel bar widths 0–100, scaled to the max value. Zeros stay empty tracks. */
+export function barsScaledToMax(values: number[]): number[] {
+  const safe = values.map(nonNegative);
+  const max = Math.max(0, ...safe);
+  if (max <= 0) return safe.map(() => 0);
+  return safe.map((value) => (value / max) * 100);
+}
+
+/** Two-branch helper for relative comparison bars (not share-of-total). */
+export function pairedBarPercents(left: number, right: number) {
+  const [leftPct, rightPct] = barsScaledToMax([left, right]);
+  return { left: leftPct, right: rightPct };
+}
