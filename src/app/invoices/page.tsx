@@ -54,6 +54,23 @@ export default async function InvoicesPage({
   const pending = photos.filter((photo) => !photo.accountId);
   const classified = photos.filter((photo) => photo.accountId);
   const months = recentMonthKeys();
+  const rollupDocuments = classified.flatMap((photo) =>
+    photo.accountId
+      ? [
+          {
+            id: photo.id,
+            accountId: photo.accountId,
+            originalName: photo.originalName,
+            fileUrl: publicFileUrl(photo.fileName),
+            mimeType: photo.mimeType,
+            createdAt: photo.createdAt.toISOString(),
+            invoiceDate: photo.aiInvoiceDate,
+            supplierName: photo.aiSupplierName ?? photo.goodsReceipt?.order.supplier.name ?? null,
+            amountIls: photo.amountIls ?? photo.aiTotalIls,
+          },
+        ]
+      : [],
+  );
 
   return (
     <div className="space-y-8">
@@ -206,7 +223,7 @@ export default async function InvoicesPage({
         )}
       </div>
 
-      <AccountRollup rows={rollup} />
+      <AccountRollup rows={rollup} documents={rollupDocuments} />
     </div>
   );
 }
