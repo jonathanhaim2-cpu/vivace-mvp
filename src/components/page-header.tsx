@@ -26,6 +26,20 @@ export function PageHeader({
   );
 }
 
+/** Single-column create/edit forms. Lists and dashboards stay full-bleed in AppShell. */
+export function NarrowForm({
+  children,
+  className,
+  wide,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  /** Multi-column supplier/product grids — still capped, not viewport-wide. */
+  wide?: boolean;
+}) {
+  return <div className={cn(wide ? "max-w-5xl" : "max-w-3xl", className)}>{children}</div>;
+}
+
 export function EmptyState({
   title,
   description,

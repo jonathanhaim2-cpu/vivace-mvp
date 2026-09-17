@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/page-header";
+import { NarrowForm, PageHeader } from "@/components/page-header";
 import { SupplierForm } from "@/components/suppliers/supplier-form";
 import { requirePagePermission } from "@/lib/access";
 import { listCategoryTree } from "@/lib/categories";
@@ -13,7 +13,9 @@ export default async function NewSupplierPage() {
   return (
     <div>
       <PageHeader title="ספק חדש" description="פרטי חברה, הזמנה, כספים וזמינות לסניפים." />
-      <SupplierForm categoryTree={tree} branches={branches} />
+      <NarrowForm wide>
+        <SupplierForm categoryTree={tree} branches={branches} />
+      </NarrowForm>
     </div>
   );
 }

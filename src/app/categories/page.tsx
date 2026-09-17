@@ -17,7 +17,7 @@ export default async function CategoriesPage() {
         description="שתי רמות: קטגוריה ותת־קטגוריה. השיבוץ למוצר הוא תמיד לתת־קטגוריה. האב משמש לסינון ולדוחות."
       />
 
-      <CompactPanel title="קטגוריה חדשה" description="אב חדש, או תת־קטגוריה תחת אב קיים.">
+      <CompactPanel className="max-w-3xl" title="קטגוריה חדשה" description="אב חדש, או תת־קטגוריה תחת אב קיים.">
         <CompactForm action={createCategory}>
           <CompactField label="שם" htmlFor="cat-name" grow>
             <Input id="cat-name" name="name" placeholder="שם" required className="sm:max-w-xs" />
