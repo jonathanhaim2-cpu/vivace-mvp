@@ -46,11 +46,13 @@ export function PendingInvoiceCard({
   months,
   auditStamp,
   branches,
+  returnTo,
 }: {
   photo: PendingInvoicePhoto;
   months: string[];
   auditStamp: string;
   branches: BranchOption[];
+  returnTo?: string;
 }) {
   const fileUrl = publicFileUrl(photo.fileName);
   const reportMonth = resolvedPeriodMonth(photo.periodMonth, photo.aiInvoiceDate) ?? monthKeyFromDate();
@@ -76,7 +78,7 @@ export function PendingInvoiceCard({
           </div>
           <AuditInfoButton stamp={auditStamp} />
         </div>
-        <AnalyzeInvoiceButton photoId={photo.id} />
+        <AnalyzeInvoiceButton photoId={photo.id} returnTo={returnTo} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-[minmax(12rem,18rem)_minmax(0,1fr)] md:items-start">

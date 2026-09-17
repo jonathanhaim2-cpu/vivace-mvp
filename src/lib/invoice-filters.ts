@@ -162,8 +162,14 @@ export function matchesDocumentTypeFilter(
   return photoDocumentType(photo) === documentType;
 }
 
-function matchesSharedFilters(photo: InvoiceFilterPhoto, filters: InvoiceListFilters) {
-  if (filters.month !== "all" && photoPeriodMonth(photo) !== filters.month) return false;
+function matchesSharedFilters(
+  photo: InvoiceFilterPhoto,
+  filters: InvoiceListFilters,
+  options: { ignoreMonth?: boolean } = {},
+) {
+  if (!options.ignoreMonth && filters.month !== "all" && photoPeriodMonth(photo) !== filters.month) {
+    return false;
+  }
   if (filters.supplier && photoSupplierName(photo) !== filters.supplier) return false;
   if (filters.branch && photo.branchId !== filters.branch) return false;
   if (!matchesDocumentTypeFilter(photo, filters.documentType)) return false;
@@ -181,7 +187,26 @@ export function matchesPendingFilters(photo: InvoiceFilterPhoto, filters: Invoic
   if (photo.accountId) return false;
   if (filters.status === "classified") return false;
   if (filters.category) return false;
-  return matchesSharedFilters(photo, filters);
+  // Month filter applies to classified docs only. Analyzing an older invoice must not
+  // yank it out of «ממתינות לסיווג» just because AI filled a date in another month.
+  return matchesSharedFilters(photo, filters, { ignoreMonth: true });
+}
+
+/** Safe `/invoices?...` redirect that keeps current filters and sets `dup`. */
+export function invoicesDupRedirect(returnTo: unknown, dupValue = "1") {
+  const fallback = `/invoices?dup=${dupValue}`;
+  const raw = typeof returnTo === "string" ? returnTo.trim() : "";
+  if (!raw.startsWith("/invoices")) return fallback;
+  try {
+    const url = new URL(raw, "https://vivace.local");
+    if (url.pathname !== "/invoices") return fallback;
+    url.searchParams.delete("imported");
+    url.searchParams.set("dup", dupValue);
+    const qs = url.searchParams.toString();
+    return qs ? `/invoices?${qs}` : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 export function invoicesFilterQuery(filters: Partial<InvoiceListFilters>) {

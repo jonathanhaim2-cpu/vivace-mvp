@@ -7,6 +7,7 @@ import { analyzeStoredPhoto } from "@/lib/analyze-photo";
 import { IMPORT_ANALYZE_GAP_MS, sleep } from "@/lib/ai-throttle";
 import { INVOICE_DUPLICATE_STATUS, INVOICE_SOURCE, PHOTO_DOCUMENT_TYPE, parsePhotoDocumentType } from "@/lib/constants";
 import { invoiceClassificationFromForm } from "@/lib/invoice-form";
+import { invoicesDupRedirect } from "@/lib/invoice-filters";
 import { markPhotoIfDuplicate } from "@/lib/invoice-duplicates";
 import {
   discardInvoicePhotoRecord,
@@ -233,11 +234,14 @@ export async function confirmAiSuggestion(photoId: string, formData?: FormData) 
   revalidateInvoicePaths();
 }
 
-export async function analyzeInvoicePhoto(photoId: string) {
+export async function analyzeInvoicePhoto(photoId: string, formData?: FormData) {
   await requirePermission("nav.invoices");
   await analyzeStoredPhoto(photoId);
-  await markPhotoIfDuplicate(photoId);
+  const isDuplicate = await markPhotoIfDuplicate(photoId);
   revalidateInvoicePaths();
+  if (isDuplicate) {
+    redirect(invoicesDupRedirect(formData?.get("returnTo"), "ai"));
+  }
 }
 
 export async function importInboxFiles(formData: FormData) {
