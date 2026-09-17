@@ -77,17 +77,17 @@ export function AiSuggestionCard({
   if (!hasSuggestion) return null;
 
   const low = isLowConfidence(confidence);
+  const panelClass = low
+    ? "border-amber-400 bg-amber-50 text-amber-950"
+    : "border-emerald-200 bg-emerald-50 text-emerald-950";
+  const mutedClass = low ? "text-amber-800" : "text-emerald-800";
 
   return (
-    <div
-      className={`space-y-2 rounded-lg border px-3 py-3 text-sm ${
-        low ? "border-amber-400 bg-amber-50" : "border-emerald-200 bg-emerald-50/60"
-      }`}
-    >
+    <div className={`space-y-2 rounded-lg border px-3 py-3 text-sm ${panelClass}`}>
       <div className="flex items-center justify-between gap-2">
         <p className="font-medium">הצעת AI</p>
         {confidence != null ? (
-          <span className="text-xs text-muted-foreground">
+          <span className={`text-xs ${mutedClass}`}>
             ביטחון {Math.round(confidence * 100)}%
           </span>
         ) : null}
@@ -100,34 +100,34 @@ export function AiSuggestionCard({
       <dl className="grid gap-1 text-xs">
         {supplierName ? (
           <div className="flex justify-between gap-2">
-            <dt className="text-muted-foreground">ספק</dt>
+            <dt className={mutedClass}>ספק</dt>
             <dd>{supplierName}</dd>
           </div>
         ) : null}
         {invoiceDate ? (
           <div className="flex justify-between gap-2">
-            <dt className="text-muted-foreground">תאריך</dt>
+            <dt className={mutedClass}>תאריך</dt>
             <dd dir="ltr">{invoiceDate}</dd>
           </div>
         ) : null}
         {totalIls != null ? (
           <div className="flex justify-between gap-2">
-            <dt className="text-muted-foreground">סכום</dt>
+            <dt className={mutedClass}>סכום</dt>
             <dd>{formatIls(totalIls)}</dd>
           </div>
         ) : null}
         {suggestedAccount ? (
           <div className="flex justify-between gap-2">
-            <dt className="text-muted-foreground">קטגוריה</dt>
+            <dt className={mutedClass}>קטגוריה</dt>
             <dd>
               {suggestedAccount.parentName} · {suggestedAccount.code} {suggestedAccount.name}
             </dd>
           </div>
         ) : (
-          <p className="text-muted-foreground">לא זוהתה קטגוריה מתאימה.</p>
+          <p className={mutedClass}>לא זוהתה קטגוריה מתאימה.</p>
         )}
       </dl>
-      {reason ? <p className="text-xs text-muted-foreground">{reason}</p> : null}
+      {reason ? <p className={`text-xs ${mutedClass}`}>{reason}</p> : null}
       {suggestedAccount ? (
         <form action={confirmAiSuggestion.bind(null, photoId)} className="space-y-2">
           {branches.length > 0 ? (
