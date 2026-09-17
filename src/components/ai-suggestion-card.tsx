@@ -77,19 +77,17 @@ export function AiSuggestionCard({
   if (!hasSuggestion) return null;
 
   const low = isLowConfidence(confidence);
-  const panelClass = low
-    ? "border-amber-400 bg-amber-50 text-amber-950"
-    : "border-emerald-200 bg-emerald-50 text-emerald-950";
-  const mutedClass = low ? "text-amber-800" : "text-emerald-800";
+  const panelClass = low ? "border-amber-400 bg-amber-50" : "border-emerald-200 bg-emerald-50";
 
   return (
-    <div className={`space-y-2 rounded-lg border px-3 py-3 text-sm ${panelClass}`}>
+    <div
+      data-tone={low ? "low" : "ok"}
+      className={`ai-suggestion-surface space-y-2 rounded-lg border px-3 py-3 text-sm ${panelClass}`}
+    >
       <div className="flex items-center justify-between gap-2">
-        <p className="font-medium">הצעת AI</p>
+        <p className="ai-suggestion-title font-medium">הצעת AI</p>
         {confidence != null ? (
-          <span className={`text-xs ${mutedClass}`}>
-            ביטחון {Math.round(confidence * 100)}%
-          </span>
+          <span className="ai-suggestion-muted text-xs">ביטחון {Math.round(confidence * 100)}%</span>
         ) : null}
       </div>
       {low ? (
@@ -100,34 +98,36 @@ export function AiSuggestionCard({
       <dl className="grid gap-1 text-xs">
         {supplierName ? (
           <div className="flex justify-between gap-2">
-            <dt className={mutedClass}>ספק</dt>
-            <dd>{supplierName}</dd>
+            <dt className="ai-suggestion-muted">ספק</dt>
+            <dd className="ai-suggestion-value">{supplierName}</dd>
           </div>
         ) : null}
         {invoiceDate ? (
           <div className="flex justify-between gap-2">
-            <dt className={mutedClass}>תאריך</dt>
-            <dd dir="ltr">{invoiceDate}</dd>
+            <dt className="ai-suggestion-muted">תאריך</dt>
+            <dd className="ai-suggestion-value" dir="ltr">
+              {invoiceDate}
+            </dd>
           </div>
         ) : null}
         {totalIls != null ? (
           <div className="flex justify-between gap-2">
-            <dt className={mutedClass}>סכום</dt>
-            <dd>{formatIls(totalIls)}</dd>
+            <dt className="ai-suggestion-muted">סכום</dt>
+            <dd className="ai-suggestion-value">{formatIls(totalIls)}</dd>
           </div>
         ) : null}
         {suggestedAccount ? (
           <div className="flex justify-between gap-2">
-            <dt className={mutedClass}>קטגוריה</dt>
-            <dd>
+            <dt className="ai-suggestion-muted">קטגוריה</dt>
+            <dd className="ai-suggestion-value">
               {suggestedAccount.parentName} · {suggestedAccount.code} {suggestedAccount.name}
             </dd>
           </div>
         ) : (
-          <p className={mutedClass}>לא זוהתה קטגוריה מתאימה.</p>
+          <p className="ai-suggestion-muted">לא זוהתה קטגוריה מתאימה.</p>
         )}
       </dl>
-      {reason ? <p className={`text-xs ${mutedClass}`}>{reason}</p> : null}
+      {reason ? <p className="ai-suggestion-muted text-xs">{reason}</p> : null}
       {suggestedAccount ? (
         <form action={confirmAiSuggestion.bind(null, photoId)} className="space-y-2">
           {branches.length > 0 ? (
