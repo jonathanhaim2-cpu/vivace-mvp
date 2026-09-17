@@ -23,6 +23,7 @@ import { getAiRuntime } from "@/lib/ai";
 import { firstAuditsFor, formatAuditStamp, INVOICE_ORIGIN_ACTIONS } from "@/lib/audit";
 import { scanExistingInvoiceDuplicates } from "@/lib/invoice-duplicates";
 import {
+  invoicesFilterQuery,
   matchesClassifiedFilters,
   matchesPendingFilters,
   parseInvoiceFilters,
@@ -67,7 +68,9 @@ export default async function InvoicesPage({
   const params = await searchParams;
   const importedCount = importedCountFromParam(params.imported);
   const duplicateNotice = Number.parseInt(params.dup ?? "", 10);
+  const aiDuplicateNotice = params.dup === "ai";
   const filters = parseInvoiceFilters(params);
+  const returnTo = invoicesFilterQuery(filters);
   const session = await getAppSession();
   const branches = session.branches.map((branch) => ({ id: branch.id, name: branch.name }));
 
@@ -144,7 +147,14 @@ export default async function InvoicesPage({
       {runtime.reason === "no_key" ? <AiMissingBanner /> : null}
       <InvoiceAiTip />
 
-      {Number.isFinite(duplicateNotice) && duplicateNotice > 0 ? (
+      {aiDuplicateNotice ? (
+        <Alert>
+          <AlertTitle>זוהתה כפילות</AlertTitle>
+          <AlertDescription>
+            הניתוח זיהה שהמסמך כבר קיים. הוא הועבר ל<a href="#duplicates">«כפילויות»</a> ולא נספר בסיכומים.
+          </AlertDescription>
+        </Alert>
+      ) : Number.isFinite(duplicateNotice) && duplicateNotice > 0 ? (
         <Alert>
           <AlertTitle>כפילות — לא יובא שוב</AlertTitle>
           <AlertDescription>
@@ -191,7 +201,7 @@ export default async function InvoicesPage({
           <CardHeader>
             <CardTitle>ממתינות לסיווג · {pending.length}</CardTitle>
             <CardDescription>
-              ייבוא והעלאה בלי קטגוריה נכנסים לכאן. רואים את המסמך, מאשרים הצעת AI, או ממלאים תאריך/ספק/סכום ומשבצים ידנית.
+              ייבוא והעלאה בלי קטגוריה נכנסים לכאן — גם אם תאריך ה-AI בחודש אחר. רואים את המסמך, מאשרים הצעת AI, או ממלאים תאריך/ספק/סכום ומשבצים ידנית.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -202,6 +212,7 @@ export default async function InvoicesPage({
                 months={monthOptions}
                 branches={branches}
                 auditStamp={stampFor(photo.id)}
+                returnTo={returnTo}
               />
             ))}
           </CardContent>
@@ -209,7 +220,7 @@ export default async function InvoicesPage({
       ) : null}
 
       {duplicates.length > 0 ? (
-        <Card>
+        <Card id="duplicates" className="scroll-mt-24">
           <CardHeader>
             <CardTitle>כפילויות · {duplicates.length}</CardTitle>
             <CardDescription>

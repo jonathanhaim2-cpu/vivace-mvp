@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { monthKeyFromDate } from "./months";
 import {
+  invoicesDupRedirect,
   invoicesFilterQuery,
   matchesClassifiedFilters,
   matchesDocumentTypeFilter,
@@ -87,15 +88,44 @@ test("classified filters match month, category, supplier, date range, and search
   assert.equal(matchesClassifiedFilters(photo(), { ...base, to: "2026-09-14" }), false);
 });
 
-test("pending photos never appear in classified results and respect month/date", () => {
+test("pending photos never appear in classified results and ignore the month filter", () => {
   const filters = parseInvoiceFilters({ month: "2026-09" });
   const pending = photo({ accountId: null });
+  const pendingAugust = photo({
+    accountId: null,
+    periodMonth: "2026-08",
+    aiInvoiceDate: "2026-08-20",
+  });
   assert.equal(matchesClassifiedFilters(pending, filters), false);
   assert.equal(matchesPendingFilters(pending, filters), true);
   assert.equal(matchesPendingFilters(pending, { ...filters, status: "classified" }), false);
-  assert.equal(matchesPendingFilters(pending, { ...filters, month: "2026-08" }), false);
   assert.equal(matchesPendingFilters(pending, { ...filters, category: "acc_food_produce" }), false);
   assert.equal(matchesPendingFilters(photo(), filters), false);
+  // Analyzing an Aug invoice while the page defaults to Sep must keep it in pending.
+  assert.equal(matchesPendingFilters(pendingAugust, filters), true);
+  assert.equal(matchesPendingFilters(pending, { ...filters, month: "2026-08" }), true);
+  assert.equal(
+    matchesClassifiedFilters(photo({ periodMonth: "2026-08", aiInvoiceDate: "2026-08-20" }), filters),
+    false,
+  );
+  assert.equal(matchesPendingFilters(pending, { ...filters, supplier: "ירקות השרון" }), true);
+  assert.equal(matchesPendingFilters(pending, { ...filters, supplier: "אחר" }), false);
+  assert.equal(matchesPendingFilters(pending, { ...filters, branch: "br_beit" }), false);
+  assert.equal(matchesPendingFilters(pending, { ...filters, from: "2026-09-16" }), false);
+  assert.equal(matchesPendingFilters(pendingAugust, { ...filters, from: "2026-08-01", to: "2026-08-31" }), true);
+  assert.equal(matchesPendingFilters(pending, { ...filters, q: "לא קיים" }), false);
+  assert.equal(
+    matchesPendingFilters(photo({ accountId: null, documentType: "INVOICE" }), { ...filters, documentType: "RECEIPT" }),
+    false,
+  );
+});
+
+test("invoicesDupRedirect keeps filters and sets dup", () => {
+  assert.equal(invoicesDupRedirect(undefined), "/invoices?dup=1");
+  assert.equal(invoicesDupRedirect("/orders"), "/invoices?dup=1");
+  assert.equal(invoicesDupRedirect("/invoices"), "/invoices?dup=1");
+  assert.equal(invoicesDupRedirect("/invoices?month=2026-09&status=pending"), "/invoices?month=2026-09&status=pending&dup=1");
+  assert.equal(invoicesDupRedirect("/invoices?imported=3&month=all", "ai"), "/invoices?month=all&dup=ai");
 });
 
 test("missing periodMonth falls back to AI invoice date then createdAt month", () => {

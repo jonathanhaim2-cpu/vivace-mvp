@@ -33,21 +33,22 @@ export function AiSuggestionCard({
   branches = [],
   defaultBranchId,
 }: Props) {
-  if (status === "skipped_no_key" || status === "SKIPPED_NO_KEY") {
+  const statusKey = (status ?? "").trim().toUpperCase();
+  if (statusKey === "SKIPPED_NO_KEY") {
     return (
       <div className="rounded-lg border border-dashed px-3 py-2 text-sm text-muted-foreground">
         אין מפתח AI — שייכו ידנית.
       </div>
     );
   }
-  if (status === "budget" || status === "BUDGET") {
+  if (statusKey === "BUDGET") {
     return (
       <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
         הגעתם לתקרת התקציב החודשית של AI. שייכו ידנית.
       </div>
     );
   }
-  if (status === "error" || status === "FAILED") {
+  if (statusKey === "ERROR" || statusKey === "FAILED") {
     if (reason === AI_QUOTA_MESSAGE) {
       return (
         <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
@@ -62,7 +63,7 @@ export function AiSuggestionCard({
       </div>
     );
   }
-  if (status === "CONFIRMED") {
+  if (statusKey === "CONFIRMED") {
     return (
       <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 px-3 py-2 text-xs text-emerald-900">
         אושר לפי הצעת AI
@@ -76,8 +77,16 @@ export function AiSuggestionCard({
     Boolean(invoiceDate) ||
     totalIls != null ||
     Boolean(reason) ||
-    confidence != null;
-  if (!hasSuggestion) return null;
+    confidence != null ||
+    (statusKey === "SUGGESTED" && Boolean(documentType));
+  if (!hasSuggestion) {
+    if (!statusKey) return null;
+    return (
+      <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm">
+        ניתוח AI לא החזיר פרטים. שייכו ידנית.
+      </div>
+    );
+  }
 
   const low = isLowConfidence(confidence);
   const panelClass = low ? "border-amber-400 bg-amber-50" : "border-emerald-200 bg-emerald-50";
