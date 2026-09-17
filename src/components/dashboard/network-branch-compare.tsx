@@ -25,9 +25,34 @@ function PairTrack({ value, max, color }: { value: number; max: number; color: s
 function PairBars({ left, right }: { left: number; right: number }) {
   const max = Math.max(0, left, right);
   return (
-    <div className="grid grid-cols-2 gap-1.5" dir="ltr">
+    <div className="grid grid-cols-2 gap-1.5">
       <PairTrack value={left} max={max} color={BRANCH_COLORS[0]} />
       <PairTrack value={right} max={max} color={BRANCH_COLORS[1]} />
+    </div>
+  );
+}
+
+function PairValues({
+  left,
+  right,
+  format = (value: number) => value.toFixed(1),
+  suffix = "",
+}: {
+  left: number;
+  right: number;
+  format?: (value: number) => string;
+  suffix?: string;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-1.5 text-[11px] leading-tight tabular-nums">
+      <span className="min-w-0 truncate" style={{ color: BRANCH_COLORS[0] }}>
+        {format(left)}
+        {suffix}
+      </span>
+      <span className="min-w-0 truncate" style={{ color: BRANCH_COLORS[1] }}>
+        {format(right)}
+        {suffix}
+      </span>
     </div>
   );
 }
@@ -51,20 +76,8 @@ function CompareRow({
 }) {
   return (
     <div className="space-y-1">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 text-xs leading-tight">
-        <span className="truncate text-muted-foreground">{label}</span>
-        <span className="shrink-0 tabular-nums" dir="ltr">
-          <span style={{ color: BRANCH_COLORS[0] }}>
-            {format(left)}
-            {suffix}
-          </span>
-          <span className="text-muted-foreground"> · </span>
-          <span style={{ color: BRANCH_COLORS[1] }}>
-            {format(right)}
-            {suffix}
-          </span>
-        </span>
-      </div>
+      <p className="text-xs leading-tight text-muted-foreground">{label}</p>
+      <PairValues left={left} right={right} format={format} suffix={suffix} />
       <PairBars left={left} right={right} />
     </div>
   );
@@ -72,11 +85,9 @@ function CompareRow({
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 rounded-md bg-background/80 px-2 py-1.5">
       <p className="text-[11px] leading-tight text-muted-foreground">{label}</p>
-      <p className="truncate text-sm font-medium leading-tight tabular-nums" dir="ltr">
-        {value}
-      </p>
+      <p className="truncate text-sm font-medium leading-tight tabular-nums">{value}</p>
     </div>
   );
 }
@@ -94,7 +105,7 @@ function BranchStatCard({
         <span className="size-2.5 shrink-0 rounded-full" style={{ background: color }} />
         <p className="truncate text-sm font-medium">{branch.name}</p>
       </div>
-      <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+      <div className="grid grid-cols-2 gap-2">
         <Metric label="רכש" value={formatIls(branch.purchaseTotal)} />
         <Metric label="% מחזור" value={formatPercent(branch.purchasePercent)} />
         <Metric label="חשבוניות" value={`${branch.invoiceCount} · ${formatIls(branch.invoiceTotal)}`} />
@@ -198,19 +209,15 @@ export function NetworkBranchCompare({
               <p className="text-[11px] text-muted-foreground">לפי קטגוריה</p>
               {left.fill.map((row) => {
                 const other = right.fill.find((item) => item.id === row.id);
+                const leftPct = row.actualPercent ?? 0;
+                const rightPct = other?.actualPercent ?? 0;
                 return (
                   <div key={row.id} className="space-y-1">
-                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 text-[11px] leading-tight">
-                      <span className="truncate" title={row.name}>
-                        {row.name}
-                      </span>
-                      <span className="shrink-0 tabular-nums" dir="ltr">
-                        <span style={{ color: BRANCH_COLORS[0] }}>{formatPercent(row.actualPercent)}</span>
-                        <span className="text-muted-foreground"> · </span>
-                        <span style={{ color: BRANCH_COLORS[1] }}>{formatPercent(other?.actualPercent ?? null)}</span>
-                      </span>
-                    </div>
-                    <PairBars left={row.actualPercent ?? 0} right={other?.actualPercent ?? 0} />
+                    <p className="truncate text-[11px] leading-tight" title={row.name}>
+                      {row.name}
+                    </p>
+                    <PairValues left={leftPct} right={rightPct} suffix="%" />
+                    <PairBars left={leftPct} right={rightPct} />
                   </div>
                 );
               })}
