@@ -17,7 +17,7 @@ export default function InvoiceImportPage() {
     <div className="space-y-6">
       <PageHeader
         title="ייבוא מתיקייה"
-        description="מעלים כמה חשבוניות בבת אחת. כל קובץ נכנס לתור הסיווג, ו-AI מציע תאריך וקטגוריה לאישור — בלי לבחור מראש לכל האצווה."
+        description="מעלים כמה חשבוניות בבת אחת. כל קובץ נכנס לתור הסיווג, ו-AI מציע תאריך וקטגוריה לאישור — בלי לבחור מראש לכל האצווה. קובץ זהה או חשבונית עם אותו ספק/תאריך/סכום נכנס ל«כפילויות» ולא נספר בסיכומים."
         action={{ href: "/invoices", label: "לתור הסיווג" }}
       />
 
@@ -34,7 +34,9 @@ export default function InvoiceImportPage() {
             <Field>
               <FieldLabel htmlFor="photos">קבצים</FieldLabel>
               <Input id="photos" name="photos" type="file" accept="image/*,application/pdf" multiple required />
-              <FieldDescription>בחירה מרובה מתיקיית ההורדות, כמו מצורפים מתיבת המייל.</FieldDescription>
+              <FieldDescription>
+                בחירה מרובה מתיקיית ההורדות, כמו מצורפים מתיבת המייל. אותו קובץ פעמיים לא ייספר פעמיים.
+              </FieldDescription>
             </Field>
             <Field>
               <FieldLabel htmlFor="periodMonth">חודש לדיווח (אופציונלי)</FieldLabel>

@@ -135,7 +135,7 @@ export async function getAnomalies(branchId?: string | null) {
     take: 20,
   });
   const unclassified = await prisma.invoicePhoto.count({
-    where: { accountId: null },
+    where: { accountId: null, isDuplicate: false },
   });
   const exceptional = await prisma.exceptionalItem.findMany({
     where: {

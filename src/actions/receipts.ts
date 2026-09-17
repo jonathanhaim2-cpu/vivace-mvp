@@ -23,6 +23,7 @@ import {
 } from "@/lib/credits";
 import { prisma } from "@/lib/prisma";
 import { requireBranchAccess, requirePermission } from "@/lib/access";
+import { markPhotoIfDuplicate } from "@/lib/invoice-duplicates";
 import { saveUpload } from "@/lib/uploads";
 
 function pricesDiffer(a: number, b: number) {
@@ -114,7 +115,7 @@ export async function submitGoodsReceipt(orderId: string, formData: FormData) {
           priceChangeStatus: line.priceChangeStatus,
         })),
       },
-      photos: {
+          photos: {
         create: {
           accountId,
           amountIls: lineInputs.reduce((sum, line) => {
@@ -125,6 +126,7 @@ export async function submitGoodsReceipt(orderId: string, formData: FormData) {
           fileName: saved.fileName,
           originalName: saved.originalName,
           mimeType: saved.mimeType,
+          contentHash: saved.contentHash,
         },
       },
     },
@@ -169,7 +171,10 @@ export async function submitGoodsReceipt(orderId: string, formData: FormData) {
   });
   if (stored) {
     for (const item of stored.photos) {
-      await analyzeStoredPhoto(item.id);
+      const duplicate = await markPhotoIfDuplicate(item.id);
+      if (!duplicate) {
+        await analyzeStoredPhoto(item.id);
+      }
     }
   }
   revalidatePath("/invoices");

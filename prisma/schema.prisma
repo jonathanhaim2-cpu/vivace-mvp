@@ -240,6 +240,12 @@ model InvoicePhoto {
   fileName       String
   originalName   String
   mimeType       String
+  contentHash    String?
+  isDuplicate    Boolean       @default(false)
+  duplicateStatus String?
+  duplicateOfId  String?
+  duplicateOf    InvoicePhoto? @relation("InvoicePhotoDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicates     InvoicePhoto[] @relation("InvoicePhotoDuplicates")
   periodMonth    String?
   source         String        @default("MANUAL")
   classifiedAt   DateTime?
@@ -254,6 +260,9 @@ model InvoicePhoto {
   aiConfidence   Float?
   aiReason       String?
   aiStatus       String?
+
+  @@index([contentHash])
+  @@index([isDuplicate])
 }
 
 model InventoryCount {

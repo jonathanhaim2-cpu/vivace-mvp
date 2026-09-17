@@ -1,4 +1,5 @@
 import { PAYMENT_METHODS } from "@/lib/constants";
+import { INVOICE_IN_TOTALS_WHERE } from "@/lib/invoice-duplicates";
 import { monthKeyFromDate, monthRangeUtc } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { nowInIsrael } from "@/lib/format";
@@ -40,6 +41,7 @@ export async function getNonProcurementChecklist(month = monthKeyFromDate()) {
     where: {
       source: "MANUAL",
       periodMonth: month,
+      ...INVOICE_IN_TOTALS_WHERE,
     },
     include: { account: { include: { parent: true } } },
     orderBy: { createdAt: "desc" },

@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -25,6 +25,10 @@ export function publicFileUrl(fileName: string) {
   return `/api/files/${encodeURIComponent(fileName)}`;
 }
 
+export function hashFileBytes(bytes: Buffer | Uint8Array): string {
+  return createHash("sha256").update(bytes).digest("hex");
+}
+
 export async function saveUpload(file: File) {
   if (!file || file.size === 0) {
     throw new Error("יש לצרף קובץ חשבונית או תעודת משלוח");
@@ -47,6 +51,7 @@ export async function saveUpload(file: File) {
     fileName,
     originalName: file.name || fileName,
     mimeType: mime,
+    contentHash: hashFileBytes(buffer),
   };
 }
 

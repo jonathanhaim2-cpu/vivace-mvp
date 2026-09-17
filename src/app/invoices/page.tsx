@@ -6,10 +6,12 @@ import { GroupedAccountSelect } from "@/components/accounts/grouped-account-sele
 import { InvoiceAiTip } from "@/components/ai-helper-tip";
 import { AiMissingBanner } from "@/components/ai-missing-banner";
 import { AiSuggestionCard } from "@/components/ai-suggestion-card";
+import { DuplicateInvoiceCard } from "@/components/invoices/duplicate-invoice-card";
 import { ImportSuccessBanner } from "@/components/invoices/import-success-banner";
 import { InvoiceDocumentPreview } from "@/components/invoices/invoice-document-preview";
 import { PendingInvoiceCard } from "@/components/invoices/pending-invoice-card";
 import { EmptyState, PageHeader } from "@/components/page-header";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
@@ -19,6 +21,7 @@ import { getAccountRollup } from "@/lib/accounts";
 import { getAiRuntime } from "@/lib/ai";
 import { chartLeafMeta } from "@/lib/chart-of-accounts";
 import { expenseCategoryLabel, formatDateTime, formatIls } from "@/lib/format";
+import { scanExistingInvoiceDuplicates } from "@/lib/invoice-duplicates";
 import { monthKeyFromDate, monthLabel, recentMonthKeys } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { publicFileUrl } from "@/lib/uploads";
@@ -34,15 +37,19 @@ function importedCountFromParam(imported: string | undefined) {
 export default async function InvoicesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ imported?: string }>;
+  searchParams: Promise<{ imported?: string; dup?: string }>;
 }) {
-  const { imported } = await searchParams;
+  await scanExistingInvoiceDuplicates();
+  const { imported, dup } = await searchParams;
   const importedCount = importedCountFromParam(imported);
+  const duplicateNotice = Number.parseInt(dup ?? "", 10);
+
   const [photos, rollup, runtime] = await Promise.all([
     prisma.invoicePhoto.findMany({
       include: {
         account: { include: { parent: true } },
         goodsReceipt: { include: { order: { include: { supplier: true } } } },
+        duplicateOf: true,
       },
       orderBy: { createdAt: "desc" },
     }),
@@ -51,8 +58,9 @@ export default async function InvoicesPage({
   ]);
 
   const counts = Object.fromEntries(rollup.flatMap((parent) => parent.children.map((child) => [child.id, child.documents])));
-  const pending = photos.filter((photo) => !photo.accountId);
-  const classified = photos.filter((photo) => photo.accountId);
+  const duplicates = photos.filter((photo) => photo.isDuplicate);
+  const pending = photos.filter((photo) => !photo.accountId && !photo.isDuplicate);
+  const classified = photos.filter((photo) => photo.accountId && !photo.isDuplicate);
   const months = recentMonthKeys();
   const rollupDocuments = classified.flatMap((photo) =>
     photo.accountId
@@ -82,6 +90,17 @@ export default async function InvoicesPage({
       {importedCount > 0 ? <ImportSuccessBanner count={importedCount} /> : null}
       {runtime.reason === "no_key" ? <AiMissingBanner /> : null}
       <InvoiceAiTip />
+
+      {Number.isFinite(duplicateNotice) && duplicateNotice > 0 ? (
+        <Alert>
+          <AlertTitle>כפילות — לא יובא שוב</AlertTitle>
+          <AlertDescription>
+            {duplicateNotice === 1
+              ? "הקובץ כבר קיים במערכת. הוא נשמר ב«כפילויות» ולא נספר בסיכומי כרטיסים או בחבילת הנה״ח."
+              : `${duplicateNotice} קבצים כבר קיימים. הם נשמרו ב«כפילויות» ולא נספרים בסיכומים.`}
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
         <Link href="/invoices/import" className={cn(buttonVariants({ variant: "outline" }))}>
@@ -118,6 +137,22 @@ export default async function InvoicesPage({
           <CardContent className="space-y-4">
             {pending.map((photo) => (
               <PendingInvoiceCard key={photo.id} photo={photo} months={months} />
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {duplicates.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>כפילויות · {duplicates.length}</CardTitle>
+            <CardDescription>
+              חשודים כהעתק של מסמך שכבר יובא. לא נספרים בכרטיסים, בדוח החודשי או בחבילת רואה החשבון עד שתאשרו שהם ייחודיים.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {duplicates.map((photo) => (
+              <DuplicateInvoiceCard key={photo.id} photo={photo} />
             ))}
           </CardContent>
         </Card>
