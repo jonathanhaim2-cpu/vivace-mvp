@@ -44,7 +44,7 @@ export default async function MailConnectionPage() {
     <div className="space-y-4">
       <PageHeader
         title="חיבור מייל"
-        description="חשבוניות מ-PDF/תמונה בתיבת invoices נכנסות לתור הסיווג. העלאה ידנית וייבוא מתיקייה נשארים."
+        description="חשבוניות מתיבת invoices נכנסות לתור לפי חשבונית/קבלה בנושא או בגוף. העלאה ידנית וייבוא מתיקייה נשארים."
         action={{ href: "/invoices", label: "לתור הסיווג" }}
       />
 
@@ -55,6 +55,9 @@ export default async function MailConnectionPage() {
             <AlertDescription>
               {connection.user} · {connection.host}:{connection.port}
               {connection.tls ? " · TLS" : ""} · תיקייה {connection.mailbox} · {connection.lookbackDays} ימים אחורה
+              <span className="mt-1 block">
+                PDF/PNG/JPG מיובאים רק אם בנושא או בגוף יש חשבונית, קבלה, invoice או receipt.
+              </span>
             </AlertDescription>
           </Alert>
         ) : (
@@ -113,7 +116,10 @@ export default async function MailConnectionPage() {
             <li>ב-Gmail: הגדרות → ראה את כל ההגדרות → העברה ו-POP/IMAP → הפעלת IMAP.</li>
             <li>אם מופעל אימות דו-שלבי, יוצרים App Password לחשבון invoices ומשתמשים בו כ-INVOICE_MAIL_PASSWORD.</li>
             <li>Google עלול לחסום סיסמת חשבון רגילה. App Password הוא המסלול הנתמך.</li>
-            <li>כל PDF/תמונה מצורפת נכנסת לתור הסיווג עם מקור «מייל». הודעה שעובדה מסומנת כ-Seen.</li>
+            <li>
+              PDF/תמונה מצורפת נכנסת לתור רק אם בנושא או בגוף יש חשבונית/קבלה. הודעה שעובדה מסומנת כ-Seen גם בלי
+              ייבוא.
+            </li>
           </ol>
         </CompactPanel>
 

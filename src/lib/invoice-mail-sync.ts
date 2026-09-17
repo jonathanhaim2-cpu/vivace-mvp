@@ -22,6 +22,7 @@ import {
   saveInvoiceMailHistoricalStatus,
   saveInvoiceMailStatus,
   selectInvoiceMailUidsToFetch,
+  shouldImportMailAttachment,
   type InvoiceMailConfig,
   type InvoiceMailStatus,
 } from "@/lib/invoice-mail";
@@ -42,6 +43,7 @@ export type InvoiceMailMessage = {
   messageId: string;
   from: string;
   subject: string;
+  text: string;
   attachments: InvoiceMailAttachment[];
 };
 
@@ -181,13 +183,20 @@ export async function importInvoiceMailMessages(
     }
 
     const note = formatInvoiceMailNote({ from: message.from, subject: message.subject });
-    const attachments = message.attachments.filter((item) =>
-      isInvoiceMailAttachment({
-        filename: item.filename,
-        contentType: item.contentType,
-        contentDisposition: item.contentDisposition,
-        size: item.content.length,
-      }),
+    const attachments = message.attachments.filter(
+      (item) =>
+        isInvoiceMailAttachment({
+          filename: item.filename,
+          contentType: item.contentType,
+          contentDisposition: item.contentDisposition,
+          size: item.content.length,
+        }) &&
+        shouldImportMailAttachment({
+          filename: item.filename,
+          contentType: item.contentType,
+          subject: message.subject,
+          text: message.text,
+        }),
     );
 
     let failed = false;
@@ -312,6 +321,7 @@ async function fetchMessagesByUid(client: ImapFlow, uids: number[]): Promise<Inv
       messageId: parsed.messageId || item.envelope?.messageId || `uid:${item.uid}`,
       from: fromText,
       subject: parsed.subject?.trim() || item.envelope?.subject || "",
+      text: typeof parsed.text === "string" ? parsed.text : "",
       attachments: (parsed.attachments ?? []).map((attachment) => ({
         filename: attachment.filename,
         contentType: attachment.contentType,
