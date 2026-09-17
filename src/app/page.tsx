@@ -2,6 +2,7 @@ import Link from "next/link";
 import { saveDashboardSettings } from "@/actions/dashboard";
 import { ClockTime } from "@/components/clock-time";
 import { ForecastInputForm } from "@/components/dashboard/forecast-form";
+import { NetworkBranchCompare } from "@/components/dashboard/network-branch-compare";
 import { PageHeader } from "@/components/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import {
   getForecastTurnover,
   getGoodsToReceiveToday,
   getOrdersToPlaceToday,
+  getNetworkBranchComparison,
   getRogueBranches,
 } from "@/lib/dashboard";
 import { getOverdueAccountantItems } from "@/lib/ap";
@@ -27,13 +29,16 @@ export default async function HomePage() {
   const branchId = session.isNetwork ? null : session.branchId;
   const month = monthKeyFromDate();
   const forecast = await getForecastTurnover();
-  const [fill, anomalies, toReceive, toOrder, overdue, rogue] = await Promise.all([
+  const [fill, anomalies, toReceive, toOrder, overdue, rogue, comparison] = await Promise.all([
     getCategoryFill(month, forecast, branchId),
     getAnomalies(branchId),
     getGoodsToReceiveToday(branchId),
     getOrdersToPlaceToday(branchId, session.isNetwork),
     getOverdueAccountantItems(month),
     session.isNetwork ? getRogueBranches(month, forecast) : Promise.resolve({ threshold: 2, branches: [] as { id: string; name: string; reasons: string[] }[] }),
+    session.isNetwork
+      ? getNetworkBranchComparison(month, forecast)
+      : Promise.resolve({ forecast, branches: [], unattributedInvoices: 0 }),
   ]);
 
   const anomalyCount =
@@ -83,12 +88,22 @@ export default async function HomePage() {
         </div>
       ) : null}
 
+      {session.isNetwork && comparison.branches.length > 0 ? (
+        <NetworkBranchCompare
+          branches={comparison.branches}
+          forecast={comparison.forecast}
+          unattributedInvoices={comparison.unattributedInvoices}
+        />
+      ) : null}
+
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className={overCount > 0 ? "ring-1 ring-destructive/40" : undefined}>
           <CardHeader>
             <CardTitle>מחזור חזוי מול רכש</CardTitle>
             <CardDescription>
-              מילוי קטגוריה מול יעד % מהמחזור. אדום = מעל היעד. מחזור {formatIls(forecast)}.
+              מילוי קטגוריה מול יעד % מהמחזור
+              {session.isNetwork ? " (כל הסניפים)" : ""}. כולל חשבוניות ששובצו גם בלי הזמנה. אדום = מעל היעד. מחזור{" "}
+              {formatIls(forecast)}.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

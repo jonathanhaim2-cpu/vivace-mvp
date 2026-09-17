@@ -14,6 +14,7 @@ export type InvoiceListFilters = {
   to: string;
   category: string;
   supplier: string;
+  branch: string;
   status: InvoiceStatusFilter;
   q: string;
 };
@@ -29,6 +30,7 @@ export type InvoiceFilterPhoto = {
   aiInvoiceDate: string | null;
   aiSupplierName: string | null;
   supplierName: string | null;
+  branchId: string | null;
 };
 
 const MONTH_RE = /^\d{4}-\d{2}$/;
@@ -40,6 +42,7 @@ export function parseInvoiceFilters(params: {
   to?: string;
   category?: string;
   supplier?: string;
+  branch?: string;
   status?: string;
   q?: string;
 }): InvoiceListFilters {
@@ -56,6 +59,7 @@ export function parseInvoiceFilters(params: {
     to,
     category: params.category?.trim() ?? "",
     supplier: params.supplier?.trim() ?? "",
+    branch: params.branch?.trim() ?? "",
     status,
     q: params.q?.trim() ?? "",
   };
@@ -126,6 +130,7 @@ export function matchesDateRange(photo: InvoiceFilterPhoto, filters: Pick<Invoic
 function matchesSharedFilters(photo: InvoiceFilterPhoto, filters: InvoiceListFilters) {
   if (filters.month !== "all" && photoPeriodMonth(photo) !== filters.month) return false;
   if (filters.supplier && photoSupplierName(photo) !== filters.supplier) return false;
+  if (filters.branch && photo.branchId !== filters.branch) return false;
   return matchesDateRange(photo, filters) && matchesSearch(photo, filters.q);
 }
 
@@ -150,6 +155,7 @@ export function invoicesFilterQuery(filters: Partial<InvoiceListFilters>) {
   if (filters.to) params.set("to", filters.to);
   if (filters.category) params.set("category", filters.category);
   if (filters.supplier) params.set("supplier", filters.supplier);
+  if (filters.branch) params.set("branch", filters.branch);
   if (filters.status && filters.status !== "all") params.set("status", filters.status);
   if (filters.q) params.set("q", filters.q);
   const query = params.toString();

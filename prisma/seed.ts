@@ -75,6 +75,7 @@ async function wipeKnownDemo() {
         { fileName: { in: [...files] } },
         { goodsReceipt: { order: { branchId: { in: [...branches] } } } },
         { goodsReceipt: { order: { supplierId: { in: [...suppliers] } } } },
+        { branchId: { in: [...branches] } },
       ],
     },
   });

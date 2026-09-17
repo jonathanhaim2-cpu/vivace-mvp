@@ -22,7 +22,7 @@ export default async function ReceiveOrderPage({ params }: { params: Promise<{ i
     <div>
       <PageHeader
         title={`קליטה · ${order.supplier.name}`}
-        description="העלו תעודת משלוח — ה-AI ממלא כמויות ומחירים. העובד מאשר בעיקר כמויות שלמות."
+        description="צלמו חשבונית מהטלפון או בחרו מהגלריה — ה-AI ממלא כמויות ומחירים. העובד מאשר בעיקר כמויות שלמות."
       />
       <ReceiveForm orderId={order.id} lines={order.lines} aiAvailable={runtime.available} />
     </div>

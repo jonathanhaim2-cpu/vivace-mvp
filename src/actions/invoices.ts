@@ -37,6 +37,17 @@ async function optionalLeaf(formData: FormData) {
   return accountId;
 }
 
+async function readBranchId(formData: FormData, required: boolean) {
+  const branchId = String(formData.get("branchId") ?? "").trim();
+  if (!branchId) {
+    if (required) throw new Error("יש לבחור סניף — אחרת החשבונית לא תיכנס לאחוז רכש מול מחזור");
+    return null;
+  }
+  const branch = await prisma.branch.findUnique({ where: { id: branchId }, select: { id: true } });
+  if (!branch) throw new Error("סניף לא נמצא");
+  return branch.id;
+}
+
 function revalidateInvoicePaths() {
   revalidatePath("/invoices");
   revalidatePath("/invoices/import");
@@ -51,6 +62,7 @@ function revalidateInvoicePaths() {
 async function createUploadedInvoicePhoto(input: {
   saved: { fileName: string; originalName: string; mimeType: string; contentHash: string };
   accountId: string | null;
+  branchId?: string | null;
   amountIls?: number | null;
   voiceNoteText?: string | null;
   periodMonth: string | null;
@@ -64,6 +76,7 @@ async function createUploadedInvoicePhoto(input: {
   return prisma.invoicePhoto.create({
     data: {
       accountId: input.accountId,
+      branchId: input.branchId ?? null,
       amountIls: input.amountIls ?? null,
       voiceNoteText: input.voiceNoteText ?? null,
       fileName: input.saved.fileName,
@@ -85,6 +98,7 @@ export async function uploadStandaloneInvoice(formData: FormData) {
     throw new Error("יש להעלות צילום חשבונית");
   }
   const accountId = await optionalLeaf(formData);
+  const branchId = await readBranchId(formData, false);
   const voiceNoteText = String(formData.get("voiceNoteText") ?? "").trim() || null;
   const amountRaw = String(formData.get("amountIls") ?? "").trim();
   const amountIls = amountRaw ? Number(amountRaw) : null;
@@ -94,6 +108,7 @@ export async function uploadStandaloneInvoice(formData: FormData) {
   const created = await createUploadedInvoicePhoto({
     saved,
     accountId,
+    branchId,
     amountIls: amountIls != null && Number.isFinite(amountIls) ? amountIls : null,
     voiceNoteText,
     periodMonth,
@@ -122,6 +137,7 @@ export async function updateInvoiceCategory(photoId: string, formData: FormData)
   const accountId = String(formData.get("accountId") ?? "");
   await assertLeafAccount(accountId);
   const periodMonth = String(formData.get("periodMonth") ?? "").trim();
+  const branchId = await readBranchId(formData, false);
   const photo = await prisma.invoicePhoto.findUnique({ where: { id: photoId } });
   if (photo?.isDuplicate) {
     throw new Error("חשבונית מסומנת ככפיל — אשרו שהיא ייחודית לפני שיבוץ");
@@ -132,6 +148,7 @@ export async function updateInvoiceCategory(photoId: string, formData: FormData)
       accountId,
       classifiedAt: new Date(),
       ...(periodMonth ? { periodMonth } : {}),
+      ...(branchId ? { branchId } : {}),
     },
   });
   await writeAuditLog(session, {
@@ -148,6 +165,7 @@ export async function saveInvoiceClassification(photoId: string, formData: FormD
   const session = await requirePermission("nav.invoices");
   const parsed = invoiceClassificationFromForm(formData);
   await assertLeafAccount(parsed.accountId);
+  const branchId = await readBranchId(formData, true);
   const photo = await prisma.invoicePhoto.findUnique({ where: { id: photoId } });
   if (photo?.isDuplicate) {
     throw new Error("חשבונית מסומנת ככפיל — אשרו שהיא ייחודית לפני שיבוץ");
@@ -156,6 +174,7 @@ export async function saveInvoiceClassification(photoId: string, formData: FormD
     where: { id: photoId },
     data: {
       accountId: parsed.accountId,
+      branchId,
       classifiedAt: new Date(),
       periodMonth: parsed.periodMonth,
       aiInvoiceDate: parsed.invoiceDate,
@@ -175,7 +194,7 @@ export async function saveInvoiceClassification(photoId: string, formData: FormD
   revalidateInvoicePaths();
 }
 
-export async function confirmAiSuggestion(photoId: string) {
+export async function confirmAiSuggestion(photoId: string, formData?: FormData) {
   const session = await requirePermission("nav.invoices");
   const photo = await prisma.invoicePhoto.findUnique({ where: { id: photoId } });
   if (!photo?.aiAccountId) {
@@ -185,11 +204,17 @@ export async function confirmAiSuggestion(photoId: string) {
     throw new Error("חשבונית מסומנת ככפיל — אשרו שהיא ייחודית לפני שיבוץ");
   }
   await assertLeafAccount(photo.aiAccountId);
+  const branchId =
+    (formData ? await readBranchId(formData, false) : null) ?? photo.branchId;
+  if (!branchId) {
+    throw new Error("יש לבחור סניף — אחרת החשבונית לא תיכנס לאחוז רכש מול מחזור");
+  }
   const periodMonth = resolvedPeriodMonth(photo.periodMonth, photo.aiInvoiceDate);
   await prisma.invoicePhoto.update({
     where: { id: photoId },
     data: {
       accountId: photo.aiAccountId,
+      branchId,
       classifiedAt: new Date(),
       aiStatus: "CONFIRMED",
       amountIls: photo.amountIls ?? photo.aiTotalIls,
@@ -221,6 +246,7 @@ export async function importInboxFiles(formData: FormData) {
   }
   const periodMonth = readOptionalMonth(formData);
   const defaultAccount = await optionalLeaf(formData);
+  const branchId = await readBranchId(formData, false);
   let duplicateCount = 0;
 
   const createdPhotos: { id: string; isDuplicate: boolean; originalName: string }[] = [];
@@ -229,6 +255,7 @@ export async function importInboxFiles(formData: FormData) {
     const created = await createUploadedInvoicePhoto({
       saved,
       accountId: defaultAccount,
+      branchId,
       periodMonth,
       source: "BULK_IMPORT",
     });

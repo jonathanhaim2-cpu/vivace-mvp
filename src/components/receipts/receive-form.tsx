@@ -6,9 +6,10 @@ import { submitGoodsReceipt } from "@/actions/receipts";
 import { ReceiptAiTip } from "@/components/ai-helper-tip";
 import { AiMissingBanner } from "@/components/ai-missing-banner";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
+import { InvoiceCaptureField } from "@/components/invoices/invoice-capture-field";
 import { Button } from "@/components/ui/button";
 import { CompactField, NativeSelect } from "@/components/ui/compact-form";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { BILLED_AS, EXCEPTION_KIND } from "@/lib/constants";
@@ -269,22 +270,7 @@ export function ReceiveForm({
       ) : null}
 
       <div className={cn(step === 2 && "hidden")}>
-        <Field>
-          <FieldLabel htmlFor="photo">צילום חשבונית / תעודת משלוח</FieldLabel>
-          <Input
-            id="photo"
-            name="photo"
-            type="file"
-            accept="image/*,application/pdf"
-            required
-            onChange={(event) => onPhotoChange(event.target.files?.[0] ?? null)}
-          />
-          <FieldDescription>
-            {pending
-              ? "סורק את המסמך וממלא כמויות..."
-              : "העלאה ממלאת כמויות ומחירים מהמסמך כשאפשר. העובד מאשר בעיקר כמויות. חובה לשמור את הקובץ."}
-          </FieldDescription>
-        </Field>
+        <InvoiceCaptureField required pending={pending} onFile={onPhotoChange} />
 
         <Field>
           <FieldLabel htmlFor="accountId">קטגוריה</FieldLabel>

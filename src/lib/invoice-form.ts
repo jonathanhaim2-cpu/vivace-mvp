@@ -40,7 +40,8 @@ export function invoiceClassificationFromForm(formData: FormData) {
   const amountIls = parseAmountIls(String(formData.get("amountIls") ?? ""));
   const note = String(formData.get("note") ?? formData.get("voiceNoteText") ?? "").trim() || null;
   const accountId = String(formData.get("accountId") ?? "").trim();
+  const branchId = String(formData.get("branchId") ?? "").trim() || null;
   const periodMonth =
     resolvedPeriodMonth(String(formData.get("periodMonth") ?? ""), invoiceDate) ?? monthKeyFromDate();
-  return { invoiceDate, supplierName, amountIls, note, accountId, periodMonth };
+  return { invoiceDate, supplierName, amountIls, note, accountId, periodMonth, branchId };
 }

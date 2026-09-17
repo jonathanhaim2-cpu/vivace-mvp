@@ -3,6 +3,7 @@ import { AuditInfoButton } from "@/components/audit-info-button";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
 import { AiSuggestionCard } from "@/components/ai-suggestion-card";
 import { AnalyzeInvoiceButton } from "@/components/analyze-invoice-button";
+import { BranchSelect, type BranchOption } from "@/components/branches/branch-select";
 import { InvoiceDocumentPreview } from "@/components/invoices/invoice-document-preview";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -31,16 +32,19 @@ export type PendingInvoicePhoto = {
   aiConfidence: number | null;
   aiReason: string | null;
   aiStatus: string | null;
+  branchId: string | null;
 };
 
 export function PendingInvoiceCard({
   photo,
   months,
   auditStamp,
+  branches,
 }: {
   photo: PendingInvoicePhoto;
   months: string[];
   auditStamp: string;
+  branches: BranchOption[];
 }) {
   const fileUrl = publicFileUrl(photo.fileName);
   const reportMonth = resolvedPeriodMonth(photo.periodMonth, photo.aiInvoiceDate) ?? monthKeyFromDate();
@@ -77,6 +81,8 @@ export function PendingInvoiceCard({
             reason={photo.aiReason}
             status={photo.aiStatus}
             suggestedAccount={chartLeafMeta(photo.aiAccountId)}
+            branches={branches}
+            defaultBranchId={photo.branchId}
           />
 
           <form action={saveInvoiceClassification.bind(null, photo.id)} className="grid gap-3 sm:grid-cols-2">
@@ -128,6 +134,16 @@ export function PendingInvoiceCard({
             <Field>
               <FieldLabel htmlFor={field("accountId")}>קטגוריה</FieldLabel>
               <GroupedAccountSelect id={field("accountId")} defaultValue={photo.aiAccountId} />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor={field("branchId")}>סניף</FieldLabel>
+              <BranchSelect
+                id={field("branchId")}
+                branches={branches}
+                defaultValue={photo.branchId}
+                required
+                allowEmpty={false}
+              />
             </Field>
             <Field className="sm:col-span-2">
               <FieldLabel htmlFor={field("note")}>הערה (אופציונלי)</FieldLabel>
