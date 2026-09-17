@@ -298,6 +298,7 @@ export function formatInvoiceMailNote(input: { from?: string | null; subject?: s
   return parts.join(" · ");
 }
 
+/** True if this attachment was already ingested — including after the InvoicePhoto was discarded. */
 export function mailAttachmentAlreadyImported(
   rows: Iterable<{ messageId: string; contentHash: string }>,
   messageId: string,

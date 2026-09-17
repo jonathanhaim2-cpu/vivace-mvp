@@ -209,6 +209,21 @@
   .app-card {
     box-shadow: var(--shadow-card);
   }
+  /* Cream/emerald AI panels stay light; ink must stay dark even when .dark
+     remaps --foreground / --muted-foreground to pale gray. Do not use those tokens here. */
+  .ai-suggestion-surface {
+    color: #1c1917;
+  }
+  .ai-suggestion-surface .ai-suggestion-title,
+  .ai-suggestion-surface .ai-suggestion-value {
+    color: #1c1917;
+  }
+  .ai-suggestion-surface .ai-suggestion-muted {
+    color: #44403c;
+  }
+  .ai-suggestion-surface[data-tone="ok"] .ai-suggestion-muted {
+    color: #14532d;
+  }
   /* Keep the brand mark inside the RTL sidebar; never paint a black plate. */
   [data-app-sidebar] img {
     display: block;

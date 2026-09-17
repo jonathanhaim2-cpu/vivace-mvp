@@ -1,5 +1,6 @@
-import { confirmInvoiceUnique, deleteDuplicateInvoice } from "@/actions/invoices";
+import { confirmInvoiceUnique } from "@/actions/invoices";
 import { AuditInfoButton } from "@/components/audit-info-button";
+import { DiscardInvoiceButton } from "@/components/invoices/discard-invoice-button";
 import { Button } from "@/components/ui/button";
 import { INVOICE_SOURCE, invoiceSourceLabel } from "@/lib/constants";
 import { formatDateTime, formatIls } from "@/lib/format";
@@ -101,11 +102,7 @@ export function DuplicateInvoiceCard({ photo, auditStamp }: Props) {
             זה לא כפיל — כלול
           </Button>
         </form>
-        <form action={deleteDuplicateInvoice.bind(null, photo.id)}>
-          <Button type="submit" size="sm" variant="destructive">
-            מחק כפיל
-          </Button>
-        </form>
+        <DiscardInvoiceButton photoId={photo.id} isDuplicate label="מחק כפיל" />
       </div>
     </div>
   );

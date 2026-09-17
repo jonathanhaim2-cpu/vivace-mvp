@@ -89,6 +89,8 @@ function notConfiguredStatus(message: string): InvoiceMailStatus {
 }
 
 async function alreadyImported(messageId: string, contentHash: string) {
+  // InvoiceMailImport rows are kept when a photo is discarded, so the same
+  // Message-ID + attachment hash is not re-imported as a new queue item.
   const row = await prisma.invoiceMailImport.findUnique({
     where: { messageId_contentHash: { messageId, contentHash } },
   });
