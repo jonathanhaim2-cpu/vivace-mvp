@@ -24,10 +24,16 @@ test("four roles exist with Hebrew-oriented defaults", () => {
   assert.equal(isNetworkRole("accounting"), true);
   assert.equal(isNetworkRole("branch_manager"), false);
   assert.equal(defaultAllowedForRole("admin", "action.manage_users"), true);
+  assert.equal(defaultAllowedForRole("admin", "action.cancel_goods_receipt"), true);
+  assert.equal(defaultAllowedForRole("admin", "nav.activity"), true);
   assert.equal(defaultAllowedForRole("accounting", "nav.invoices"), true);
+  assert.equal(defaultAllowedForRole("accounting", "nav.activity"), true);
+  assert.equal(defaultAllowedForRole("accounting", "action.cancel_goods_receipt"), false);
   assert.equal(defaultAllowedForRole("accounting", "action.manage_users"), false);
   assert.equal(defaultAllowedForRole("branch_manager", "nav.orders"), true);
   assert.equal(defaultAllowedForRole("branch_manager", "action.edit_prices"), false);
+  assert.equal(defaultAllowedForRole("branch_manager", "action.cancel_goods_receipt"), false);
+  assert.equal(defaultAllowedForRole("branch_manager", "nav.activity"), false);
   assert.equal(defaultAllowedForRole("edge_worker", "action.create_orders"), true);
   assert.equal(defaultAllowedForRole("edge_worker", "nav.settings"), false);
 });
@@ -37,10 +43,21 @@ test("admin core permissions stay locked even if matrix tries to revoke them", (
     { key: "action.manage_users", allowed: false },
     { key: "nav.users", allowed: false },
     { key: "nav.foodcost", allowed: false },
+    { key: "action.cancel_goods_receipt", allowed: false },
   ]);
   assert.equal(allowed.has("action.manage_users"), true);
   assert.equal(allowed.has("nav.users"), true);
+  assert.equal(allowed.has("action.cancel_goods_receipt"), true);
   assert.equal(allowed.has("nav.foodcost"), false);
+});
+
+test("branch roles cannot keep network-only audit/cancel permissions", () => {
+  const manager = resolveRolePermissions("branch_manager", [
+    { key: "action.cancel_goods_receipt", allowed: true },
+    { key: "nav.activity", allowed: true },
+  ]);
+  assert.equal(manager.has("action.cancel_goods_receipt"), false);
+  assert.equal(manager.has("nav.activity"), false);
 });
 
 test("cannot deactivate or demote the last active admin", () => {
@@ -98,6 +115,7 @@ test("temporary passwords are strong enough", () => {
 test("routes map to permission keys", () => {
   assert.equal(requiredPermissionForPath("/settings/users"), "action.manage_users");
   assert.equal(requiredPermissionForPath("/settings/permissions"), "action.manage_permissions");
+  assert.equal(requiredPermissionForPath("/settings/activity"), "nav.activity");
   assert.equal(requiredPermissionForPath("/orders/new"), "nav.orders");
   assert.equal(requiredPermissionForPath("/ap"), "nav.ap");
   assert.equal(requiredPermissionForPath("/login"), null);

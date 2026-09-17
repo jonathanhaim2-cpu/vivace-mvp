@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/access";
+import { AUDIT_ACTIONS, writeAuditLog } from "@/lib/audit";
 import {
   generateTemporaryPassword,
   hashPassword,
@@ -73,7 +74,7 @@ export async function createUser(
   formData: FormData,
 ): Promise<UserActionState> {
   try {
-    await requirePermission("action.manage_users");
+    const session = await requirePermission("action.manage_users");
     const name = String(formData.get("name") ?? "").trim();
     const username = normalizeUsername(String(formData.get("username") ?? ""));
     const roleRaw = String(formData.get("role") ?? "");
@@ -104,6 +105,13 @@ export async function createUser(
       },
     });
     await syncBranches(user.id, roleRaw, branchIds);
+    await writeAuditLog(session, {
+      action: AUDIT_ACTIONS.USER_CREATE,
+      entityType: "User",
+      entityId: user.id,
+      summary: `נוצר משתמש ${name} (${username})`,
+      meta: { role: roleRaw, active, branchIds },
+    });
     revalidateUsers();
     return { credentials: { name, username, password, mode: "created" } };
   } catch (error) {
@@ -116,7 +124,7 @@ export async function updateUser(
   formData: FormData,
 ): Promise<UserActionState> {
   try {
-    await requirePermission("action.manage_users");
+    const session = await requirePermission("action.manage_users");
     const id = String(formData.get("id") ?? "");
     const name = String(formData.get("name") ?? "").trim();
     const username = normalizeUsername(String(formData.get("username") ?? ""));
@@ -159,6 +167,13 @@ export async function updateUser(
       data: { name, username, role: nextRole, active },
     });
     await syncBranches(id, nextRole, branchIds);
+    await writeAuditLog(session, {
+      action: AUDIT_ACTIONS.USER_UPDATE,
+      entityType: "User",
+      entityId: id,
+      summary: `עודכן משתמש ${name} (${username})`,
+      meta: { role: nextRole, active, previousRole: user.role, previousActive: user.active },
+    });
     revalidateUsers();
     return {};
   } catch (error) {
@@ -168,7 +183,7 @@ export async function updateUser(
 
 export async function setUserActive(userId: string, active: boolean): Promise<UserActionState> {
   try {
-    await requirePermission("action.manage_users");
+    const session = await requirePermission("action.manage_users");
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return { error: "משתמש לא נמצא" };
     const otherAdmins = await otherActiveAdminCount(userId);
@@ -184,6 +199,13 @@ export async function setUserActive(userId: string, active: boolean): Promise<Us
       return { error: "אי אפשר לבטל את האדמין הפעיל האחרון" };
     }
     await prisma.user.update({ where: { id: userId }, data: { active } });
+    await writeAuditLog(session, {
+      action: AUDIT_ACTIONS.USER_UPDATE,
+      entityType: "User",
+      entityId: userId,
+      summary: `${active ? "הופעל" : "הושבת"} משתמש ${user.name} (${user.username})`,
+      meta: { active, previousActive: user.active },
+    });
     revalidateUsers();
     return {};
   } catch (error) {
@@ -196,7 +218,7 @@ export async function resetUserPassword(
   formData: FormData,
 ): Promise<UserActionState> {
   try {
-    await requirePermission("action.manage_users");
+    const session = await requirePermission("action.manage_users");
     const id = String(formData.get("id") ?? "");
     const requestedPassword = String(formData.get("password") ?? "").trim();
     const user = await prisma.user.findUnique({ where: { id } });
@@ -209,6 +231,12 @@ export async function resetUserPassword(
     await prisma.user.update({
       where: { id },
       data: { passwordHash: await hashPassword(password) },
+    });
+    await writeAuditLog(session, {
+      action: AUDIT_ACTIONS.USER_PASSWORD_RESET,
+      entityType: "User",
+      entityId: id,
+      summary: `אופסה סיסמה למשתמש ${user.name} (${user.username})`,
     });
     revalidateUsers();
     return {

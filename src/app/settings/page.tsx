@@ -40,7 +40,7 @@ export default async function SettingsPage() {
 
       {runtime.reason === "no_key" ? <AiMissingBanner /> : null}
 
-      {sessionCan(session, "action.manage_users") || sessionCan(session, "action.manage_permissions") ? (
+          {sessionCan(session, "action.manage_users") || sessionCan(session, "action.manage_permissions") || sessionCan(session, "nav.activity") ? (
         <div className="grid gap-3 sm:grid-cols-2">
           {sessionCan(session, "action.manage_users") ? (
             <Card>
@@ -64,6 +64,19 @@ export default async function SettingsPage() {
               <CardContent>
                 <Link href="/settings/permissions" className={cn(buttonVariants())}>
                   טבלת שליטה
+                </Link>
+              </CardContent>
+            </Card>
+          ) : null}
+          {sessionCan(session, "nav.activity") ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>פעילות</CardTitle>
+                <CardDescription>מי ביצע הזמנות, קליטות, ביטולי קליטה, חשבוניות ושינויי משתמש.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/settings/activity" className={cn(buttonVariants())}>
+                  לוג פעילות
                 </Link>
               </CardContent>
             </Card>

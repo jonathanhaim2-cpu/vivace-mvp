@@ -16,9 +16,10 @@ export function SettingsNav({ permissions }: { permissions: readonly string[] })
       match: "prefix",
       key: "action.manage_permissions" as PermissionKey,
     },
+    { href: "/settings/activity", label: "פעילות", match: "prefix", key: "nav.activity" as PermissionKey },
   ].filter((item) => hasPermission(permissions, item.key));
 
-  if (items.length < 2) return null;
+  if (items.length === 0) return null;
 
   return (
     <div className="mb-6 inline-flex flex-wrap rounded-full border border-border bg-card p-0.5">

@@ -368,6 +368,26 @@ model RolePermission {
   @@id([role, key])
 }
 
+/// Durable who/when/what for critical mutations. Actor fields are copied at write time
+/// so historical rows survive user rename/delete. actorUserId is not a FK (dev session
+/// and deleted users are still valid actors).
+model AuditLog {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  actorUserId   String?
+  actorUsername String
+  actorName     String
+  action        String
+  entityType    String
+  entityId      String
+  summary       String
+  meta          Json?
+  @@index([createdAt])
+  @@index([action])
+  @@index([actorUsername])
+  @@index([entityType, entityId])
+}
+
 model OrderStandardSuggestion {
   id                String   @id @default(cuid())
   branchId          String

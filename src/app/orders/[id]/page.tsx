@@ -22,6 +22,7 @@ import { buildOrderWhatsAppText, buildWhatsAppUrl } from "@/lib/whatsapp";
 import { getSendToSuppliersEnabled, resolveOrderWhatsAppPhone } from "@/lib/whatsapp-routing";
 import { RoiTestModeBadge } from "@/components/orders/send-to-suppliers-toggle";
 import { getAppSession, sessionCan } from "@/lib/session";
+import { AUDIT_ACTIONS, firstAuditFor, formatActorLabel } from "@/lib/audit";
 import { cn } from "@/lib/utils";
 
 export default async function OrderDetailPage({
@@ -44,6 +45,11 @@ export default async function OrderDetailPage({
     },
   });
   if (!order) notFound();
+
+  const createLog = await firstAuditFor("Order", order.id, AUDIT_ACTIONS.ORDER_CREATE);
+  const createdBy = createLog
+    ? formatActorLabel(createLog.actorName, createLog.actorUsername)
+    : null;
 
   const total = order.lines.reduce(
     (sum, line) => sum + lineTotal(line.qty, line.unitPrice, line.discountPercent),
@@ -77,6 +83,7 @@ export default async function OrderDetailPage({
           <h1 className="font-heading text-2xl font-semibold">{order.supplier.name}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {order.branch.name} · {formatDateTime(order.createdAt)}
+            {createdBy ? ` · נוצרה ע״י ${createdBy}` : ""}
           </p>
         </div>
         <OrderStatusBadge status={order.status} />

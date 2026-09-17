@@ -21,6 +21,7 @@ import {
   parseMismatchAction,
   qtyDiffers,
 } from "@/lib/credits";
+import { AUDIT_ACTIONS, isCancellableReceiptStatus, writeAuditLog } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { requireBranchAccess, requirePermission } from "@/lib/access";
 import { saveUpload } from "@/lib/uploads";
@@ -38,7 +39,7 @@ export async function submitGoodsReceipt(orderId: string, formData: FormData) {
 
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    include: { lines: { include: { product: true } } },
+    include: { lines: { include: { product: true } }, supplier: true, branch: true },
   });
   if (!order) throw new Error("הזמנה לא נמצאה");
   await requireBranchAccess(order.branchId, session);
@@ -158,6 +159,22 @@ export async function submitGoodsReceipt(orderId: string, formData: FormData) {
     data: { status: hasMissing ? ORDER_STATUSES.PARTIAL : ORDER_STATUSES.RECEIVED },
   });
 
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.RECEIPT_SUBMIT,
+    entityType: "GoodsReceipt",
+    entityId: receipt.id,
+    summary: `קליטת סחורה · ${order.supplier.name} / ${order.branch.name} · ${lineInputs.length} שורות`,
+    meta: {
+      orderId,
+      status,
+      lineCount: lineInputs.length,
+      hasPricePending,
+      hasCreditRequest,
+      supplierName: order.supplier.name,
+      branchName: order.branch.name,
+    },
+  });
+
   revalidatePath("/receipts");
   revalidatePath("/orders");
   revalidatePath(`/orders/${orderId}`);
@@ -199,6 +216,13 @@ export async function approvePriceChange(lineId: string) {
   });
 
   await refreshReceiptStatus(line.goodsReceiptId);
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.RECEIPT_PRICE_APPROVE,
+    entityType: "GoodsReceipt",
+    entityId: line.goodsReceiptId,
+    summary: `אושר שינוי מחיר בשורת קליטה`,
+    meta: { lineId, invoicePrice: line.invoicePrice, productId: line.orderLine.productId },
+  });
   revalidatePath(`/receipts/${line.goodsReceiptId}`);
   revalidatePath("/receipts");
 }
@@ -220,6 +244,13 @@ export async function rejectPriceChange(lineId: string) {
   });
 
   await refreshReceiptStatus(line.goodsReceiptId);
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.RECEIPT_PRICE_REJECT,
+    entityType: "GoodsReceipt",
+    entityId: line.goodsReceiptId,
+    summary: "נדחה שינוי מחיר בשורת קליטה · נדרשת בקשת זיכוי",
+    meta: { lineId },
+  });
   revalidatePath(`/receipts/${line.goodsReceiptId}`);
   revalidatePath("/receipts");
 }
@@ -265,4 +296,76 @@ export async function assignReceiptCategory(receiptId: string, formData: FormDat
   });
   revalidatePath(`/receipts/${receiptId}`);
   revalidatePath("/invoices");
+}
+
+/**
+ * Admin/network-only undo for a submitted receipt.
+ * Allowed statuses: APPROVED, CREDIT_NEEDED, PENDING_PRICE_APPROVAL, SUBMITTED.
+ * Deletes the receipt + lines, removes exceptional items, unlinks invoice photos
+ * (files stay in the invoice queue), and sets the order back to SENT so a new
+ * receipt can be submitted.
+ */
+export async function cancelGoodsReceipt(receiptId: string) {
+  const session = await requirePermission("action.cancel_goods_receipt");
+  if (!session.isNetwork) {
+    throw new Error("רק משרד הרשת יכול לבטל קליטה");
+  }
+
+  const receipt = await prisma.goodsReceipt.findUnique({
+    where: { id: receiptId },
+    include: {
+      order: { include: { supplier: true, branch: true } },
+      photos: { select: { id: true } },
+    },
+  });
+  if (!receipt) throw new Error("קליטה לא נמצאה");
+  await requireBranchAccess(receipt.order.branchId, session);
+
+  if (!isCancellableReceiptStatus(receipt.status)) {
+    throw new Error("לא ניתן לבטל קליטה במצב זה");
+  }
+
+  const orderId = receipt.orderId;
+  const previousOrderStatus = receipt.order.status;
+  const revertOrder =
+    previousOrderStatus === ORDER_STATUSES.RECEIVED || previousOrderStatus === ORDER_STATUSES.PARTIAL;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.invoicePhoto.updateMany({
+      where: { goodsReceiptId: receiptId },
+      data: { goodsReceiptId: null },
+    });
+    await tx.exceptionalItem.deleteMany({ where: { goodsReceiptId: receiptId } });
+    await tx.goodsReceipt.delete({ where: { id: receiptId } });
+    if (revertOrder) {
+      await tx.order.update({
+        where: { id: orderId },
+        data: { status: ORDER_STATUSES.SENT },
+      });
+    }
+  });
+
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.RECEIPT_CANCEL,
+    entityType: "GoodsReceipt",
+    entityId: receiptId,
+    summary: `ביטול קליטה · ${receipt.order.supplier.name} / ${receipt.order.branch.name}`,
+    meta: {
+      orderId,
+      previousReceiptStatus: receipt.status,
+      previousOrderStatus,
+      photoCount: receipt.photos.length,
+      supplierName: receipt.order.supplier.name,
+      branchName: receipt.order.branch.name,
+    },
+  });
+
+  revalidatePath("/receipts");
+  revalidatePath(`/receipts/${receiptId}`);
+  revalidatePath("/orders");
+  revalidatePath(`/orders/${orderId}`);
+  revalidatePath("/");
+  revalidatePath("/anomalies");
+  revalidatePath("/invoices");
+  redirect(`/orders/${orderId}`);
 }

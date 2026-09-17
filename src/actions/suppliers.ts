@@ -7,6 +7,7 @@ import { ensurePriceLists } from "@/lib/catalog";
 import { normalizeClockTime } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/access";
+import { AUDIT_ACTIONS, writeAuditLog } from "@/lib/audit";
 
 function readDays(formData: FormData, fieldName = "deliveryDay") {
   const selected = formData
@@ -119,33 +120,55 @@ async function replaceBranches(supplierId: string, branchIds: string[], formData
 }
 
 export async function createSupplier(formData: FormData) {
-  await requirePermission("action.edit_suppliers");
+  const session = await requirePermission("action.edit_suppliers");
   const data = readSupplierInput(formData);
   const supplier = await prisma.supplier.create({ data });
   await replaceBranches(supplier.id, readBranchIds(formData), formData);
   await ensurePriceLists(supplier.id);
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.SUPPLIER_CREATE,
+    entityType: "Supplier",
+    entityId: supplier.id,
+    summary: `נוצר ספק ${data.name}`,
+    meta: { active: data.active },
+  });
   revalidatePath("/suppliers");
   redirect(`/suppliers/${supplier.id}`);
 }
 
 export async function updateSupplier(id: string, formData: FormData) {
-  await requirePermission("action.edit_suppliers");
+  const session = await requirePermission("action.edit_suppliers");
   const data = readSupplierInput(formData);
   await prisma.supplier.update({ where: { id }, data });
   await replaceBranches(id, readBranchIds(formData), formData);
   await ensurePriceLists(id);
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.SUPPLIER_UPDATE,
+    entityType: "Supplier",
+    entityId: id,
+    summary: `עודכן ספק ${data.name}${data.active ? "" : " (לא פעיל)"}`,
+    meta: { active: data.active },
+  });
   revalidatePath("/suppliers");
   revalidatePath(`/suppliers/${id}`);
   redirect(`/suppliers/${id}`);
 }
 
 export async function deleteSupplier(id: string) {
-  await requirePermission("action.edit_suppliers");
+  const session = await requirePermission("action.edit_suppliers");
+  const supplier = await prisma.supplier.findUnique({ where: { id } });
+  if (!supplier) throw new Error("ספק לא נמצא");
   const orders = await prisma.order.count({ where: { supplierId: id } });
   if (orders > 0) {
     throw new Error("לא ניתן למחוק ספק עם הזמנות קיימות");
   }
   await prisma.supplier.delete({ where: { id } });
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.SUPPLIER_DELETE,
+    entityType: "Supplier",
+    entityId: id,
+    summary: `נמחק ספק ${supplier.name}`,
+  });
   revalidatePath("/suppliers");
   redirect("/suppliers");
 }

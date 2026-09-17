@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { assignReceiptCategory, markForwardedToAccountant } from "@/actions/receipts";
+import { CancelReceiptButton } from "@/components/receipts/cancel-receipt-button";
 import { PriceActions } from "@/components/receipts/price-actions";
 import { PriceChangeBadge, ReceiptStatusBadge } from "@/components/status-badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -8,6 +9,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
 import { COMPANY, EXCEPTION_KIND, PRICE_CHANGE } from "@/lib/constants";
+import { AUDIT_ACTIONS, firstAuditFor, formatActorLabel, isCancellableReceiptStatus } from "@/lib/audit";
 import { ExceptionActions } from "@/components/exceptions/exception-actions";
 import { billedAsLabel, exceptionKindLabel, exceptionStatusLabel } from "@/lib/credits";
 import { expenseCategoryLabel, formatDateTime, formatIls, lineTotal } from "@/lib/format";
@@ -33,6 +35,15 @@ export default async function ReceiptDetailPage({ params }: { params: Promise<{ 
   });
   if (!receipt) notFound();
 
+  const submitLog = await firstAuditFor("GoodsReceipt", receipt.id, AUDIT_ACTIONS.RECEIPT_SUBMIT);
+  const submittedBy = submitLog
+    ? formatActorLabel(submitLog.actorName, submitLog.actorUsername)
+    : "לא ידוע";
+  const canCancel =
+    sessionCan(session, "action.cancel_goods_receipt") &&
+    session.isNetwork &&
+    isCancellableReceiptStatus(receipt.status);
+
   const sendToSuppliers = await getSendToSuppliersEnabled();
   const resolvedSupplier = resolveSupplierForBranch(receipt.order.supplier, receipt.order.branchId);
   const creditWhatsAppPhone = resolveOrderWhatsAppPhone({
@@ -55,8 +66,15 @@ export default async function ReceiptDetailPage({ params }: { params: Promise<{ 
             {receipt.order.branch.name} · {formatDateTime(receipt.createdAt)} ·{" "}
             {expenseCategoryLabel(receipt.accountId)}
           </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            הוגש ע״י {submittedBy}
+            {submitLog ? ` ב־${formatDateTime(submitLog.createdAt)}` : ""}
+          </p>
         </div>
-        <ReceiptStatusBadge status={receipt.status} />
+        <div className="flex flex-wrap items-center gap-2">
+          <ReceiptStatusBadge status={receipt.status} />
+          {canCancel ? <CancelReceiptButton receiptId={receipt.id} /> : null}
+        </div>
       </div>
 
       {receipt.status === "PENDING_PRICE_APPROVAL" ? (

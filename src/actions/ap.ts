@@ -6,6 +6,7 @@ import { getSupplierApRows } from "@/lib/ap";
 import { monthKeyFromDate } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/access";
+import { AUDIT_ACTIONS, writeAuditLog } from "@/lib/audit";
 
 function monthFrom(formData: FormData) {
   const raw = String(formData.get("month") ?? "").trim();
@@ -37,7 +38,7 @@ export async function requestKarteset(supplierId: string, formData: FormData) {
 }
 
 export async function approveSupplierPayment(supplierId: string, formData: FormData) {
-  await requirePermission("nav.ap");
+  const session = await requirePermission("nav.ap");
   const month = monthFrom(formData);
   const payMethod = String(formData.get("payMethod") ?? "").trim();
   if (payMethod && !PAYMENT_METHODS.some((item) => item.value === payMethod)) {
@@ -59,6 +60,13 @@ export async function approveSupplierPayment(supplierId: string, formData: FormD
       payMethod: payMethod || null,
       amountDue: row?.purchased ?? 0,
     },
+  });
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.AP_APPROVE_PAYMENT,
+    entityType: "Supplier",
+    entityId: supplierId,
+    summary: `אושר תשלום לספק לחודש ${month}`,
+    meta: { month, payMethod: payMethod || null },
   });
   revalidatePath("/ap");
 }

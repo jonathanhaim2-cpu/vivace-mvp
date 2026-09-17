@@ -6,6 +6,7 @@ import {
   BarChart3,
   ClipboardCheck,
   FileText,
+  History,
   Home,
   Landmark,
   LogOut,
@@ -74,6 +75,7 @@ export function AppShell({
 
   const items = NAV.filter((item) => hasPermission(permissions, item.permission));
   const canSettings = hasPermission(permissions, "nav.settings");
+  const canActivity = hasPermission(permissions, "nav.activity");
   const canToggleSend = hasPermission(permissions, "action.toggle_send_to_suppliers");
   const canChat = hasPermission(permissions, "nav.chat");
 
@@ -142,12 +144,26 @@ export function AppShell({
             ) : null}
             {canToggleSend ? <SendToSuppliersToggle enabled={sendToSuppliers} compact /> : null}
             <ThemeToggle compact />
+            {canActivity ? (
+              <Link
+                href="/settings/activity"
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs hover:bg-muted",
+                  pathname.startsWith("/settings/activity") && "bg-muted text-primary",
+                )}
+              >
+                <History className="size-3.5" />
+                <span className="hidden sm:inline">פעילות</span>
+              </Link>
+            ) : null}
             {canSettings ? (
               <Link
                 href="/settings"
                 className={cn(
                   "inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs hover:bg-muted",
-                  pathname.startsWith("/settings") && "bg-muted text-primary",
+                  pathname.startsWith("/settings") &&
+                    !pathname.startsWith("/settings/activity") &&
+                    "bg-muted text-primary",
                 )}
               >
                 <Settings className="size-3.5" />

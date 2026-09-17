@@ -7,6 +7,7 @@ import { supplierVisibleToBranch } from "@/lib/catalog";
 import { nextDeliveryInfo, parseDeliveryDays, parseWeekdays } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { requireBranchAccess, requirePermission } from "@/lib/access";
+import { AUDIT_ACTIONS, writeAuditLog } from "@/lib/audit";
 
 async function findOpenOrder(supplierId: string, branchId: string) {
   return prisma.order.findFirst({
@@ -99,6 +100,13 @@ export async function createOrder(formData: FormData) {
         });
       }
     });
+    await writeAuditLog(session, {
+      action: AUDIT_ACTIONS.ORDER_CREATE,
+      entityType: "Order",
+      entityId: openOrder.id,
+      summary: `מיזוג שורות להזמנה קיימת · ${supplier.name}`,
+      meta: { merge: true, supplierId, branchId, lineCount: lines.length },
+    });
     revalidatePath("/orders");
     revalidatePath(`/orders/${openOrder.id}`);
     redirect(`/orders/${openOrder.id}`);
@@ -125,6 +133,14 @@ export async function createOrder(formData: FormData) {
     },
   });
 
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.ORDER_CREATE,
+    entityType: "Order",
+    entityId: order.id,
+    summary: `הזמנה חדשה · ${supplier.name}`,
+    meta: { supplierId, branchId, lineCount: lines.length },
+  });
+
   revalidatePath("/orders");
   redirect(`/orders/${order.id}`);
 }
@@ -143,6 +159,12 @@ export async function markOrderSent(orderId: string) {
       whatsappStatus: alreadyTracked ? order.whatsappStatus : WHATSAPP_STATUS.SENT,
       whatsappSentAt: order.whatsappSentAt ?? new Date(),
     },
+  });
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.ORDER_SEND,
+    entityType: "Order",
+    entityId: orderId,
+    summary: "הזמנה סומנה כנשלחה לספק",
   });
   revalidatePath(`/orders/${orderId}`);
   revalidatePath("/orders");

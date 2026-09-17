@@ -4,9 +4,10 @@ import { revalidatePath } from "next/cache";
 import { EXCEPTION_KIND, EXCEPTION_STATUS } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/access";
+import { AUDIT_ACTIONS, writeAuditLog } from "@/lib/audit";
 
 export async function resolveExceptionalItem(id: string, resolution: string) {
-  await requirePermission("action.approve_credits");
+  const session = await requirePermission("action.approve_credits");
   const allowed = new Set<string>([
     EXCEPTION_STATUS.CONFIRMED,
     EXCEPTION_STATUS.ARRIVED,
@@ -36,6 +37,13 @@ export async function resolveExceptionalItem(id: string, resolution: string) {
 
   if (item.goodsReceiptId) revalidatePath(`/receipts/${item.goodsReceiptId}`);
   if (item.orderId) revalidatePath(`/orders/${item.orderId}`);
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.EXCEPTION_RESOLVE,
+    entityType: "ExceptionalItem",
+    entityId: id,
+    summary: `טופל מסמך חריג · ${item.title}`,
+    meta: { resolution, kind: item.kind },
+  });
   revalidatePath("/");
   revalidatePath("/anomalies");
   revalidatePath("/receipts");

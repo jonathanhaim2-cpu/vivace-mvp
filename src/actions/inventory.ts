@@ -7,6 +7,7 @@ import { monthKeyFromDate } from "@/lib/months";
 import { generateOrderStandardSuggestions } from "@/lib/order-standards";
 import { prisma } from "@/lib/prisma";
 import { requireBranchAccess, requirePermission } from "@/lib/access";
+import { AUDIT_ACTIONS, writeAuditLog } from "@/lib/audit";
 
 function readInventoryKind(raw: string, fallback: string) {
   if (raw === INVENTORY_KIND.START || raw === INVENTORY_KIND.END || raw === INVENTORY_KIND.SPOT) return raw;
@@ -92,6 +93,13 @@ export async function submitInventoryCount(countId: string) {
   await prisma.inventoryCount.update({
     where: { id: countId },
     data: { status: "SUBMITTED" },
+  });
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.INVENTORY_SUBMIT,
+    entityType: "InventoryCount",
+    entityId: countId,
+    summary: `הוגשה ספירת מלאי (${count.kind})`,
+    meta: { kind: count.kind, branchId: count.branchId, periodMonth: count.periodMonth },
   });
   if (count.kind === INVENTORY_KIND.END) {
     await generateOrderStandardSuggestions(countId);

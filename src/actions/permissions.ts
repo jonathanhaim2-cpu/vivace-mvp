@@ -3,11 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/access";
+import { AUDIT_ACTIONS, writeAuditLog } from "@/lib/audit";
 import {
   APP_ROLES,
   DEFAULT_ROLE_PERMISSIONS,
   isAppRole,
   isLockedAdminPermission,
+  isNetworkOnlyPermission,
   PERMISSION_KEYS,
   type PermissionKey,
 } from "@/lib/roles";
@@ -19,22 +21,32 @@ function revalidatePermissions() {
 }
 
 export async function setRolePermission(role: string, key: string, allowed: boolean) {
-  await requirePermission("action.manage_permissions");
+  const session = await requirePermission("action.manage_permissions");
   if (!isAppRole(role)) throw new Error("תפקיד לא חוקי");
   if (!PERMISSION_KEYS.includes(key as PermissionKey)) throw new Error("הרשאה לא חוקית");
   if (isLockedAdminPermission(role, key) && !allowed) {
     throw new Error("לא ניתן לבטל הרשאות ליבה של אדמין");
+  }
+  if (isNetworkOnlyPermission(role, key) && allowed) {
+    throw new Error("הרשאה זו זמינה רק למשרד הרשת");
   }
   await prisma.rolePermission.upsert({
     where: { role_key: { role, key } },
     update: { allowed },
     create: { role, key, allowed },
   });
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.PERMISSION_CHANGE,
+    entityType: "RolePermission",
+    entityId: `${role}:${key}`,
+    summary: `${allowed ? "הופעלה" : "בוטלה"} הרשאה ${key} לתפקיד ${role}`,
+    meta: { role, key, allowed },
+  });
   revalidatePermissions();
 }
 
 export async function restoreDefaultPermissions() {
-  await requirePermission("action.manage_permissions");
+  const session = await requirePermission("action.manage_permissions");
   for (const role of APP_ROLES) {
     for (const key of PERMISSION_KEYS) {
       const allowed = DEFAULT_ROLE_PERMISSIONS[role].includes(key);
@@ -45,5 +57,11 @@ export async function restoreDefaultPermissions() {
       });
     }
   }
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.PERMISSION_CHANGE,
+    entityType: "RolePermission",
+    entityId: "defaults",
+    summary: "שחזור ברירות מחדל לטבלת ההרשאות",
+  });
   revalidatePermissions();
 }
