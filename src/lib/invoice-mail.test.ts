@@ -6,6 +6,7 @@ import {
   cronSecretMatches,
   cronTokenFromRequest,
   emailLooksLikeInvoice,
+  inferDocumentTypeFromMail,
   formatInvoiceMailNote,
   getInvoiceMailConfig,
   getInvoiceMailHistoricalConfig,
@@ -290,6 +291,21 @@ test("keyword miss skips images and PDFs; hit imports both types from the same m
   assert.equal(shouldImportMailAttachment({ ...png, ...miss }), false);
   assert.equal(shouldImportMailAttachment({ ...pdf, ...hit }), true);
   assert.equal(shouldImportMailAttachment({ ...png, ...hit }), true);
+});
+
+test("inferDocumentTypeFromMail prefills only when keywords are exclusive", () => {
+  assert.equal(inferDocumentTypeFromMail("חשבונית אוגוסט", ""), "INVOICE");
+  assert.equal(inferDocumentTypeFromMail("שלום, מצורפות חשבוניות", ""), "INVOICE");
+  assert.equal(inferDocumentTypeFromMail("", "קבלה על תשלום"), "RECEIPT");
+  assert.equal(inferDocumentTypeFromMail("קבלות ספק", "תודה"), "RECEIPT");
+  assert.equal(inferDocumentTypeFromMail("Please see the attached INVOICE", ""), "INVOICE");
+  assert.equal(inferDocumentTypeFromMail("", "Tax Invoice 4412"), "INVOICE");
+  assert.equal(inferDocumentTypeFromMail("Monthly receipts", "thanks"), "RECEIPT");
+  assert.equal(inferDocumentTypeFromMail("חשבונית + קבלה", ""), "UNKNOWN");
+  assert.equal(inferDocumentTypeFromMail("Tax Invoice and receipt", ""), "UNKNOWN");
+  assert.equal(inferDocumentTypeFromMail("תפריט השבוע", "מצורפת תמונה"), "UNKNOWN");
+  assert.equal(inferDocumentTypeFromMail("", ""), "UNKNOWN");
+  assert.equal(inferDocumentTypeFromMail(null, null), "UNKNOWN");
 });
 
 test("message-id + hash dedup treats a processed sentinel as already imported", () => {

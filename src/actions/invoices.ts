@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { assertLeafAccount } from "@/lib/accounts";
 import { analyzeStoredPhoto } from "@/lib/analyze-photo";
 import { IMPORT_ANALYZE_GAP_MS, sleep } from "@/lib/ai-throttle";
-import { INVOICE_DUPLICATE_STATUS, INVOICE_SOURCE } from "@/lib/constants";
+import { INVOICE_DUPLICATE_STATUS, INVOICE_SOURCE, PHOTO_DOCUMENT_TYPE, parsePhotoDocumentType } from "@/lib/constants";
 import { invoiceClassificationFromForm } from "@/lib/invoice-form";
 import { markPhotoIfDuplicate } from "@/lib/invoice-duplicates";
 import {
@@ -90,6 +90,7 @@ export async function uploadStandaloneInvoice(formData: FormData) {
   const amountRaw = String(formData.get("amountIls") ?? "").trim();
   const amountIls = amountRaw ? Number(amountRaw) : null;
   const periodMonth = readMonth(formData);
+  const documentType = parsePhotoDocumentType(formData.get("documentType"));
   const saved = await saveUpload(photo);
 
   const created = await createUploadedInvoicePhoto({
@@ -100,6 +101,7 @@ export async function uploadStandaloneInvoice(formData: FormData) {
     voiceNoteText,
     periodMonth,
     source: INVOICE_SOURCE.MANUAL,
+    documentType,
   });
   if (!created.isDuplicate) {
     await analyzeStoredPhoto(created.id);
@@ -112,7 +114,7 @@ export async function uploadStandaloneInvoice(formData: FormData) {
     summary: created.isDuplicate
       ? `הועלתה חשבונית כפולה · ${saved.originalName}`
       : `הועלתה חשבונית · ${saved.originalName}`,
-    meta: { fileName: saved.fileName, periodMonth, isDuplicate: created.isDuplicate },
+    meta: { fileName: saved.fileName, periodMonth, documentType, isDuplicate: created.isDuplicate },
   });
 
   revalidateInvoicePaths();
@@ -129,6 +131,9 @@ export async function updateInvoiceCategory(photoId: string, formData: FormData)
     throw new Error("חשבונית מסומנת ככפיל — אשרו שהיא ייחודית לפני שיבוץ");
   }
   const branchId = await resolveInvoiceBranchId(formData, session, photo?.branchId);
+  const documentType = formData.has("documentType")
+    ? parsePhotoDocumentType(formData.get("documentType"))
+    : null;
   await prisma.invoicePhoto.update({
     where: { id: photoId },
     data: {
@@ -136,6 +141,7 @@ export async function updateInvoiceCategory(photoId: string, formData: FormData)
       classifiedAt: new Date(),
       ...(periodMonth ? { periodMonth } : {}),
       ...(branchId ? { branchId } : {}),
+      ...(documentType ? { documentType } : {}),
     },
   });
   await writeAuditLog(session, {
@@ -143,7 +149,7 @@ export async function updateInvoiceCategory(photoId: string, formData: FormData)
     entityType: "InvoicePhoto",
     entityId: photoId,
     summary: "חשבונית שובצה לקטגוריה",
-    meta: { accountId, periodMonth: periodMonth || null },
+    meta: { accountId, periodMonth: periodMonth || null, documentType },
   });
   revalidateInvoicePaths();
 }
@@ -168,6 +174,7 @@ export async function saveInvoiceClassification(photoId: string, formData: FormD
       aiSupplierName: parsed.supplierName,
       amountIls: parsed.amountIls,
       voiceNoteText: parsed.note,
+      documentType: parsed.documentType,
       aiStatus: "MANUAL",
     },
   });
@@ -176,7 +183,7 @@ export async function saveInvoiceClassification(photoId: string, formData: FormD
     entityType: "InvoicePhoto",
     entityId: photoId,
     summary: "חשבונית סווגה ידנית",
-    meta: { accountId: parsed.accountId, periodMonth: parsed.periodMonth },
+    meta: { accountId: parsed.accountId, periodMonth: parsed.periodMonth, documentType: parsed.documentType },
   });
   revalidateInvoicePaths();
 }
@@ -199,6 +206,7 @@ export async function confirmAiSuggestion(photoId: string, formData?: FormData) 
   }
   if (!formData) await requireBranchAccess(branchId, session);
   const periodMonth = resolvedPeriodMonth(photo.periodMonth, photo.aiInvoiceDate);
+  const suggestedType = parsePhotoDocumentType(photo.aiDocumentType);
   await prisma.invoicePhoto.update({
     where: { id: photoId },
     data: {
@@ -207,6 +215,9 @@ export async function confirmAiSuggestion(photoId: string, formData?: FormData) 
       classifiedAt: new Date(),
       aiStatus: "CONFIRMED",
       amountIls: photo.amountIls ?? photo.aiTotalIls,
+      ...(suggestedType !== PHOTO_DOCUMENT_TYPE.UNKNOWN || photo.documentType === PHOTO_DOCUMENT_TYPE.UNKNOWN
+        ? { documentType: suggestedType }
+        : {}),
       ...(periodMonth ? { periodMonth } : {}),
     },
   });
@@ -215,7 +226,7 @@ export async function confirmAiSuggestion(photoId: string, formData?: FormData) 
     entityType: "InvoicePhoto",
     entityId: photoId,
     summary: "אושרה הצעת AI לסיווג חשבונית",
-    meta: { accountId: photo.aiAccountId, periodMonth },
+    meta: { accountId: photo.aiAccountId, periodMonth, documentType: suggestedType },
   });
   revalidateInvoicePaths();
 }

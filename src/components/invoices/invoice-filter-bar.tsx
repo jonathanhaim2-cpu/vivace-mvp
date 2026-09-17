@@ -7,6 +7,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BranchSelect, type BranchOption } from "@/components/branches/branch-select";
 import { INVOICE_STATUS_FILTERS, type InvoiceListFilters } from "@/lib/invoice-filters";
+import { DocumentTypeFilterSelect } from "@/components/invoices/document-type-control";
 import { monthLabel } from "@/lib/months";
 import { cn } from "@/lib/utils";
 
@@ -74,6 +75,10 @@ export function InvoiceFilterBar({
             </option>
           ))}
         </select>
+      </label>
+      <label className="text-sm">
+        <span className="mb-1 block text-muted-foreground">סוג מסמך</span>
+        <DocumentTypeFilterSelect defaultValue={filters.documentType} className={selectClassName} />
       </label>
       {suppliers.length > 0 ? (
         <label className="text-sm">

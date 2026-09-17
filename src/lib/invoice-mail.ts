@@ -1,3 +1,4 @@
+import { PHOTO_DOCUMENT_TYPE, type PhotoDocumentType } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 
 export const INVOICE_MAIL_STATUS_KEY = "invoiceMail.sync";
@@ -26,18 +27,23 @@ const MAIL_MIME_BY_EXT: Record<string, string> = {
 
 const MAIL_MIMES = new Set(Object.values(MAIL_MIME_BY_EXT));
 
-/** Subject/body tokens that mean the message is an invoice or receipt (HE + EN). */
-export const INVOICE_MAIL_KEYWORDS = [
+/** Subject/body tokens that mean the message is an invoice (HE + EN). */
+export const INVOICE_MAIL_INVOICE_KEYWORDS = [
   "חשבונית",
   "חשבוניות",
-  "קבלה",
-  "קבלות",
   "invoice",
   "invoices",
   "invoicing",
-  "receipt",
-  "receipts",
   "tax invoice",
+] as const;
+
+/** Subject/body tokens that mean the message is a receipt / קבלה (HE + EN). */
+export const INVOICE_MAIL_RECEIPT_KEYWORDS = ["קבלה", "קבלות", "receipt", "receipts"] as const;
+
+/** Subject/body tokens that mean the message is an invoice or receipt (HE + EN). */
+export const INVOICE_MAIL_KEYWORDS = [
+  ...INVOICE_MAIL_INVOICE_KEYWORDS,
+  ...INVOICE_MAIL_RECEIPT_KEYWORDS,
 ] as const;
 
 export type InvoiceMailConfig = {
@@ -262,10 +268,32 @@ export function isInvoiceMailAttachment(input: {
   return true;
 }
 
+function mailKeywordHaystack(subject?: string | null, text?: string | null) {
+  return `${subject ?? ""}\n${text ?? ""}`.toLowerCase();
+}
+
+function haystackHasKeyword(haystack: string, keywords: readonly string[]) {
+  return keywords.some((keyword) => haystack.includes(keyword.toLowerCase()));
+}
+
 export function emailLooksLikeInvoice(subject?: string | null, text?: string | null) {
-  const haystack = `${subject ?? ""}\n${text ?? ""}`.toLowerCase();
+  const haystack = mailKeywordHaystack(subject, text);
   if (!haystack.trim()) return false;
-  return INVOICE_MAIL_KEYWORDS.some((keyword) => haystack.includes(keyword.toLowerCase()));
+  return haystackHasKeyword(haystack, INVOICE_MAIL_KEYWORDS);
+}
+
+/** Prefill INVOICE/RECEIPT only when subject/body clearly says one family, not both. */
+export function inferDocumentTypeFromMail(
+  subject?: string | null,
+  text?: string | null,
+): PhotoDocumentType {
+  const haystack = mailKeywordHaystack(subject, text);
+  if (!haystack.trim()) return PHOTO_DOCUMENT_TYPE.UNKNOWN;
+  const invoice = haystackHasKeyword(haystack, INVOICE_MAIL_INVOICE_KEYWORDS);
+  const receipt = haystackHasKeyword(haystack, INVOICE_MAIL_RECEIPT_KEYWORDS);
+  if (invoice && !receipt) return PHOTO_DOCUMENT_TYPE.INVOICE;
+  if (receipt && !invoice) return PHOTO_DOCUMENT_TYPE.RECEIPT;
+  return PHOTO_DOCUMENT_TYPE.UNKNOWN;
 }
 
 export function shouldImportMailAttachment(input: {

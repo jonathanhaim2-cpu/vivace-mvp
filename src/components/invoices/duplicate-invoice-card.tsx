@@ -3,6 +3,7 @@ import { AuditInfoButton } from "@/components/audit-info-button";
 import { DiscardInvoiceButton } from "@/components/invoices/discard-invoice-button";
 import { Button } from "@/components/ui/button";
 import { INVOICE_SOURCE, invoiceSourceLabel } from "@/lib/constants";
+import { DocumentTypeBadge } from "@/components/invoices/document-type-control";
 import { formatDateTime, formatIls } from "@/lib/format";
 import { monthLabel } from "@/lib/months";
 import { publicFileUrl } from "@/lib/uploads";
@@ -28,6 +29,7 @@ type Props = {
     periodMonth: string | null;
     source: string;
     amountIls: number | null;
+    documentType?: string | null;
     duplicateOf: DuplicateOriginal;
   };
   auditStamp: string;
@@ -54,6 +56,9 @@ export function DuplicateInvoiceCard({ photo, auditStamp }: Props) {
               {photo.source && photo.source !== INVOICE_SOURCE.MANUAL ? ` · ${invoiceSourceLabel(photo.source)}` : ""}
               {photo.amountIls != null ? ` · ${formatIls(photo.amountIls)}` : ""}
             </p>
+            <div className="mt-1">
+              <DocumentTypeBadge value={photo.documentType} />
+            </div>
           </div>
           <AuditInfoButton stamp={auditStamp} />
         </div>

@@ -12,6 +12,7 @@ import {
   collectImportedUids,
   fallbackInvoiceMailMessageId,
   formatInvoiceMailNote,
+  inferDocumentTypeFromMail,
   getInvoiceMailConfig,
   getInvoiceMailHistoricalConfig,
   invoiceMailLookbackSince,
@@ -185,6 +186,7 @@ export async function importInvoiceMailMessages(
     }
 
     const note = formatInvoiceMailNote({ from: message.from, subject: message.subject });
+    const documentType = inferDocumentTypeFromMail(message.subject, message.text);
     const attachments = message.attachments.filter(
       (item) =>
         isInvoiceMailAttachment({
@@ -228,6 +230,7 @@ export async function importInvoiceMailMessages(
           periodMonth: null,
           source: INVOICE_SOURCE.EMAIL,
           voiceNoteText: note,
+          documentType,
         });
         await markAttachmentImported({
           messageId,
@@ -253,6 +256,7 @@ export async function importInvoiceMailMessages(
             from: message.from,
             subject: message.subject,
             isDuplicate: created.isDuplicate,
+            documentType,
             mailboxUser: mailboxUser || undefined,
             historical: Boolean(options?.historical),
           },
