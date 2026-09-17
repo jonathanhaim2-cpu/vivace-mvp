@@ -190,8 +190,8 @@ export function NetworkBranchCompare({
           </div>
         ) : null}
         {unattributedInvoices > 0 ? (
-          <p className="text-xs text-amber-800">
-            {unattributedInvoices} חשבוניות משובצות בלי סניף — שייכו סניף בחשבוניות כדי שייכנסו לאחוז הסניף.
+          <p className="text-xs text-muted-foreground">
+            {unattributedInvoices} הוצאות רשתיות — לא נספרות באחוז רכש של סניף, כן בחבילת הנה״ח ובסיכום הרשת.
           </p>
         ) : null}
       </CardContent>

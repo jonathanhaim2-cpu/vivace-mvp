@@ -1,4 +1,5 @@
 import { parsePhotoDocumentType } from "@/lib/constants";
+import { parseInvoiceBranchFormValue } from "@/lib/invoice-branch";
 import { monthKeyFromDate, resolvedPeriodMonth } from "@/lib/months";
 
 export function isInvoiceImage(mimeType: string) {
@@ -41,7 +42,8 @@ export function invoiceClassificationFromForm(formData: FormData) {
   const amountIls = parseAmountIls(String(formData.get("amountIls") ?? ""));
   const note = String(formData.get("note") ?? formData.get("voiceNoteText") ?? "").trim() || null;
   const accountId = String(formData.get("accountId") ?? "").trim();
-  const branchId = String(formData.get("branchId") ?? "").trim() || null;
+  const branchChoice = parseInvoiceBranchFormValue(String(formData.get("branchId") ?? ""));
+  const branchId = branchChoice.kind === "branch" ? branchChoice.branchId : null;
   const periodMonth =
     resolvedPeriodMonth(String(formData.get("periodMonth") ?? ""), invoiceDate) ?? monthKeyFromDate();
   const documentType = parsePhotoDocumentType(formData.get("documentType"));

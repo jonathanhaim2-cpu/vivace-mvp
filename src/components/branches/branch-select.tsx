@@ -1,4 +1,8 @@
 import { NativeSelect } from "@/components/ui/compact-form";
+import {
+  NETWORK_BRANCH_LABEL,
+  NETWORK_BRANCH_VALUE,
+} from "@/lib/invoice-branch";
 
 export type BranchOption = { id: string; name: string };
 
@@ -10,6 +14,8 @@ export function BranchSelect({
   required = false,
   allowEmpty = !required,
   emptyLabel = "בחירת סניף",
+  allowNetwork = false,
+  networkLabel = NETWORK_BRANCH_LABEL,
   className,
 }: {
   id?: string;
@@ -19,6 +25,8 @@ export function BranchSelect({
   required?: boolean;
   allowEmpty?: boolean;
   emptyLabel?: string;
+  allowNetwork?: boolean;
+  networkLabel?: string;
   className?: string;
 }) {
   return (
@@ -30,6 +38,7 @@ export function BranchSelect({
       className={className}
     >
       {allowEmpty ? <option value="">{emptyLabel}</option> : null}
+      {allowNetwork ? <option value={NETWORK_BRANCH_VALUE}>{networkLabel}</option> : null}
       {branches.map((branch) => (
         <option key={branch.id} value={branch.id}>
           {branch.name}

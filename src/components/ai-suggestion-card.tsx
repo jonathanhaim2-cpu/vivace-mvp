@@ -6,6 +6,7 @@ import { isLowConfidence } from "@/lib/ai";
 import { AI_QUOTA_MESSAGE } from "@/lib/ai-throttle";
 import { photoDocumentTypeLabel } from "@/lib/constants";
 import { formatIls } from "@/lib/format";
+import { NETWORK_BRANCH_LABEL, NETWORK_BRANCH_SHORT_LABEL, NETWORK_BRANCH_VALUE } from "@/lib/invoice-branch";
 
 type Props = {
   photoId: string;
@@ -19,6 +20,8 @@ type Props = {
   suggestedAccount: { code: string; name: string; parentName: string } | null;
   branches?: BranchOption[];
   defaultBranchId?: string | null;
+  suggestedBranchId?: string | null;
+  suggestedNetwork?: boolean;
 };
 
 export function AiSuggestionCard({
@@ -33,6 +36,8 @@ export function AiSuggestionCard({
   suggestedAccount,
   branches = [],
   defaultBranchId,
+  suggestedBranchId,
+  suggestedNetwork = false,
 }: Props) {
   const statusKey = (status ?? "").trim().toUpperCase();
   if (statusKey === "SKIPPED_NO_KEY") {
@@ -90,6 +95,10 @@ export function AiSuggestionCard({
   }
 
   const low = isLowConfidence(confidence);
+  const suggestedBranchName = suggestedNetwork
+    ? NETWORK_BRANCH_SHORT_LABEL
+    : branches.find((branch) => branch.id === suggestedBranchId)?.name ?? null;
+  const branchSelectValue = defaultBranchId ?? (suggestedNetwork ? NETWORK_BRANCH_VALUE : suggestedBranchId) ?? "";
   const panelClass = low ? "border-amber-400 bg-amber-50" : "border-emerald-200 bg-emerald-50";
 
   return (
@@ -145,6 +154,14 @@ export function AiSuggestionCard({
         ) : (
           <p className="ai-suggestion-muted">לא זוהתה קטגוריה מתאימה.</p>
         )}
+        {suggestedBranchName ? (
+          <div className="flex justify-between gap-2">
+            <dt className="ai-suggestion-muted">סניף</dt>
+            <dd className="ai-suggestion-value">{suggestedNetwork ? NETWORK_BRANCH_LABEL : suggestedBranchName}</dd>
+          </div>
+        ) : (
+          <p className="ai-suggestion-muted">לא זוהה סניף במסמך.</p>
+        )}
       </dl>
       {reason ? <p className="ai-suggestion-muted text-xs">{reason}</p> : null}
       {suggestedAccount ? (
@@ -160,21 +177,21 @@ export function AiSuggestionCard({
                 className="ai-suggestion-control"
               />
             </div>
-            {branches.length > 0 ? (
-              <div className="space-y-1">
-                <label htmlFor={`ai-branch-${photoId}`} className="ai-suggestion-muted block text-[11px] font-medium">
-                  סניף
-                </label>
-                <BranchSelect
-                  id={`ai-branch-${photoId}`}
-                  className="ai-suggestion-control"
-                  branches={branches}
-                  defaultValue={defaultBranchId ?? branches[0]?.id}
-                  required
-                  allowEmpty={false}
-                />
-              </div>
-            ) : null}
+            <div className="space-y-1">
+              <label htmlFor={`ai-branch-${photoId}`} className="ai-suggestion-muted block text-[11px] font-medium">
+                סניף
+              </label>
+              <BranchSelect
+                id={`ai-branch-${photoId}`}
+                className="ai-suggestion-control"
+                branches={branches}
+                defaultValue={branchSelectValue}
+                required
+                allowEmpty={!branchSelectValue}
+                allowNetwork
+                emptyLabel="בחירת סניף"
+              />
+            </div>
           </div>
           <Button type="submit" size="sm" className="w-full">
             אשר הצעה

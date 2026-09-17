@@ -3,6 +3,7 @@ import path from "node:path";
 import { analyzeInvoiceDocument, getAiRuntime } from "@/lib/ai";
 import { aiFailureReason } from "@/lib/ai-throttle";
 import { PHOTO_DOCUMENT_TYPE } from "@/lib/constants";
+import { mapAiBranchHint } from "@/lib/invoice-branch";
 import { markPhotoIfDuplicate } from "@/lib/invoice-duplicates";
 import { resolvedPeriodMonth } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
@@ -23,10 +24,15 @@ export async function analyzeStoredPhoto(photoId: string) {
 
   try {
     const buffer = await readFile(path.join(UPLOAD_DIR, photo.fileName));
+    const branches = await prisma.branch.findMany({
+      select: { id: true, name: true, address: true },
+      orderBy: { name: "asc" },
+    });
     const suggestion = await analyzeInvoiceDocument({
       buffer,
       mimeType: photo.mimeType,
       fileName: photo.originalName,
+      branches,
     });
 
     if (!suggestion) {
@@ -37,6 +43,7 @@ export async function analyzeStoredPhoto(photoId: string) {
       return null;
     }
 
+    const mappedBranch = mapAiBranchHint(suggestion.branchHint, branches);
     const periodMonth = resolvedPeriodMonth(photo.periodMonth, suggestion.invoiceDate);
     const keepExistingType = photo.documentType !== PHOTO_DOCUMENT_TYPE.UNKNOWN;
     await prisma.invoicePhoto.update({
@@ -50,6 +57,8 @@ export async function analyzeStoredPhoto(photoId: string) {
         aiConfidence: suggestion.confidence,
         aiReason: suggestion.reason,
         aiStatus: "SUGGESTED",
+        aiBranchId: mappedBranch.branchId,
+        aiNetworkExpense: mappedBranch.network,
         amountIls: photo.amountIls ?? suggestion.totalIls,
         ...(keepExistingType || suggestion.documentType === PHOTO_DOCUMENT_TYPE.UNKNOWN
           ? {}

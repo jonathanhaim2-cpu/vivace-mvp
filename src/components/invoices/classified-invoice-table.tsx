@@ -13,6 +13,7 @@ import { expenseCategoryLabel, formatDate, formatIls } from "@/lib/format";
 import { monthLabel } from "@/lib/months";
 import { publicFileUrl } from "@/lib/uploads";
 import { cn } from "@/lib/utils";
+import { invoiceBranchDisplayName, NETWORK_BRANCH_VALUE } from "@/lib/invoice-branch";
 
 export type ClassifiedInvoiceRow = {
   id: string;
@@ -98,8 +99,8 @@ export function ClassifiedInvoiceTable({
               <TableCell className="max-w-[12rem] whitespace-normal">
                 <p className="font-medium">{expenseCategoryLabel(row.accountId)}</p>
               </TableCell>
-              <TableCell className={row.branchName ? "" : "text-amber-800"}>
-                {row.branchName ?? "ללא סניף"}
+              <TableCell>
+                {invoiceBranchDisplayName(row.branchName, row.branchId)}
               </TableCell>
               <TableCell>{amount != null ? formatIls(amount) : "—"}</TableCell>
               <TableCell>
@@ -117,10 +118,10 @@ export function ClassifiedInvoiceTable({
                     <DocumentTypeSelect defaultValue={row.documentType} className="w-[10rem]" />
                     <BranchSelect
                       branches={branches}
-                      defaultValue={row.branchId}
-                      required={!row.branchId}
-                      allowEmpty={Boolean(row.branchId)}
-                      emptyLabel="סניף"
+                      defaultValue={row.branchId ?? NETWORK_BRANCH_VALUE}
+                      required
+                      allowEmpty={false}
+                      allowNetwork
                     />
                     {row.periodMonth ? <input type="hidden" name="periodMonth" value={row.periodMonth} /> : null}
                     <Button type="submit" size="sm" variant="outline">

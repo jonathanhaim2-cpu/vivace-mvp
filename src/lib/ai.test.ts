@@ -10,6 +10,7 @@ test("parseInvoiceAiSuggestion maps CREDIT_NOTE and Hebrew credit aliases", () =
   assert.equal(credit?.documentType, PHOTO_DOCUMENT_TYPE.CREDIT_NOTE);
   assert.equal(credit?.totalIls, -180);
   assert.equal(credit?.accountId, "acc_food_produce");
+  assert.equal(credit?.branchHint, null);
 
   const hebrew = parseInvoiceAiSuggestion(
     '{"supplierName":"תנובה","invoiceDate":"2026-09-02","totalIls":90,"accountId":"acc_food_dairy","documentType":"חשבונית זיכוי","confidence":0.8,"reason":"זיכוי"}',
@@ -38,6 +39,24 @@ test("parseInvoiceAiSuggestion keeps INVOICE/RECEIPT/UNKNOWN mapping", () => {
   );
   assert.equal(unknown?.documentType, PHOTO_DOCUMENT_TYPE.UNKNOWN);
   assert.equal(unknown?.accountId, null);
+});
+
+test("parseInvoiceAiSuggestion reads branchHint without forcing a guess", () => {
+  const network = parseInvoiceAiSuggestion(
+    '{"supplierName":"יועץ","invoiceDate":"2026-09-01","totalIls":1200,"accountId":"acc_admin_consulting","documentType":"INVOICE","branchHint":"network","confidence":0.88,"reason":"ייעוץ מטה"}',
+  );
+  assert.equal(network?.documentType, PHOTO_DOCUMENT_TYPE.INVOICE);
+  assert.equal(network?.branchHint, "network");
+
+  const city = parseInvoiceAiSuggestion(
+    '{"supplierName":"ירקות","invoiceDate":"2026-09-01","totalIls":80,"accountId":"acc_food_produce","documentType":"INVOICE","branchName":"בית שמש","confidence":0.8,"reason":"כתובת אספקה"}',
+  );
+  assert.equal(city?.branchHint, "בית שמש");
+
+  const unclear = parseInvoiceAiSuggestion(
+    '{"supplierName":"x","invoiceDate":"","totalIls":10,"accountId":"acc_food_misc","documentType":"INVOICE","branchHint":"","confidence":0.4,"reason":"לא ברור"}',
+  );
+  assert.equal(unclear?.branchHint, null);
 });
 
 test("photoDocumentTypeLabel uses חשבונית זיכוי for CREDIT_NOTE", () => {

@@ -35,6 +35,8 @@ test("receipt-linked photos are excluded so lines are not double-counted", () =>
   assert.equal(standaloneInvoiceCountsForBranch({ goodsReceiptId: null, branchId: "b1" }, "b1"), true);
   assert.equal(standaloneInvoiceCountsForBranch({ goodsReceiptId: null, branchId: "b1" }, "b2"), false);
   assert.equal(standaloneInvoiceCountsForBranch({ goodsReceiptId: null, branchId: "b1" }, null), true);
+  assert.equal(standaloneInvoiceCountsForBranch({ goodsReceiptId: null, branchId: null }, "b1"), false);
+  assert.equal(standaloneInvoiceCountsForBranch({ goodsReceiptId: null, branchId: null }, null), true);
 });
 
 test("branch attribution prefers InvoicePhoto.branchId then Order.branchId", () => {

@@ -85,6 +85,8 @@ test("classified filters match month, category, supplier, date range, and search
   assert.equal(matchesClassifiedFilters(photo(), { ...base, supplier: "אחר" }), false);
   assert.equal(matchesClassifiedFilters(photo(), { ...base, branch: "br_kiryat" }), true);
   assert.equal(matchesClassifiedFilters(photo(), { ...base, branch: "br_beit" }), false);
+  assert.equal(matchesClassifiedFilters(photo({ branchId: null }), { ...base, branch: "network" }), true);
+  assert.equal(matchesClassifiedFilters(photo(), { ...base, branch: "network" }), false);
   assert.equal(matchesClassifiedFilters(photo(), { ...base, q: "245" }), true);
   assert.equal(matchesClassifiedFilters(photo(), { ...base, q: "PHOTO-2026" }), true);
   assert.equal(matchesClassifiedFilters(photo(), { ...base, q: "לא קיים" }), false);
