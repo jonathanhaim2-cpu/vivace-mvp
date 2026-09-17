@@ -165,5 +165,5 @@ export async function importInboxFiles(formData: FormData) {
   revalidatePath("/invoices");
   revalidatePath("/invoices/import");
   revalidatePath("/settings");
-  redirect("/invoices");
+  redirect(`/invoices?imported=${files.length}`);
 }
