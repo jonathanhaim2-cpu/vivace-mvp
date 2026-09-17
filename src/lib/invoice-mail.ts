@@ -26,6 +26,20 @@ const MAIL_MIME_BY_EXT: Record<string, string> = {
 
 const MAIL_MIMES = new Set(Object.values(MAIL_MIME_BY_EXT));
 
+/** Subject/body tokens that mean the message is an invoice or receipt (HE + EN). */
+export const INVOICE_MAIL_KEYWORDS = [
+  "חשבונית",
+  "חשבוניות",
+  "קבלה",
+  "קבלות",
+  "invoice",
+  "invoices",
+  "invoicing",
+  "receipt",
+  "receipts",
+  "tax invoice",
+] as const;
+
 export type InvoiceMailConfig = {
   user: string;
   password: string;
@@ -246,6 +260,27 @@ export function isInvoiceMailAttachment(input: {
     return false;
   }
   return true;
+}
+
+export function emailLooksLikeInvoice(subject?: string | null, text?: string | null) {
+  const haystack = `${subject ?? ""}\n${text ?? ""}`.toLowerCase();
+  if (!haystack.trim()) return false;
+  return INVOICE_MAIL_KEYWORDS.some((keyword) => haystack.includes(keyword.toLowerCase()));
+}
+
+export function shouldImportMailAttachment(input: {
+  mime?: string | null;
+  filename?: string | null;
+  contentType?: string | null;
+  subject?: string | null;
+  text?: string | null;
+}) {
+  const explicit = (input.mime ?? "").split(";")[0].trim().toLowerCase();
+  const mime = MAIL_MIMES.has(explicit)
+    ? explicit
+    : resolveInvoiceMailMime(input.filename, input.contentType ?? input.mime);
+  if (!mime) return false;
+  return emailLooksLikeInvoice(input.subject, input.text);
 }
 
 export function normalizeMessageId(raw?: string | null) {

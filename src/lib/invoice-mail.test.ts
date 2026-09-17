@@ -5,6 +5,7 @@ import {
   collectImportedUids,
   cronSecretMatches,
   cronTokenFromRequest,
+  emailLooksLikeInvoice,
   formatInvoiceMailNote,
   getInvoiceMailConfig,
   getInvoiceMailHistoricalConfig,
@@ -20,6 +21,7 @@ import {
   parseInvoiceMailStatus,
   resolveInvoiceMailMime,
   selectInvoiceMailUidsToFetch,
+  shouldImportMailAttachment,
   DEFAULT_INVOICE_MAIL_HISTORICAL_LOOKBACK_DAYS,
   INVOICE_MAIL_HISTORICAL_MAX_MESSAGES,
   INVOICE_MAIL_MAX_MESSAGES,
@@ -208,6 +210,86 @@ test("tiny inline images are skipped; PDFs and real attachments are kept", () =>
     }),
     true,
   );
+});
+
+test("emailLooksLikeInvoice matches Hebrew and English invoice keywords case-insensitively", () => {
+  assert.equal(emailLooksLikeInvoice("חשבונית אוגוסט", ""), true);
+  assert.equal(emailLooksLikeInvoice("שלום, מצורפות חשבוניות", ""), true);
+  assert.equal(emailLooksLikeInvoice("", "קבלה על תשלום"), true);
+  assert.equal(emailLooksLikeInvoice("קבלות ספק", "תודה"), true);
+  assert.equal(emailLooksLikeInvoice("Please see the attached INVOICE", ""), true);
+  assert.equal(emailLooksLikeInvoice("", "Tax Invoice 4412"), true);
+  assert.equal(emailLooksLikeInvoice("Monthly receipts", "thanks"), true);
+  assert.equal(emailLooksLikeInvoice("Invoices from last week", ""), true);
+  assert.equal(emailLooksLikeInvoice("תפריט השבוע", "מצורפת תמונה מהאירוע"), false);
+  assert.equal(emailLooksLikeInvoice("Newsletter", "See you tomorrow"), false);
+  assert.equal(emailLooksLikeInvoice("", ""), false);
+  assert.equal(emailLooksLikeInvoice(null, null), false);
+});
+
+test("shouldImportMailAttachment requires keywords for PDF and images", () => {
+  const invoiceSubject = { subject: "חשבונית ספק", text: "" };
+  const invoiceBody = { subject: "שלום", text: "Please find the receipt attached" };
+  const newsletter = { subject: "תפריט השבוע", text: "תמונות מהאירוע" };
+
+  assert.equal(
+    shouldImportMailAttachment({ filename: "doc.pdf", contentType: "application/pdf", ...invoiceSubject }),
+    true,
+  );
+  assert.equal(
+    shouldImportMailAttachment({ mime: "application/pdf", filename: "scan.pdf", ...invoiceBody }),
+    true,
+  );
+  assert.equal(
+    shouldImportMailAttachment({ filename: "doc.pdf", contentType: "application/pdf", ...newsletter }),
+    false,
+  );
+
+  assert.equal(
+    shouldImportMailAttachment({ filename: "scan.png", contentType: "image/png", ...invoiceSubject }),
+    true,
+  );
+  assert.equal(
+    shouldImportMailAttachment({ filename: "scan.JPG", contentType: "image/jpeg", ...invoiceBody }),
+    true,
+  );
+  assert.equal(
+    shouldImportMailAttachment({ filename: "scan.jpeg", contentType: "image/jpeg", subject: "INVOICE #9", text: "" }),
+    true,
+  );
+  assert.equal(
+    shouldImportMailAttachment({ filename: "photo.webp", contentType: "image/webp", subject: "", text: "קבלה" }),
+    true,
+  );
+  assert.equal(
+    shouldImportMailAttachment({
+      filename: "scan.HEIC",
+      contentType: "application/octet-stream",
+      subject: "חשבוניות",
+      text: "",
+    }),
+    true,
+  );
+  assert.equal(
+    shouldImportMailAttachment({ filename: "photo.png", contentType: "image/png", ...newsletter }),
+    false,
+  );
+  assert.equal(
+    shouldImportMailAttachment({ filename: "notes.txt", contentType: "text/plain", ...invoiceSubject }),
+    false,
+  );
+});
+
+test("keyword miss skips images and PDFs; hit imports both types from the same mail", () => {
+  const miss = { subject: "סיכום ישיבה", text: "מצורפים הקבצים" };
+  const hit = { subject: "חשבונית + קבלה", text: "" };
+  const pdf = { filename: "a.pdf", contentType: "application/pdf" };
+  const png = { filename: "b.png", contentType: "image/png" };
+
+  assert.equal(shouldImportMailAttachment({ ...pdf, ...miss }), false);
+  assert.equal(shouldImportMailAttachment({ ...png, ...miss }), false);
+  assert.equal(shouldImportMailAttachment({ ...pdf, ...hit }), true);
+  assert.equal(shouldImportMailAttachment({ ...png, ...hit }), true);
 });
 
 test("message-id + hash dedup treats a processed sentinel as already imported", () => {
