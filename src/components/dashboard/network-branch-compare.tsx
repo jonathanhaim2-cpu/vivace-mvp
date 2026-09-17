@@ -1,16 +1,42 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { BranchComparisonRow, CategoryFill } from "@/lib/dashboard";
+import type { BranchComparisonRow } from "@/lib/dashboard";
 import { formatIls } from "@/lib/format";
-import { relativeShare } from "@/lib/purchase-fill";
 import { cn } from "@/lib/utils";
 
 const BRANCH_COLORS = ["var(--brand-red)", "#3d6b6a"] as const;
 
-function categoryMax(fillA: CategoryFill[], fillB: CategoryFill[]) {
-  return Math.max(1, ...fillA.map((row) => row.actualPercent ?? 0), ...fillB.map((row) => row.actualPercent ?? 0));
+/** Width of a value as % of the pair's max. Zero stays an empty muted track. */
+function pairBarPercent(value: number, max: number) {
+  if (!(max > 0) || !(value > 0)) return 0;
+  return Math.min(100, (value / max) * 100);
 }
 
-function CompareBar({
+function PairTrack({ value, max, color }: { value: number; max: number; color: string }) {
+  const percent = pairBarPercent(value, max);
+  return (
+    <div className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
+      {percent > 0 ? (
+        <div className="h-full rounded-full" style={{ width: `${percent}%`, background: color }} />
+      ) : null}
+    </div>
+  );
+}
+
+function PairBars({ left, right }: { left: number; right: number }) {
+  const max = Math.max(0, left, right);
+  return (
+    <div className="grid grid-cols-2 gap-1.5" dir="ltr">
+      <PairTrack value={left} max={max} color={BRANCH_COLORS[0]} />
+      <PairTrack value={right} max={max} color={BRANCH_COLORS[1]} />
+    </div>
+  );
+}
+
+function formatPercent(value: number | null) {
+  return value != null ? `${value.toFixed(1)}%` : "—";
+}
+
+function CompareRow({
   label,
   left,
   right,
@@ -23,59 +49,23 @@ function CompareBar({
   format?: (value: number) => string;
   suffix?: string;
 }) {
-  const share = relativeShare(left, right);
   return (
     <div className="space-y-1">
-      <div className="flex items-baseline justify-between gap-2 text-xs">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="tabular-nums text-muted-foreground">
-          <span style={{ color: BRANCH_COLORS[0] }}>{format(left)}{suffix}</span>
-          {" · "}
-          <span style={{ color: BRANCH_COLORS[1] }}>{format(right)}{suffix}</span>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 text-xs leading-tight">
+        <span className="truncate text-muted-foreground">{label}</span>
+        <span className="shrink-0 tabular-nums" dir="ltr">
+          <span style={{ color: BRANCH_COLORS[0] }}>
+            {format(left)}
+            {suffix}
+          </span>
+          <span className="text-muted-foreground"> · </span>
+          <span style={{ color: BRANCH_COLORS[1] }}>
+            {format(right)}
+            {suffix}
+          </span>
         </span>
       </div>
-      <div className="flex h-2 overflow-hidden rounded-full bg-muted" dir="ltr">
-        <div className="h-full" style={{ width: `${share.left}%`, background: BRANCH_COLORS[0] }} />
-        <div className="h-full" style={{ width: `${share.right}%`, background: BRANCH_COLORS[1] }} />
-      </div>
-    </div>
-  );
-}
-
-function CategoryCompareChart({ left, right }: { left: BranchComparisonRow; right: BranchComparisonRow }) {
-  const max = categoryMax(left.fill, right.fill);
-  const height = Math.max(120, left.fill.length * 28);
-  const rowH = height / Math.max(1, left.fill.length);
-  const padL = 78;
-  const padR = 8;
-  const width = 360;
-  const plotW = width - padL - padR;
-  const barH = 7;
-
-  return (
-    <div dir="ltr">
-    <svg
-      viewBox={`0 0 ${width} ${height}`}
-      className="h-auto w-full"
-      role="img"
-      aria-label="השוואת אחוז רכש לפי קטגוריה"
-    >
-      {left.fill.map((row, index) => {
-        const other = right.fill.find((item) => item.id === row.id);
-        const y = index * rowH + rowH / 2;
-        const leftW = ((row.actualPercent ?? 0) / max) * plotW;
-        const rightW = ((other?.actualPercent ?? 0) / max) * plotW;
-        return (
-          <g key={row.id}>
-            <text x={padL - 6} y={y + 3} textAnchor="end" className="fill-muted-foreground" fontSize="9">
-              {row.name}
-            </text>
-            <rect x={padL} y={y - barH - 1} width={Math.max(1, leftW)} height={barH} rx="2" fill={BRANCH_COLORS[0]} />
-            <rect x={padL} y={y + 1} width={Math.max(1, rightW)} height={barH} rx="2" fill={BRANCH_COLORS[1]} />
-          </g>
-        );
-      })}
-    </svg>
+      <PairBars left={left} right={right} />
     </div>
   );
 }
@@ -83,8 +73,8 @@ function CategoryCompareChart({ left, right }: { left: BranchComparisonRow; righ
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <p className="text-[11px] text-muted-foreground">{label}</p>
-      <p className="truncate text-sm tabular-nums" dir="ltr">
+      <p className="text-[11px] leading-tight text-muted-foreground">{label}</p>
+      <p className="truncate text-sm font-medium leading-tight tabular-nums" dir="ltr">
         {value}
       </p>
     </div>
@@ -99,49 +89,42 @@ function BranchStatCard({
   color: string;
 }) {
   return (
-    <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+    <div className="space-y-2.5 rounded-lg border bg-muted/20 p-3">
       <div className="flex items-center gap-2">
-        <span className="size-2.5 rounded-full" style={{ background: color }} />
-        <p className="text-sm font-medium">{branch.name}</p>
+        <span className="size-2.5 shrink-0 rounded-full" style={{ background: color }} />
+        <p className="truncate text-sm font-medium">{branch.name}</p>
       </div>
       <div className="grid grid-cols-2 gap-x-3 gap-y-2">
         <Metric label="רכש" value={formatIls(branch.purchaseTotal)} />
-        <Metric
-          label="% מחזור"
-          value={branch.purchasePercent != null ? `${branch.purchasePercent.toFixed(1)}%` : "—"}
-        />
+        <Metric label="% מחזור" value={formatPercent(branch.purchasePercent)} />
         <Metric label="חשבוניות" value={`${branch.invoiceCount} · ${formatIls(branch.invoiceTotal)}`} />
         <Metric label="הזמנות" value={`${branch.orderCount} · ${formatIls(branch.orderVolume)}`} />
       </div>
-      <div className="space-y-1">
-        {branch.fill.map((row) => {
-          const fillPct =
-            row.targetPercent && row.targetPercent > 0 && row.actualPercent != null
-              ? Math.min(140, (row.actualPercent / row.targetPercent) * 100)
-              : row.actualPercent
-                ? Math.min(100, row.actualPercent)
-                : 0;
-          return (
-            <div key={row.id} className="space-y-0.5">
-              <div className="flex items-baseline justify-between gap-2 text-[11px]">
-                <span>{row.name}</span>
-                <span
-                  className={cn("tabular-nums", row.over ? "font-medium text-destructive" : "text-muted-foreground")}
-                  dir="ltr"
-                >
-                  {row.actualPercent != null ? `${row.actualPercent.toFixed(1)}%` : "—"}
-                  {row.targetPercent != null ? ` / ${row.targetPercent}%` : ""}
+      <div>
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-b border-border/70 pb-1 text-[10px] text-muted-foreground">
+          <span>קטגוריה</span>
+          <span>בפועל / יעד</span>
+        </div>
+        <ul className="m-0 list-none p-0">
+          {branch.fill.map((row) => (
+            <li
+              key={row.id}
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 border-b border-border/40 py-1 text-[11px] leading-tight last:border-b-0"
+            >
+              <span className="truncate" title={row.name}>
+                {row.name}
+              </span>
+              <span className="shrink-0 tabular-nums" dir="ltr">
+                <span className={cn(row.over ? "font-medium text-destructive" : "text-foreground")}>
+                  {formatPercent(row.actualPercent)}
                 </span>
-              </div>
-              <div className="h-1 overflow-hidden rounded-full bg-muted">
-                <div
-                  className={cn("h-full rounded-full", row.over ? "bg-destructive" : "")}
-                  style={{ width: `${Math.max(2, fillPct)}%`, background: row.over ? undefined : color }}
-                />
-              </div>
-            </div>
-          );
-        })}
+                {row.targetPercent != null ? (
+                  <span className="text-muted-foreground">{` / ${row.targetPercent}%`}</span>
+                ) : null}
+              </span>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
@@ -164,9 +147,7 @@ export function NetworkBranchCompare({
     <Card>
       <CardHeader>
         <CardTitle>השוואת סניפים</CardTitle>
-        <CardDescription>
-          רכש מול מחזור חזוי {formatIls(forecast)} — כולל חשבוניות ששובצו לסניף גם בלי הזמנה במערכת.
-        </CardDescription>
+        <CardDescription>רכש לפי סניף מול מחזור חזוי {formatIls(forecast)}.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className={cn("grid gap-3", branches.length > 1 ? "md:grid-cols-2" : "grid-cols-1")}>
@@ -175,18 +156,65 @@ export function NetworkBranchCompare({
           ))}
         </div>
         {right ? (
-          <div className="space-y-3 rounded-lg border bg-card p-3">
-            <p className="text-xs font-medium">השוואה יחסית</p>
-            <CompareBar label="רכש (₪)" left={left.purchaseTotal} right={right.purchaseTotal} format={(v) => formatIls(v)} />
-            <CompareBar
+          <div className="space-y-2.5 rounded-lg border bg-card p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-medium">השוואה יחסית</p>
+              <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="size-2 rounded-full" style={{ background: BRANCH_COLORS[0] }} />
+                  {left.name}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="size-2 rounded-full" style={{ background: BRANCH_COLORS[1] }} />
+                  {right.name}
+                </span>
+              </div>
+            </div>
+            <CompareRow
+              label="רכש (₪)"
+              left={left.purchaseTotal}
+              right={right.purchaseTotal}
+              format={(value) => formatIls(value)}
+            />
+            <CompareRow
               label="% מהמחזור"
               left={left.purchasePercent ?? 0}
               right={right.purchasePercent ?? 0}
               suffix="%"
             />
-            <CompareBar label="חשבוניות (₪)" left={left.invoiceTotal} right={right.invoiceTotal} format={(v) => formatIls(v)} />
-            <CompareBar label="היקף הזמנות" left={left.orderVolume} right={right.orderVolume} format={(v) => formatIls(v)} />
-            <CategoryCompareChart left={left} right={right} />
+            <CompareRow
+              label="חשבוניות (₪)"
+              left={left.invoiceTotal}
+              right={right.invoiceTotal}
+              format={(value) => formatIls(value)}
+            />
+            <CompareRow
+              label="היקף הזמנות"
+              left={left.orderVolume}
+              right={right.orderVolume}
+              format={(value) => formatIls(value)}
+            />
+            <div className="space-y-1.5 pt-1">
+              <p className="text-[11px] text-muted-foreground">לפי קטגוריה</p>
+              {left.fill.map((row) => {
+                const other = right.fill.find((item) => item.id === row.id);
+                return (
+                  <div key={row.id} className="space-y-1">
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 text-[11px] leading-tight">
+                      <span className="truncate" title={row.name}>
+                        {row.name}
+                      </span>
+                      <span className="shrink-0 tabular-nums" dir="ltr">
+                        <span style={{ color: BRANCH_COLORS[0] }}>{formatPercent(row.actualPercent)}</span>
+                        <span className="text-muted-foreground"> · </span>
+                        <span style={{ color: BRANCH_COLORS[1] }}>{formatPercent(other?.actualPercent ?? null)}</span>
+                      </span>
+                    </div>
+                    <PairBars left={row.actualPercent ?? 0} right={other?.actualPercent ?? 0} />
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ) : null}
         {unattributedInvoices > 0 ? (
