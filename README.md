@@ -62,7 +62,7 @@ Secrets are env-only. Never commit keys.
 3. Jonathan’s hierarchical chart is seeded (leaf assignment, parent rollup).
 4. Classify invoice photos to a **leaf** card; unclassified imports wait in a queue.
 5. Manual upload + **ייבוא מתיקייה**, with AI suggestion when a key is set.
-6. **חיבור מייל** settings stub (no Gmail OAuth).
+6. **חיבור מייל**: IMAP poll of `INVOICE_MAIL_*` (Gmail App Password). Attachments enter the classification queue; UI shows status + **סנכרן עכשיו**. Optional `/api/cron/invoice-mail`.
 7. Monthly **accountant package**: ZIP + Hebrew mailto.
 8. **דוח תחילת חודש** (defaults to previous month).
 
@@ -91,7 +91,7 @@ SQLite file (`prisma/dev.db`) is the first remote-demo store. On Railway/Fly put
 
 ### Out of scope
 
-- Real Gmail/IMAP OAuth
+- Gmail OAuth consent screen (IMAP + App Password instead)
 - Tabit sales import
 - Franchise P&L
 - WhatsApp Business API
@@ -121,6 +121,7 @@ npm run dev
 - כניסה בשם משתמש וסיסמה (כשיש `APP_PASSWORD`; אדמין מנהל משתמשים בהגדרות)
 - ניתוח חשבונית ב-AI + אישור בלחיצה, או שיוך ידני
 - סיווג לקטגוריה, חבילת ZIP להנה״ח, דוח חודשי
+- סנכרון תיבת invoices ב-IMAP (חיבור מייל) בלי לשבור העלאה ידנית
 - ספירות מלאי ו-Food Cost תיאורטי
 
 Toggle **סניף** להזמנות וספירות; **רשת** לאישור מחירון. קטלוג הדמו הישן רק עם `SEED_DEMO=true`.

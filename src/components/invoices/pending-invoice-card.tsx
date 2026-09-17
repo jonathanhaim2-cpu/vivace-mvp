@@ -10,6 +10,7 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { chartLeafMeta } from "@/lib/chart-of-accounts";
+import { invoiceSourceLabel } from "@/lib/constants";
 import { formatDateTime } from "@/lib/format";
 import { toDateInputValue } from "@/lib/invoice-form";
 import { monthKeyFromDate, monthLabel, resolvedPeriodMonth } from "@/lib/months";
@@ -59,7 +60,7 @@ export function PendingInvoiceCard({
           <div className="min-w-0">
             <p className="font-medium">{photo.originalName}</p>
             <p className="text-xs text-muted-foreground">
-              {formatDateTime(photo.createdAt)} · {photo.source === "BULK_IMPORT" ? "ייבוא תיקייה" : "העלאה"}
+              {formatDateTime(photo.createdAt)} · {invoiceSourceLabel(photo.source)}
               {reportMonth ? ` · ${monthLabel(reportMonth)}` : ""}
             </p>
           </div>

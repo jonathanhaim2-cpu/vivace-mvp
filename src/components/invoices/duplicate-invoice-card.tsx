@@ -1,6 +1,7 @@
 import { confirmInvoiceUnique, deleteDuplicateInvoice } from "@/actions/invoices";
 import { AuditInfoButton } from "@/components/audit-info-button";
 import { Button } from "@/components/ui/button";
+import { INVOICE_SOURCE, invoiceSourceLabel } from "@/lib/constants";
 import { formatDateTime, formatIls } from "@/lib/format";
 import { monthLabel } from "@/lib/months";
 import { publicFileUrl } from "@/lib/uploads";
@@ -49,7 +50,7 @@ export function DuplicateInvoiceCard({ photo, auditStamp }: Props) {
             <p className="text-xs text-muted-foreground">
               {photo.originalName} · {formatDateTime(photo.createdAt)}
               {photo.periodMonth ? ` · ${monthLabel(photo.periodMonth)}` : ""}
-              {photo.source === "BULK_IMPORT" ? " · ייבוא תיקייה" : ""}
+              {photo.source && photo.source !== INVOICE_SOURCE.MANUAL ? ` · ${invoiceSourceLabel(photo.source)}` : ""}
               {photo.amountIls != null ? ` · ${formatIls(photo.amountIls)}` : ""}
             </p>
           </div>

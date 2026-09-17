@@ -29,30 +29,50 @@ export function hashFileBytes(bytes: Buffer | Uint8Array): string {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
-export async function saveUpload(file: File) {
-  if (!file || file.size === 0) {
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+
+export async function saveUploadBytes(input: {
+  bytes: Buffer | Uint8Array;
+  originalName: string;
+  mimeType: string;
+  maxBytes?: number;
+}) {
+  const buffer = Buffer.from(input.bytes);
+  if (buffer.length === 0) {
     throw new Error("יש לצרף קובץ חשבונית או תעודת משלוח");
   }
-  if (file.size > 8 * 1024 * 1024) {
+  if (buffer.length > (input.maxBytes ?? MAX_UPLOAD_BYTES)) {
     throw new Error("הקובץ גדול מדי (מקסימום 8MB)");
   }
-  const mime = file.type || "application/octet-stream";
+  const mime = input.mimeType || "application/octet-stream";
   if (!ALLOWED.has(mime)) {
     throw new Error("סוג קובץ לא נתמך. יש להעלות תמונה, PDF או קובץ קול");
   }
 
   await mkdir(UPLOAD_DIR, { recursive: true });
-  const ext = extensionFor(file.name, mime);
+  const ext = extensionFor(input.originalName, mime);
   const fileName = `${Date.now()}-${randomUUID()}${ext}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
   await writeFile(path.join(UPLOAD_DIR, fileName), buffer);
 
   return {
     fileName,
-    originalName: file.name || fileName,
+    originalName: input.originalName || fileName,
     mimeType: mime,
     contentHash: hashFileBytes(buffer),
   };
+}
+
+export async function saveUpload(file: File) {
+  if (!file || file.size === 0) {
+    throw new Error("יש לצרף קובץ חשבונית או תעודת משלוח");
+  }
+  const mime = file.type || "application/octet-stream";
+  const buffer = Buffer.from(await file.arrayBuffer());
+  return saveUploadBytes({
+    bytes: buffer,
+    originalName: file.name || "upload",
+    mimeType: mime,
+  });
 }
 
 function extensionFor(name: string, mime: string) {
@@ -61,6 +81,8 @@ function extensionFor(name: string, mime: string) {
   if (mime === "image/jpeg") return ".jpg";
   if (mime === "image/png") return ".png";
   if (mime === "image/webp") return ".webp";
+  if (mime === "image/heic") return ".heic";
+  if (mime === "image/heif") return ".heif";
   if (mime === "application/pdf") return ".pdf";
   return "";
 }
