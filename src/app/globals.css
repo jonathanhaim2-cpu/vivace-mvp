@@ -213,6 +213,7 @@
      remaps --foreground / --muted-foreground to pale gray. Do not use those tokens here. */
   .ai-suggestion-surface {
     color: #1c1917;
+    color-scheme: light;
   }
   .ai-suggestion-surface .ai-suggestion-title,
   .ai-suggestion-surface .ai-suggestion-value {
@@ -234,6 +235,24 @@
     background-color: transparent;
     object-fit: contain;
   }
+}
+
+/* Unlayered so this beats NativeSelect's `bg-background` utility (near-black in
+   .dark) and `select { color-scheme: inherit }`. Cream-card ink from
+   .ai-suggestion-surface is dark; without a light fill the closed control is
+   dark-on-dark. `color-scheme: light` also keeps the native options popup readable. */
+.ai-suggestion-surface select,
+.ai-suggestion-surface .ai-suggestion-control {
+  color-scheme: light;
+  background-color: #fffefb;
+  color: #1c1917;
+  border-color: #c4b8aa;
+}
+
+.ai-suggestion-surface select option,
+.ai-suggestion-surface .ai-suggestion-control option {
+  background-color: #fffefb;
+  color: #1c1917;
 }
 
 @media print {

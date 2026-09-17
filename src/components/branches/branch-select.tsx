@@ -10,6 +10,7 @@ export function BranchSelect({
   required = false,
   allowEmpty = !required,
   emptyLabel = "בחירת סניף",
+  className,
 }: {
   id?: string;
   name?: string;
@@ -18,9 +19,16 @@ export function BranchSelect({
   required?: boolean;
   allowEmpty?: boolean;
   emptyLabel?: string;
+  className?: string;
 }) {
   return (
-    <NativeSelect id={id} name={name} defaultValue={defaultValue ?? ""} required={required}>
+    <NativeSelect
+      id={id}
+      name={name}
+      defaultValue={defaultValue ?? ""}
+      required={required}
+      className={className}
+    >
       {allowEmpty ? <option value="">{emptyLabel}</option> : null}
       {branches.map((branch) => (
         <option key={branch.id} value={branch.id}>

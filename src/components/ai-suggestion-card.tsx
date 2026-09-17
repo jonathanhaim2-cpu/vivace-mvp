@@ -131,13 +131,19 @@ export function AiSuggestionCard({
       {suggestedAccount ? (
         <form action={confirmAiSuggestion.bind(null, photoId)} className="space-y-2">
           {branches.length > 0 ? (
-            <BranchSelect
-              id={`ai-branch-${photoId}`}
-              branches={branches}
-              defaultValue={defaultBranchId ?? branches[0]?.id}
-              required
-              allowEmpty={false}
-            />
+            <div className="space-y-1">
+              <label htmlFor={`ai-branch-${photoId}`} className="ai-suggestion-muted block text-[11px] font-medium">
+                סניף
+              </label>
+              <BranchSelect
+                id={`ai-branch-${photoId}`}
+                className="ai-suggestion-control"
+                branches={branches}
+                defaultValue={defaultBranchId ?? branches[0]?.id}
+                required
+                allowEmpty={false}
+              />
+            </div>
           ) : null}
           <Button type="submit" size="sm" className="w-full">
             אשר הצעה
