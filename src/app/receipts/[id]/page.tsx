@@ -66,7 +66,7 @@ export default async function ReceiptDetailPage({ params }: { params: Promise<{ 
             {receipt.order.branch.name} · {formatDateTime(receipt.createdAt)} ·{" "}
             {expenseCategoryLabel(receipt.accountId)}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground">
             הוגש ע״י {submittedBy}
             {submitLog ? ` ב־${formatDateTime(submitLog.createdAt)}` : ""}
           </p>

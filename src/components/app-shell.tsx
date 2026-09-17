@@ -153,7 +153,7 @@ export function AppShell({
                 )}
               >
                 <History className="size-3.5" />
-                <span className="hidden sm:inline">פעילות</span>
+                פעילות
               </Link>
             ) : null}
             {canSettings ? (
