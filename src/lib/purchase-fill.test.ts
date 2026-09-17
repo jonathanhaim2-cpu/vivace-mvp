@@ -7,6 +7,8 @@ import {
   overallPurchasePercent,
   parentCategoryIdForAccount,
   relativeShare,
+  barsScaledToMax,
+  pairedBarPercents,
   resolvedInvoiceBranchId,
   standaloneInvoiceCountsForBranch,
 } from "./purchase-fill";
@@ -63,4 +65,12 @@ test("purchase % uses forecast turnover and comparison shares stay balanced", ()
   assert.equal(overallPurchasePercent(100, 0), null);
   assert.deepEqual(relativeShare(80, 20), { left: 80, right: 20 });
   assert.deepEqual(relativeShare(0, 0), { left: 50, right: 50 });
+});
+
+test("paired bars scale to the max value and keep zero as an empty track", () => {
+  assert.deepEqual(pairedBarPercents(80, 20), { left: 100, right: 25 });
+  assert.deepEqual(pairedBarPercents(0, 50), { left: 0, right: 100 });
+  assert.deepEqual(pairedBarPercents(0, 0), { left: 0, right: 0 });
+  assert.deepEqual(pairedBarPercents(-4, Number.NaN), { left: 0, right: 0 });
+  assert.deepEqual(barsScaledToMax([10, 0, 5]), [100, 0, 50]);
 });
