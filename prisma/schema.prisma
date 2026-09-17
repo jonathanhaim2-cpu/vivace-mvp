@@ -276,12 +276,14 @@ model InvoiceMailImport {
   messageId      String
   contentHash    String
   uid            Int?
+  mailboxUser    String   @default("")
   originalName   String   @default("")
   invoicePhotoId String?
   createdAt      DateTime @default(now())
 
   @@unique([messageId, contentHash])
   @@index([messageId])
+  @@index([mailboxUser, uid])
 }
 
 model InventoryCount {
