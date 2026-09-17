@@ -2,8 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { usePathname } from "next/navigation";
-import { MessageCircle } from "lucide-react";
-import { sendChatMessage } from "@/actions/chat";
+import { Eraser, MessageCircle, Plus } from "lucide-react";
+import {
+  clearCurrentChat,
+  createChatThread,
+  selectChatThread,
+  sendChatMessage,
+} from "@/actions/chat";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -14,18 +19,21 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import type { ChatPanelState } from "@/lib/chat-types";
 
-type ChatRow = { id: string; role: string; content: string };
+function threadLabel(thread: ChatPanelState["threads"][number]) {
+  return thread.archived ? `ארכיון · ${thread.title}` : thread.title;
+}
 
 export function AppChat({
-  messages,
+  panel,
   aiAvailable,
 }: {
-  messages: ChatRow[];
+  panel: ChatPanelState;
   aiAvailable: boolean;
 }) {
   const pathname = usePathname();
-  const [rows, setRows] = useState(messages);
+  const [state, setState] = useState(panel);
   const [text, setText] = useState("");
   const [pending, start] = useTransition();
 
@@ -37,11 +45,36 @@ export function AppChat({
     const fd = new FormData();
     fd.set("message", question);
     fd.set("path", pathname);
+    fd.set("threadId", state.currentThreadId);
     start(async () => {
       const next = await sendChatMessage(fd);
-      setRows(next);
+      setState(next);
     });
   }
+
+  function onNewChat() {
+    start(async () => {
+      const next = await createChatThread();
+      setState(next);
+    });
+  }
+
+  function onClear() {
+    start(async () => {
+      const next = await clearCurrentChat();
+      setState(next);
+    });
+  }
+
+  function onSelectThread(threadId: string) {
+    if (threadId === state.currentThreadId) return;
+    start(async () => {
+      const next = await selectChatThread(threadId);
+      setState(next);
+    });
+  }
+
+  const currentThread = state.threads.find((thread) => thread.id === state.currentThreadId);
 
   return (
     <Sheet>
@@ -64,16 +97,49 @@ export function AppChat({
             שאלו על רכש, Food Cost או AP לפי הנתונים החיים במערכת.
           </SheetDescription>
         </SheetHeader>
+        <div className="flex flex-col gap-2 px-4">
+          <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
+            <span>שיחה</span>
+            <select
+              className="h-8 w-full min-w-0 rounded-full border border-border bg-card px-2 text-xs text-foreground"
+              value={state.currentThreadId}
+              disabled={pending || state.threads.length === 0}
+              onChange={(event) => onSelectThread(event.target.value)}
+            >
+              {state.threads.map((thread) => (
+                <option key={thread.id} value={thread.id}>
+                  {threadLabel(thread)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" size="sm" variant="outline" disabled={pending} onClick={onNewChat}>
+              <Plus data-icon="inline-start" />
+              שיחה חדשה
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={pending || state.messages.length === 0 || currentThread?.archived}
+              onClick={onClear}
+            >
+              <Eraser data-icon="inline-start" />
+              נקה שיחה
+            </Button>
+          </div>
+        </div>
         {!aiAvailable ? (
           <p className="px-4 text-sm text-muted-foreground">
             חסר מפתח AI. הגדירו GOOGLE_GENERATIVE_AI_API_KEY או OPENAI_API_KEY. בלי מפתח תוצג הודעת התקנה אחרי השאלה.
           </p>
         ) : null}
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4">
-          {rows.length === 0 ? (
+          {state.messages.length === 0 ? (
             <p className="text-sm text-muted-foreground">למשל: כמה לתשלום לספקים החודש? או סכם חריגות רכש.</p>
           ) : (
-            rows.map((row) => (
+            state.messages.map((row) => (
               <div
                 key={row.id}
                 className={
