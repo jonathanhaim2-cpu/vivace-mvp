@@ -75,7 +75,7 @@ export default async function HomePage() {
 
       {session.isNetwork && rogue.branches.length > 0 ? (
         <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm">
-          <p className="font-medium text-destructive">סניפים סוררים (חריגת יעד ≥ {rogue.threshold} נקודות אחוז)</p>
+          <p className="font-medium text-destructive">חריגה מיעד (≥ {rogue.threshold} נקודות אחוז)</p>
           <ul className="mt-1 space-y-1">
             {rogue.branches.map((branch) => (
               <li key={branch.id}>
