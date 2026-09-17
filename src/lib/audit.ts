@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { RECEIPT_STATUSES } from "@/lib/constants";
+import { formatDateTime } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import type { AppSession } from "@/lib/session";
 
@@ -28,6 +29,8 @@ export const AUDIT_ACTIONS = {
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
+
+export const INVOICE_ORIGIN_ACTIONS = [AUDIT_ACTIONS.INVOICE_UPLOAD, AUDIT_ACTIONS.INVOICE_IMPORT] as const;
 
 export const AUDIT_ACTION_LABELS: Record<string, string> = {
   [AUDIT_ACTIONS.ORDER_CREATE]: "יצירת הזמנה",
@@ -95,6 +98,24 @@ export function formatActorLabel(name?: string | null, username?: string | null)
   if (displayName) return displayName;
   if (handle && handle !== "unknown") return handle;
   return "לא ידוע";
+}
+
+export type AuditStampSource = {
+  actorName?: string | null;
+  actorUsername?: string | null;
+  createdAt: Date | string;
+} | null | undefined;
+
+export function formatAuditStamp(log?: AuditStampSource) {
+  if (!log) return "לא ידוע";
+  const actor = formatActorLabel(log.actorName, log.actorUsername);
+  return `בוצע ע״י ${actor} · ${formatDateTime(log.createdAt)}`;
+}
+
+function actionWhere(action?: string | string[]) {
+  if (action == null) return {};
+  if (Array.isArray(action)) return action.length > 0 ? { action: { in: action } } : {};
+  return { action };
 }
 
 export function auditActionLabel(action: string) {
@@ -170,9 +191,9 @@ export async function writeAuditLog(session: AppSession, input: WriteAuditLogInp
   }
 }
 
-export async function firstAuditFor(entityType: string, entityId: string, action?: string) {
+export async function firstAuditFor(entityType: string, entityId: string, action?: string | string[]) {
   return prisma.auditLog.findFirst({
-    where: { entityType, entityId, ...(action ? { action } : {}) },
+    where: { entityType, entityId, ...actionWhere(action) },
     orderBy: { createdAt: "asc" },
     select: {
       actorName: true,
@@ -183,14 +204,14 @@ export async function firstAuditFor(entityType: string, entityId: string, action
   });
 }
 
-export async function firstAuditsFor(entityType: string, entityIds: string[], action?: string) {
+export async function firstAuditsFor(entityType: string, entityIds: string[], action?: string | string[]) {
   const map = new Map<
     string,
     { actorName: string; actorUsername: string; createdAt: Date; action: string }
   >();
   if (entityIds.length === 0) return map;
   const rows = await prisma.auditLog.findMany({
-    where: { entityType, entityId: { in: entityIds }, ...(action ? { action } : {}) },
+    where: { entityType, entityId: { in: entityIds }, ...actionWhere(action) },
     orderBy: { createdAt: "asc" },
     select: {
       entityId: true,

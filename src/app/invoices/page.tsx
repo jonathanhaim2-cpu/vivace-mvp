@@ -17,6 +17,7 @@ import { CompactField, CompactForm, CompactPanel, NativeSelect } from "@/compone
 import { Input } from "@/components/ui/input";
 import { getAccountRollup } from "@/lib/accounts";
 import { getAiRuntime } from "@/lib/ai";
+import { firstAuditsFor, formatAuditStamp, INVOICE_ORIGIN_ACTIONS } from "@/lib/audit";
 import { scanExistingInvoiceDuplicates } from "@/lib/invoice-duplicates";
 import {
   matchesClassifiedFilters,
@@ -73,6 +74,12 @@ export default async function InvoicesPage({
     getAccountRollup(),
     getAiRuntime(),
   ]);
+  const invoiceActors = await firstAuditsFor(
+    "InvoicePhoto",
+    photos.map((photo) => photo.id),
+    [...INVOICE_ORIGIN_ACTIONS],
+  );
+  const stampFor = (id: string) => formatAuditStamp(invoiceActors.get(id));
 
   const duplicates = photos.filter((photo) => photo.isDuplicate);
   const uniquePhotos = photos.filter((photo) => !photo.isDuplicate);
@@ -177,7 +184,12 @@ export default async function InvoicesPage({
           </CardHeader>
           <CardContent className="space-y-4">
             {pending.map((photo) => (
-              <PendingInvoiceCard key={photo.id} photo={photo} months={monthOptions} />
+              <PendingInvoiceCard
+                key={photo.id}
+                photo={photo}
+                months={monthOptions}
+                auditStamp={stampFor(photo.id)}
+              />
             ))}
           </CardContent>
         </Card>
@@ -193,7 +205,7 @@ export default async function InvoicesPage({
           </CardHeader>
           <CardContent className="space-y-4">
             {duplicates.map((photo) => (
-              <DuplicateInvoiceCard key={photo.id} photo={photo} />
+              <DuplicateInvoiceCard key={photo.id} photo={photo} auditStamp={stampFor(photo.id)} />
             ))}
           </CardContent>
         </Card>
@@ -226,6 +238,7 @@ export default async function InvoicesPage({
               supplierName: photo.goodsReceipt?.order.supplier.name ?? null,
               aiSupplierName: photo.aiSupplierName,
             }),
+            auditStamp: stampFor(photo.id),
           }))}
           emptyTitle={classifiedTotal === 0 ? "אין חשבוניות משובצות" : "אין תוצאות לסינון"}
           emptyDescription={

@@ -1,15 +1,16 @@
 import Link from "next/link";
+import { AuditInfoButton } from "@/components/audit-info-button";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { ReceiptStatusBadge } from "@/components/status-badge";
 import { CompactField, FilterBar, NativeSelect } from "@/components/ui/compact-form";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AUDIT_ACTIONS, firstAuditsFor, formatActorLabel } from "@/lib/audit";
+import { AUDIT_ACTIONS, firstAuditsFor, formatAuditStamp } from "@/lib/audit";
 import { RECEIPT_STATUSES } from "@/lib/constants";
 import { formatDateTime, receiptStatusLabel } from "@/lib/format";
 import { monthLabel, monthRangeUtc, parseMonthParam, recentMonthKeys } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
-import { getAppSession, sessionCan } from "@/lib/session";
+import { getAppSession } from "@/lib/session";
 
 export default async function ReceiptsPage({
   searchParams,
@@ -52,11 +53,6 @@ export default async function ReceiptsPage({
       <PageHeader
         title="קליטת סחורה"
         description="השוואה מול הזמנה, סימון חוסרים וסטיות מחיר, ואישור משרד הרשת למחירון חדש."
-        action={
-          sessionCan(session, "nav.activity")
-            ? { href: "/settings/activity", label: "לוג פעילות" }
-            : undefined
-        }
       />
       <FilterBar>
         <CompactField label="חודש" htmlFor="receipts-month">
@@ -108,35 +104,31 @@ export default async function ReceiptsPage({
               <TableHead>ספק</TableHead>
               <TableHead>סניף</TableHead>
               <TableHead>תאריך</TableHead>
-              <TableHead>הוגש ע״י</TableHead>
               <TableHead>שורות</TableHead>
               <TableHead>סטטוס</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {receipts.map((receipt) => {
-              const actor = actors.get(receipt.id);
-              return (
-                <TableRow key={receipt.id}>
-                  <TableCell>
+            {receipts.map((receipt) => (
+              <TableRow key={receipt.id}>
+                <TableCell>
+                  <div className="flex items-center gap-0.5">
                     <Link href={`/receipts/${receipt.id}`} className="font-medium hover:underline">
                       {receipt.order.supplier.name}
                     </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{receipt.order.branch.name}</TableCell>
-                  <TableCell className="whitespace-nowrap text-muted-foreground">
-                    {formatDateTime(receipt.createdAt)}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {actor ? formatActorLabel(actor.actorName, actor.actorUsername) : "לא ידוע"}
-                  </TableCell>
-                  <TableCell>{receipt.lines.length}</TableCell>
-                  <TableCell>
-                    <ReceiptStatusBadge status={receipt.status} />
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+                    <AuditInfoButton stamp={formatAuditStamp(actors.get(receipt.id))} />
+                  </div>
+                </TableCell>
+                <TableCell className="text-muted-foreground">{receipt.order.branch.name}</TableCell>
+                <TableCell className="whitespace-nowrap text-muted-foreground">
+                  {formatDateTime(receipt.createdAt)}
+                </TableCell>
+                <TableCell>{receipt.lines.length}</TableCell>
+                <TableCell>
+                  <ReceiptStatusBadge status={receipt.status} />
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       )}

@@ -223,7 +223,7 @@ export async function importInboxFiles(formData: FormData) {
   const defaultAccount = await optionalLeaf(formData);
   let duplicateCount = 0;
 
-  const createdPhotos: { id: string; isDuplicate: boolean }[] = [];
+  const createdPhotos: { id: string; isDuplicate: boolean; originalName: string }[] = [];
   for (const file of files) {
     const saved = await saveUpload(file);
     const created = await createUploadedInvoicePhoto({
@@ -233,7 +233,11 @@ export async function importInboxFiles(formData: FormData) {
       source: "BULK_IMPORT",
     });
     if (created.isDuplicate) duplicateCount += 1;
-    createdPhotos.push(created);
+    createdPhotos.push({
+      id: created.id,
+      isDuplicate: created.isDuplicate,
+      originalName: created.originalName,
+    });
   }
 
   const toAnalyze = createdPhotos.filter((photo) => !photo.isDuplicate);
@@ -242,18 +246,21 @@ export async function importInboxFiles(formData: FormData) {
     await analyzeStoredPhoto(photo.id);
   }
 
-  await writeAuditLog(session, {
-    action: AUDIT_ACTIONS.INVOICE_IMPORT,
-    entityType: "InvoicePhoto",
-    entityId: createdPhotos[0]?.id ?? "bulk",
-    summary: `יובאו ${createdPhotos.length} חשבוניות${duplicateCount ? ` · ${duplicateCount} כפולות` : ""}`,
-    meta: {
-      count: createdPhotos.length,
-      duplicateCount,
-      ids: createdPhotos.map((photo) => photo.id),
-      periodMonth,
-    },
-  });
+  for (const created of createdPhotos) {
+    await writeAuditLog(session, {
+      action: AUDIT_ACTIONS.INVOICE_IMPORT,
+      entityType: "InvoicePhoto",
+      entityId: created.id,
+      summary: created.isDuplicate
+        ? `יובאה חשבונית כפולה · ${created.originalName}`
+        : `יובאה חשבונית · ${created.originalName}`,
+      meta: {
+        periodMonth,
+        isDuplicate: created.isDuplicate,
+        bulkCount: createdPhotos.length,
+      },
+    });
+  }
 
   revalidateInvoicePaths();
   const params = new URLSearchParams();

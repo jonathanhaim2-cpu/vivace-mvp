@@ -6,6 +6,7 @@ import {
   auditActionLabel,
   auditEntityHref,
   formatActorLabel,
+  formatAuditStamp,
   isCancellableReceiptStatus,
 } from "./audit";
 import type { AppSession, SessionUser } from "./session";
@@ -30,6 +31,17 @@ test("formatActorLabel prefers name + username and falls back to unknown", () =>
   assert.equal(formatActorLabel(null, "jonathan"), "jonathan");
   assert.equal(formatActorLabel("", "unknown"), "לא ידוע");
   assert.equal(formatActorLabel(null, null), "לא ידוע");
+});
+
+test("formatAuditStamp uses Hebrew actor + time, or לא ידוע", () => {
+  const stamp = formatAuditStamp({
+    actorName: "יונתן",
+    actorUsername: "jonathan",
+    createdAt: new Date("2026-09-17T08:30:00.000Z"),
+  });
+  assert.match(stamp, /^בוצע ע״י יונתן \(jonathan\) · /);
+  assert.equal(formatAuditStamp(null), "לא ידוע");
+  assert.equal(formatAuditStamp(undefined), "לא ידוע");
 });
 
 test("actorFromSession copies live session identity", () => {

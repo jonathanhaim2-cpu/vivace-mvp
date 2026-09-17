@@ -1,4 +1,5 @@
 import { saveInvoiceClassification } from "@/actions/invoices";
+import { AuditInfoButton } from "@/components/audit-info-button";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
 import { AiSuggestionCard } from "@/components/ai-suggestion-card";
 import { AnalyzeInvoiceButton } from "@/components/analyze-invoice-button";
@@ -32,7 +33,15 @@ export type PendingInvoicePhoto = {
   aiStatus: string | null;
 };
 
-export function PendingInvoiceCard({ photo, months }: { photo: PendingInvoicePhoto; months: string[] }) {
+export function PendingInvoiceCard({
+  photo,
+  months,
+  auditStamp,
+}: {
+  photo: PendingInvoicePhoto;
+  months: string[];
+  auditStamp: string;
+}) {
   const fileUrl = publicFileUrl(photo.fileName);
   const reportMonth = resolvedPeriodMonth(photo.periodMonth, photo.aiInvoiceDate) ?? monthKeyFromDate();
   const monthOptions = months.includes(reportMonth) ? months : [reportMonth, ...months];
@@ -42,12 +51,15 @@ export function PendingInvoiceCard({ photo, months }: { photo: PendingInvoicePho
   return (
     <div className="space-y-3 rounded-lg border p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <p className="font-medium">{photo.originalName}</p>
-          <p className="text-xs text-muted-foreground">
-            {formatDateTime(photo.createdAt)} · {photo.source === "BULK_IMPORT" ? "ייבוא תיקייה" : "העלאה"}
-            {reportMonth ? ` · ${monthLabel(reportMonth)}` : ""}
-          </p>
+        <div className="flex min-w-0 items-start gap-0.5">
+          <div className="min-w-0">
+            <p className="font-medium">{photo.originalName}</p>
+            <p className="text-xs text-muted-foreground">
+              {formatDateTime(photo.createdAt)} · {photo.source === "BULK_IMPORT" ? "ייבוא תיקייה" : "העלאה"}
+              {reportMonth ? ` · ${monthLabel(reportMonth)}` : ""}
+            </p>
+          </div>
+          <AuditInfoButton stamp={auditStamp} />
         </div>
         <AnalyzeInvoiceButton photoId={photo.id} />
       </div>

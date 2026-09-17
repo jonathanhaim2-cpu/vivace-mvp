@@ -1,4 +1,5 @@
 import { updateInvoiceCategory } from "@/actions/invoices";
+import { AuditInfoButton } from "@/components/audit-info-button";
 import { InvoicePreviewButton } from "@/components/invoices/invoice-preview-button";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
 import { EmptyState } from "@/components/page-header";
@@ -23,6 +24,7 @@ export type ClassifiedInvoiceRow = {
   aiConfidence: number | null;
   aiStatus: string | null;
   supplierName: string | null;
+  auditStamp: string;
 };
 
 export function ClassifiedInvoiceTable({
@@ -64,14 +66,19 @@ export function ClassifiedInvoiceTable({
                 </div>
               </TableCell>
               <TableCell className="max-w-[14rem]">
-                <p className="truncate font-medium" title={row.originalName}>
-                  {row.originalName}
-                </p>
-                {row.supplierName ? (
-                  <p className="truncate text-xs text-muted-foreground" title={row.supplierName}>
-                    {row.supplierName}
-                  </p>
-                ) : null}
+                <div className="flex items-start gap-0.5">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium" title={row.originalName}>
+                      {row.originalName}
+                    </p>
+                    {row.supplierName ? (
+                      <p className="truncate text-xs text-muted-foreground" title={row.supplierName}>
+                        {row.supplierName}
+                      </p>
+                    ) : null}
+                  </div>
+                  <AuditInfoButton stamp={row.auditStamp} />
+                </div>
               </TableCell>
               <TableCell className="max-w-[12rem] whitespace-normal">
                 <p className="font-medium">{expenseCategoryLabel(row.accountId)}</p>
