@@ -119,6 +119,7 @@ export async function submitGoodsReceipt(orderId: string, formData: FormData) {
       photos: {
         create: {
           accountId,
+          branchId: order.branchId,
           amountIls: lineInputs.reduce((sum, line) => {
             const billedQty =
               line.billedAs === BILLED_AS.FULL_ORDERED ? line.orderedQty : line.receivedQty;

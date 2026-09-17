@@ -5,6 +5,7 @@ import Link from "next/link";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { BranchSelect, type BranchOption } from "@/components/branches/branch-select";
 import { INVOICE_STATUS_FILTERS, type InvoiceListFilters } from "@/lib/invoice-filters";
 import { monthLabel } from "@/lib/months";
 import { cn } from "@/lib/utils";
@@ -15,10 +16,12 @@ export function InvoiceFilterBar({
   filters,
   months,
   suppliers,
+  branches,
 }: {
   filters: InvoiceListFilters;
   months: string[];
   suppliers: string[];
+  branches: BranchOption[];
 }) {
   function submitOnSelect(event: FormEvent<HTMLFormElement>) {
     const target = event.target;
@@ -83,6 +86,19 @@ export function InvoiceFilterBar({
               </option>
             ))}
           </select>
+        </label>
+      ) : null}
+      {branches.length > 0 ? (
+        <label className="text-sm">
+          <span className="mb-1 block text-muted-foreground">סניף</span>
+          <BranchSelect
+            id="filter-branch"
+            name="branch"
+            branches={branches}
+            defaultValue={filters.branch}
+            allowEmpty
+            emptyLabel="כל הסניפים"
+          />
         </label>
       ) : null}
       <label className={cn("text-sm", suppliers.length > 0 ? "md:col-span-2" : "")}>

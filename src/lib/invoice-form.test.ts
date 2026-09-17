@@ -50,6 +50,7 @@ test("invoiceClassificationFromForm maps pending-queue fields", () => {
   form.set("supplierName", "  ירקות השרון  ");
   form.set("amountIls", "2140");
   form.set("accountId", "acc_food_produce");
+  form.set("branchId", "br_kiryat");
   form.set("note", "נבדק ידנית");
   const parsed = invoiceClassificationFromForm(form);
   assert.deepEqual(parsed, {
@@ -59,5 +60,13 @@ test("invoiceClassificationFromForm maps pending-queue fields", () => {
     note: "נבדק ידנית",
     accountId: "acc_food_produce",
     periodMonth: "2026-08",
+    branchId: "br_kiryat",
   });
+});
+
+test("invoiceClassificationFromForm treats missing branch as null", () => {
+  const form = new FormData();
+  form.set("accountId", "acc_food_dairy");
+  form.set("periodMonth", "2026-09");
+  assert.equal(invoiceClassificationFromForm(form).branchId, null);
 });

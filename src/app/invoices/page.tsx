@@ -4,6 +4,8 @@ import { AccountRollup } from "@/components/accounts/account-rollup";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
 import { InvoiceAiTip } from "@/components/ai-helper-tip";
 import { AiMissingBanner } from "@/components/ai-missing-banner";
+import { BranchSelect } from "@/components/branches/branch-select";
+import { InvoiceCaptureField } from "@/components/invoices/invoice-capture-field";
 import { ClassifiedInvoiceTable } from "@/components/invoices/classified-invoice-table";
 import { DuplicateInvoiceCard } from "@/components/invoices/duplicate-invoice-card";
 import { ImportSuccessBanner } from "@/components/invoices/import-success-banner";
@@ -31,6 +33,8 @@ import {
 } from "@/lib/invoice-filters";
 import { monthKeyFromDate, monthLabel, recentMonthKeys } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
+import { resolvedInvoiceBranchId } from "@/lib/purchase-fill";
+import { getAppSession } from "@/lib/session";
 import { publicFileUrl } from "@/lib/uploads";
 import { cn } from "@/lib/utils";
 
@@ -54,6 +58,7 @@ export default async function InvoicesPage({
     supplier?: string;
     status?: string;
     q?: string;
+    branch?: string;
   }>;
 }) {
   await scanExistingInvoiceDuplicates();
@@ -61,12 +66,15 @@ export default async function InvoicesPage({
   const importedCount = importedCountFromParam(params.imported);
   const duplicateNotice = Number.parseInt(params.dup ?? "", 10);
   const filters = parseInvoiceFilters(params);
+  const session = await getAppSession();
+  const branches = session.branches.map((branch) => ({ id: branch.id, name: branch.name }));
 
   const [photos, rollup, runtime] = await Promise.all([
     prisma.invoicePhoto.findMany({
       include: {
         account: { include: { parent: true } },
-        goodsReceipt: { include: { order: { include: { supplier: true } } } },
+        branch: true,
+        goodsReceipt: { include: { order: { include: { supplier: true, branch: true } } } },
         duplicateOf: true,
       },
       orderBy: { createdAt: "desc" },
@@ -94,6 +102,7 @@ export default async function InvoicesPage({
     aiInvoiceDate: photo.aiInvoiceDate,
     aiSupplierName: photo.aiSupplierName,
     supplierName: photo.goodsReceipt?.order.supplier.name ?? null,
+    branchId: resolvedInvoiceBranchId(photo),
   }));
 
   const pending = uniquePhotos.filter((_, index) => matchesPendingFilters(filterPhotos[index], filters));
@@ -171,7 +180,7 @@ export default async function InvoicesPage({
         title="סינון מסמכים"
         description="קודם בוחרים סינון (חודש, תאריך, קטגוריה, סטטוס, חיפוש) — ואז רואים רשימה קומפקטית. תמונה רק בלחיצה על «תצוגה»."
       >
-        <InvoiceFilterBar filters={filters} months={months} suppliers={suppliers} />
+        <InvoiceFilterBar filters={filters} months={months} suppliers={suppliers} branches={branches} />
       </CompactPanel>
 
       {pending.length > 0 ? (
@@ -186,8 +195,9 @@ export default async function InvoicesPage({
             {pending.map((photo) => (
               <PendingInvoiceCard
                 key={photo.id}
-                photo={photo}
+                photo={{ ...photo, branchId: resolvedInvoiceBranchId(photo) }}
                 months={monthOptions}
+                branches={branches}
                 auditStamp={stampFor(photo.id)}
               />
             ))}
@@ -239,7 +249,10 @@ export default async function InvoicesPage({
               aiSupplierName: photo.aiSupplierName,
             }),
             auditStamp: stampFor(photo.id),
+            branchId: resolvedInvoiceBranchId(photo),
+            branchName: photo.branch?.name ?? photo.goodsReceipt?.order.branch.name ?? null,
           }))}
+          branches={branches}
           emptyTitle={classifiedTotal === 0 ? "אין חשבוניות משובצות" : "אין תוצאות לסינון"}
           emptyDescription={
             classifiedTotal === 0
@@ -249,14 +262,23 @@ export default async function InvoicesPage({
         />
       </CompactPanel>
 
-      <CompactPanel title="העלאה + ניתוח" description="אפשר לבחור קטגוריה מראש, או להעלות בלי שיבוץ ולקבל הצעת AI.">
+      <CompactPanel title="העלאה + ניתוח" description="צלמו או בחרו קובץ, שייכו סניף כדי שהסכום ייכנס לאחוז רכש מול מחזור.">
         <CompactForm action={uploadStandaloneInvoice}>
           <CompactField label="קטגוריה" htmlFor="accountId" className="min-w-[14rem]">
             <GroupedAccountSelect id="accountId" defaultValue="" allowEmpty required={false} />
           </CompactField>
-          <CompactField label="קובץ" htmlFor="photo" grow>
-            <Input id="photo" name="photo" type="file" accept="image/*,application/pdf" required />
+          <CompactField label="סניף" htmlFor="branchId">
+            <BranchSelect
+              id="branchId"
+              branches={branches}
+              defaultValue={session.branchId}
+              required={branches.length > 0}
+              allowEmpty={branches.length === 0}
+            />
           </CompactField>
+          <div className="min-w-[16rem] flex-1">
+            <InvoiceCaptureField compact required />
+          </div>
           <CompactField label="חודש לדיווח" htmlFor="periodMonth">
             <NativeSelect id="periodMonth" name="periodMonth" defaultValue={monthKeyFromDate()}>
               {monthOptions.map((key) => (

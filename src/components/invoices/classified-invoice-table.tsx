@@ -1,5 +1,6 @@
 import { updateInvoiceCategory } from "@/actions/invoices";
 import { AuditInfoButton } from "@/components/audit-info-button";
+import { BranchSelect, type BranchOption } from "@/components/branches/branch-select";
 import { InvoicePreviewButton } from "@/components/invoices/invoice-preview-button";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
 import { EmptyState } from "@/components/page-header";
@@ -25,14 +26,18 @@ export type ClassifiedInvoiceRow = {
   aiStatus: string | null;
   supplierName: string | null;
   auditStamp: string;
+  branchId: string | null;
+  branchName: string | null;
 };
 
 export function ClassifiedInvoiceTable({
   rows,
+  branches,
   emptyTitle,
   emptyDescription,
 }: {
   rows: ClassifiedInvoiceRow[];
+  branches: BranchOption[];
   emptyTitle: string;
   emptyDescription: string;
 }) {
@@ -47,6 +52,7 @@ export function ClassifiedInvoiceTable({
           <TableHead>תאריך</TableHead>
           <TableHead>קובץ</TableHead>
           <TableHead>קטגוריה</TableHead>
+          <TableHead>סניף</TableHead>
           <TableHead>סכום</TableHead>
           <TableHead>AI</TableHead>
           <TableHead>פעולות</TableHead>
@@ -83,6 +89,9 @@ export function ClassifiedInvoiceTable({
               <TableCell className="max-w-[12rem] whitespace-normal">
                 <p className="font-medium">{expenseCategoryLabel(row.accountId)}</p>
               </TableCell>
+              <TableCell className={row.branchName ? "" : "text-amber-800"}>
+                {row.branchName ?? "ללא סניף"}
+              </TableCell>
               <TableCell>{amount != null ? formatIls(amount) : "—"}</TableCell>
               <TableCell>
                 <AiConfidenceBadge confidence={row.aiConfidence} status={row.aiStatus} />
@@ -94,8 +103,15 @@ export function ClassifiedInvoiceTable({
                     originalName={row.originalName}
                     mimeType={row.mimeType}
                   />
-                  <form action={updateInvoiceCategory.bind(null, row.id)} className="flex min-w-[12rem] flex-1 items-center gap-2">
+                  <form action={updateInvoiceCategory.bind(null, row.id)} className="flex min-w-[12rem] flex-1 flex-wrap items-center gap-2">
                     <GroupedAccountSelect defaultValue={row.accountId} />
+                    <BranchSelect
+                      branches={branches}
+                      defaultValue={row.branchId}
+                      required={!row.branchId}
+                      allowEmpty={Boolean(row.branchId)}
+                      emptyLabel="סניף"
+                    />
                     {row.periodMonth ? <input type="hidden" name="periodMonth" value={row.periodMonth} /> : null}
                     <Button type="submit" size="sm" variant="outline">
                       שינוי

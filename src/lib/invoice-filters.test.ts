@@ -24,6 +24,7 @@ function photo(overrides: Partial<InvoiceFilterPhoto> = {}): InvoiceFilterPhoto 
     aiInvoiceDate: "2026-09-15",
     aiSupplierName: "ירקות השרון",
     supplierName: null,
+    branchId: "br_kiryat",
     ...overrides,
   };
 }
@@ -36,6 +37,7 @@ test("parseInvoiceFilters defaults to current month and all statuses", () => {
   assert.equal(filters.from, "");
   assert.equal(filters.to, "");
   assert.equal(filters.q, "");
+  assert.equal(filters.branch, "");
 });
 
 test("parseInvoiceFilters accepts all-months, date range, and classified status", () => {
@@ -69,6 +71,8 @@ test("classified filters match month, category, supplier, date range, and search
   assert.equal(matchesClassifiedFilters(photo(), { ...base, category: "acc_food_produce" }), true);
   assert.equal(matchesClassifiedFilters(photo(), { ...base, supplier: "ירקות השרון" }), true);
   assert.equal(matchesClassifiedFilters(photo(), { ...base, supplier: "אחר" }), false);
+  assert.equal(matchesClassifiedFilters(photo(), { ...base, branch: "br_kiryat" }), true);
+  assert.equal(matchesClassifiedFilters(photo(), { ...base, branch: "br_beit" }), false);
   assert.equal(matchesClassifiedFilters(photo(), { ...base, q: "245" }), true);
   assert.equal(matchesClassifiedFilters(photo(), { ...base, q: "PHOTO-2026" }), true);
   assert.equal(matchesClassifiedFilters(photo(), { ...base, q: "לא קיים" }), false);

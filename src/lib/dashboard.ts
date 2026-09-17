@@ -1,9 +1,15 @@
-import { nowInIsrael, nextDeliveryInfo, parseDeliveryDays, parseWeekdays } from "@/lib/format";
+import { nowInIsrael, nextDeliveryInfo, parseDeliveryDays, parseWeekdays, lineTotal } from "@/lib/format";
 import { monthKeyFromDate, monthRangeUtc } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { RECEIPT_STATUSES } from "@/lib/constants";
 import { supplierVisibleToBranch } from "@/lib/catalog";
 import { resolveSupplierForBranch } from "@/lib/supplier-branch";
+import { INVOICE_IN_TOTALS_WHERE } from "@/lib/invoice-duplicates";
+import {
+  addInvoiceAmountToCategory,
+  overallPurchasePercent,
+  standaloneInvoiceCountsForBranch,
+} from "@/lib/purchase-fill";
 
 const FORECAST_KEY = "dashboard.forecastTurnoverIls";
 const ROGUE_KEY = "dashboard.rogueDeviationPercent";
@@ -74,6 +80,9 @@ export async function getCategoryFill(month = monthKeyFromDate(), forecast: numb
     include: { children: true },
     orderBy: { sortOrder: "asc" },
   });
+  const categories = await prisma.productCategory.findMany({
+    select: { id: true, parentId: true, accountId: true },
+  });
 
   const receipts = await prisma.goodsReceipt.findMany({
     where: {
@@ -97,6 +106,28 @@ export async function getCategoryFill(month = monthKeyFromDate(), forecast: numb
     }
   }
 
+  const photos = await prisma.invoicePhoto.findMany({
+    where: {
+      ...INVOICE_IN_TOTALS_WHERE,
+      goodsReceiptId: null,
+      accountId: { not: null },
+      OR: [{ periodMonth: month }, { periodMonth: null, createdAt: { gte: start, lt: end } }],
+      ...(branchId ? { branchId } : {}),
+    },
+    select: {
+      amountIls: true,
+      aiTotalIls: true,
+      accountId: true,
+      branchId: true,
+      goodsReceiptId: true,
+    },
+  });
+
+  for (const photo of photos) {
+    if (!standaloneInvoiceCountsForBranch(photo, branchId)) continue;
+    addInvoiceAmountToCategory(spentByParent, photo.accountId, photo.amountIls ?? photo.aiTotalIls, categories);
+  }
+
   return parents.map((parent): CategoryFill => {
     const spent = spentByParent.get(parent.id) ?? 0;
     const actualPercent = forecast > 0 ? (spent / forecast) * 100 : null;
@@ -111,6 +142,72 @@ export async function getCategoryFill(month = monthKeyFromDate(), forecast: numb
       over,
     };
   });
+}
+
+export type BranchComparisonRow = {
+  id: string;
+  name: string;
+  fill: CategoryFill[];
+  purchaseTotal: number;
+  purchasePercent: number | null;
+  invoiceTotal: number;
+  invoiceCount: number;
+  orderCount: number;
+  orderVolume: number;
+};
+
+export async function getNetworkBranchComparison(month = monthKeyFromDate(), forecast?: number) {
+  const turnover = forecast ?? (await getForecastTurnover());
+  const { start, end } = monthRangeUtc(month);
+  const branches = await prisma.branch.findMany({ orderBy: { name: "asc" } });
+  const [orders, invoices] = await Promise.all([
+    prisma.order.findMany({
+      where: { createdAt: { gte: start, lt: end } },
+      include: { lines: true },
+    }),
+    prisma.invoicePhoto.findMany({
+      where: {
+        ...INVOICE_IN_TOTALS_WHERE,
+        accountId: { not: null },
+        OR: [{ periodMonth: month }, { periodMonth: null, createdAt: { gte: start, lt: end } }],
+      },
+      include: { goodsReceipt: { include: { order: { select: { branchId: true } } } } },
+    }),
+  ]);
+
+  const rows: BranchComparisonRow[] = [];
+  for (const branch of branches) {
+    const fill = await getCategoryFill(month, turnover, branch.id);
+    const purchaseTotal = fill.reduce((sum, row) => sum + row.spent, 0);
+    const branchInvoices = invoices.filter((photo) => {
+      const attributed = photo.branchId ?? photo.goodsReceipt?.order.branchId ?? null;
+      return attributed === branch.id;
+    });
+    const invoiceTotal = branchInvoices.reduce((sum, photo) => sum + (photo.amountIls ?? photo.aiTotalIls ?? 0), 0);
+    const branchOrders = orders.filter((order) => order.branchId === branch.id);
+    const orderVolume = branchOrders.reduce(
+      (sum, order) =>
+        sum + order.lines.reduce((lineSum, line) => lineSum + lineTotal(line.qty, line.unitPrice, line.discountPercent), 0),
+      0,
+    );
+    rows.push({
+      id: branch.id,
+      name: branch.name,
+      fill,
+      purchaseTotal,
+      purchasePercent: overallPurchasePercent(purchaseTotal, turnover),
+      invoiceTotal,
+      invoiceCount: branchInvoices.length,
+      orderCount: branchOrders.length,
+      orderVolume,
+    });
+  }
+
+  const unattributedInvoices = invoices.filter(
+    (photo) => !photo.branchId && !photo.goodsReceipt?.order.branchId,
+  ).length;
+
+  return { forecast: turnover, branches: rows, unattributedInvoices };
 }
 
 export async function getAnomalies(branchId?: string | null) {

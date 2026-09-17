@@ -17,8 +17,9 @@ import {
 import { monthKeyFromDate, resolvedPeriodMonth } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { saveUpload, UPLOAD_DIR } from "@/lib/uploads";
-import { requirePermission } from "@/lib/access";
+import { requireBranchAccess, requirePermission } from "@/lib/access";
 import { AUDIT_ACTIONS, writeAuditLog } from "@/lib/audit";
+import type { AppSession } from "@/lib/session";
 
 function readMonth(formData: FormData) {
   const raw = String(formData.get("periodMonth") ?? "").trim();
@@ -37,6 +38,34 @@ async function optionalLeaf(formData: FormData) {
   return accountId;
 }
 
+async function readBranchId(formData: FormData, required: boolean) {
+  const branchId = String(formData.get("branchId") ?? "").trim();
+  if (!branchId) {
+    if (required) throw new Error("יש לבחור סניף — אחרת החשבונית לא תיכנס לאחוז רכש מול מחזור");
+    return null;
+  }
+  const branch = await prisma.branch.findUnique({ where: { id: branchId }, select: { id: true } });
+  if (!branch) throw new Error("סניף לא נמצא");
+  return branch.id;
+}
+
+/** Form branch, else already stored, else the session's current branch (Roi on קרית יערים, or a branch worker). */
+async function resolveInvoiceBranchId(
+  formData: FormData,
+  session: AppSession,
+  existing?: string | null,
+  required = false,
+) {
+  const fromForm = await readBranchId(formData, false);
+  const branchId = fromForm ?? existing ?? session.branchId ?? null;
+  if (!branchId) {
+    if (required) throw new Error("יש לבחור סניף — אחרת החשבונית לא תיכנס לאחוז רכש מול מחזור");
+    return null;
+  }
+  await requireBranchAccess(branchId, session);
+  return branchId;
+}
+
 function revalidateInvoicePaths() {
   revalidatePath("/invoices");
   revalidatePath("/invoices/import");
@@ -51,6 +80,7 @@ function revalidateInvoicePaths() {
 async function createUploadedInvoicePhoto(input: {
   saved: { fileName: string; originalName: string; mimeType: string; contentHash: string };
   accountId: string | null;
+  branchId?: string | null;
   amountIls?: number | null;
   voiceNoteText?: string | null;
   periodMonth: string | null;
@@ -64,6 +94,7 @@ async function createUploadedInvoicePhoto(input: {
   return prisma.invoicePhoto.create({
     data: {
       accountId: input.accountId,
+      branchId: input.branchId ?? null,
       amountIls: input.amountIls ?? null,
       voiceNoteText: input.voiceNoteText ?? null,
       fileName: input.saved.fileName,
@@ -85,6 +116,7 @@ export async function uploadStandaloneInvoice(formData: FormData) {
     throw new Error("יש להעלות צילום חשבונית");
   }
   const accountId = await optionalLeaf(formData);
+  const branchId = await resolveInvoiceBranchId(formData, session);
   const voiceNoteText = String(formData.get("voiceNoteText") ?? "").trim() || null;
   const amountRaw = String(formData.get("amountIls") ?? "").trim();
   const amountIls = amountRaw ? Number(amountRaw) : null;
@@ -94,6 +126,7 @@ export async function uploadStandaloneInvoice(formData: FormData) {
   const created = await createUploadedInvoicePhoto({
     saved,
     accountId,
+    branchId,
     amountIls: amountIls != null && Number.isFinite(amountIls) ? amountIls : null,
     voiceNoteText,
     periodMonth,
@@ -126,12 +159,14 @@ export async function updateInvoiceCategory(photoId: string, formData: FormData)
   if (photo?.isDuplicate) {
     throw new Error("חשבונית מסומנת ככפיל — אשרו שהיא ייחודית לפני שיבוץ");
   }
+  const branchId = await resolveInvoiceBranchId(formData, session, photo?.branchId);
   await prisma.invoicePhoto.update({
     where: { id: photoId },
     data: {
       accountId,
       classifiedAt: new Date(),
       ...(periodMonth ? { periodMonth } : {}),
+      ...(branchId ? { branchId } : {}),
     },
   });
   await writeAuditLog(session, {
@@ -152,10 +187,12 @@ export async function saveInvoiceClassification(photoId: string, formData: FormD
   if (photo?.isDuplicate) {
     throw new Error("חשבונית מסומנת ככפיל — אשרו שהיא ייחודית לפני שיבוץ");
   }
+  const branchId = await resolveInvoiceBranchId(formData, session, photo?.branchId, true);
   await prisma.invoicePhoto.update({
     where: { id: photoId },
     data: {
       accountId: parsed.accountId,
+      branchId,
       classifiedAt: new Date(),
       periodMonth: parsed.periodMonth,
       aiInvoiceDate: parsed.invoiceDate,
@@ -175,7 +212,7 @@ export async function saveInvoiceClassification(photoId: string, formData: FormD
   revalidateInvoicePaths();
 }
 
-export async function confirmAiSuggestion(photoId: string) {
+export async function confirmAiSuggestion(photoId: string, formData?: FormData) {
   const session = await requirePermission("nav.invoices");
   const photo = await prisma.invoicePhoto.findUnique({ where: { id: photoId } });
   if (!photo?.aiAccountId) {
@@ -185,11 +222,19 @@ export async function confirmAiSuggestion(photoId: string) {
     throw new Error("חשבונית מסומנת ככפיל — אשרו שהיא ייחודית לפני שיבוץ");
   }
   await assertLeafAccount(photo.aiAccountId);
+  const branchId = formData
+    ? await resolveInvoiceBranchId(formData, session, photo.branchId, true)
+    : photo.branchId ?? session.branchId;
+  if (!branchId) {
+    throw new Error("יש לבחור סניף — אחרת החשבונית לא תיכנס לאחוז רכש מול מחזור");
+  }
+  if (!formData) await requireBranchAccess(branchId, session);
   const periodMonth = resolvedPeriodMonth(photo.periodMonth, photo.aiInvoiceDate);
   await prisma.invoicePhoto.update({
     where: { id: photoId },
     data: {
       accountId: photo.aiAccountId,
+      branchId,
       classifiedAt: new Date(),
       aiStatus: "CONFIRMED",
       amountIls: photo.amountIls ?? photo.aiTotalIls,
@@ -221,6 +266,7 @@ export async function importInboxFiles(formData: FormData) {
   }
   const periodMonth = readOptionalMonth(formData);
   const defaultAccount = await optionalLeaf(formData);
+  const branchId = await resolveInvoiceBranchId(formData, session);
   let duplicateCount = 0;
 
   const createdPhotos: { id: string; isDuplicate: boolean; originalName: string }[] = [];
@@ -229,6 +275,7 @@ export async function importInboxFiles(formData: FormData) {
     const created = await createUploadedInvoicePhoto({
       saved,
       accountId: defaultAccount,
+      branchId,
       periodMonth,
       source: "BULK_IMPORT",
     });

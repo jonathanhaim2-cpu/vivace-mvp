@@ -2,15 +2,19 @@ import Link from "next/link";
 import { importInboxFiles } from "@/actions/invoices";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
 import { InvoiceAiTip } from "@/components/ai-helper-tip";
+import { BranchSelect } from "@/components/branches/branch-select";
 import { PageHeader } from "@/components/page-header";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { CompactField, CompactForm, CompactPanel, NativeSelect } from "@/components/ui/compact-form";
 import { Input } from "@/components/ui/input";
 import { monthLabel, recentMonthKeys } from "@/lib/months";
+import { getAppSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
-export default function InvoiceImportPage() {
+export default async function InvoiceImportPage() {
   const months = recentMonthKeys();
+  const session = await getAppSession();
+  const branches = session.branches.map((branch) => ({ id: branch.id, name: branch.name }));
 
   return (
     <div className="space-y-4">
@@ -44,6 +48,15 @@ export default function InvoiceImportPage() {
                 </option>
               ))}
             </NativeSelect>
+          </CompactField>
+          <CompactField label="סניף" htmlFor="branchId">
+            <BranchSelect
+              id="branchId"
+              branches={branches}
+              defaultValue={session.branchId}
+              allowEmpty
+              emptyLabel="לשיבוץ אחר כך"
+            />
           </CompactField>
           <CompactField label="קטגוריה" htmlFor="accountId" className="min-w-[14rem]">
             <GroupedAccountSelect id="accountId" allowEmpty required={false} />

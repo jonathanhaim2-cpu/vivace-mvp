@@ -1,4 +1,5 @@
 import { confirmAiSuggestion } from "@/actions/invoices";
+import { BranchSelect, type BranchOption } from "@/components/branches/branch-select";
 import { Button } from "@/components/ui/button";
 import { isLowConfidence } from "@/lib/ai";
 import { AI_QUOTA_MESSAGE } from "@/lib/ai-throttle";
@@ -13,6 +14,8 @@ type Props = {
   reason: string | null;
   status: string | null;
   suggestedAccount: { code: string; name: string; parentName: string } | null;
+  branches?: BranchOption[];
+  defaultBranchId?: string | null;
 };
 
 export function AiSuggestionCard({
@@ -24,6 +27,8 @@ export function AiSuggestionCard({
   reason,
   status,
   suggestedAccount,
+  branches = [],
+  defaultBranchId,
 }: Props) {
   if (status === "skipped_no_key" || status === "SKIPPED_NO_KEY") {
     return (
@@ -117,7 +122,16 @@ export function AiSuggestionCard({
       </dl>
       {reason ? <p className="text-xs text-muted-foreground">{reason}</p> : null}
       {suggestedAccount ? (
-        <form action={confirmAiSuggestion.bind(null, photoId)}>
+        <form action={confirmAiSuggestion.bind(null, photoId)} className="space-y-2">
+          {branches.length > 0 ? (
+            <BranchSelect
+              id={`ai-branch-${photoId}`}
+              branches={branches}
+              defaultValue={defaultBranchId ?? branches[0]?.id}
+              required
+              allowEmpty={false}
+            />
+          ) : null}
           <Button type="submit" size="sm" className="w-full">
             אשר הצעה
           </Button>

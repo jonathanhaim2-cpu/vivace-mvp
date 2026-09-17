@@ -22,6 +22,7 @@ model Branch {
   exceptionalItems    ExceptionalItem[]
   cutoffReminders     OrderCutoffReminder[]
   userLinks       UserBranch[]
+  invoicePhotos   InvoicePhoto[]
 }
 
 model Supplier {
@@ -233,6 +234,9 @@ model InvoicePhoto {
   id             String        @id @default(cuid())
   goodsReceiptId String?
   goodsReceipt   GoodsReceipt? @relation(fields: [goodsReceiptId], references: [id], onDelete: SetNull)
+  /// Branch this invoice counts toward for purchase-vs-turnover, even without an Order.
+  branchId       String?
+  branch         Branch?       @relation(fields: [branchId], references: [id], onDelete: SetNull)
   accountId      String?
   account        Account?      @relation(fields: [accountId], references: [id])
   amountIls      Float?
@@ -263,6 +267,7 @@ model InvoicePhoto {
 
   @@index([contentHash])
   @@index([isDuplicate])
+  @@index([branchId])
 }
 
 model InventoryCount {
