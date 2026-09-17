@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, Images } from "lucide-react";
+import { Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 function assignFile(input: HTMLInputElement | null, file: File | null) {
@@ -30,7 +31,6 @@ export function InvoiceCaptureField({
 }) {
   const photoRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
-  const galleryRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
 
   useEffect(() => {
@@ -41,52 +41,47 @@ export function InvoiceCaptureField({
     photoRef.current?.setCustomValidity(fileName ? "" : "חובה לצלם או לבחור קובץ");
   }, [fileName, required]);
 
-  function applyFile(file: File | null) {
-    assignFile(photoRef.current, file);
+  function applyFile(file: File | null, target?: HTMLInputElement | null) {
+    if (target && target !== photoRef.current) {
+      assignFile(photoRef.current, file);
+    }
     setFileName(file?.name ?? null);
     onFile?.(file);
   }
 
   const controls = (
-    <div className="flex flex-wrap items-center gap-2">
-      <input
-        ref={photoRef}
-        id="photo"
-        name="photo"
-        type="file"
-        accept="image/*,application/pdf"
-        required={required}
-        className="sr-only"
-        tabIndex={-1}
-      />
+    <div className={cn("flex flex-wrap items-end gap-2", compact ? "" : "sm:items-center")}>
       <input
         ref={cameraRef}
+        id="photo-camera"
         type="file"
         accept="image/*"
         capture="environment"
         className="hidden"
         tabIndex={-1}
-        onChange={(event) => applyFile(event.target.files?.[0] ?? null)}
+        onChange={(event) => {
+          applyFile(event.target.files?.[0] ?? null, event.target);
+          event.target.value = "";
+        }}
       />
-      <input
-        ref={galleryRef}
-        type="file"
-        accept="image/*,application/pdf"
-        className="hidden"
-        tabIndex={-1}
-        onChange={(event) => applyFile(event.target.files?.[0] ?? null)}
-      />
-      <Button type="button" size="sm" onClick={() => cameraRef.current?.click()}>
+      <Button type="button" size="sm" className="mb-0.5" onClick={() => cameraRef.current?.click()}>
         <Camera data-icon="inline-start" />
         צלם חשבונית
       </Button>
-      <Button type="button" size="sm" variant="outline" onClick={() => galleryRef.current?.click()}>
-        <Images data-icon="inline-start" />
-        בחר מהגלריה
-      </Button>
-      <p className={cn("text-xs", fileName ? "text-foreground" : "text-muted-foreground")}>
-        {fileName ?? (required ? "חובה לצלם או לבחור קובץ" : "אופציונלי")}
-      </p>
+      <div className="min-w-[12rem] flex-1">
+        <label htmlFor="photo" className="mb-1 block text-[11px] font-medium text-muted-foreground">
+          בחר מהגלריה
+        </label>
+        <Input
+          ref={photoRef}
+          id="photo"
+          name="photo"
+          type="file"
+          accept="image/*,application/pdf"
+          required={required}
+          onChange={(event) => applyFile(event.target.files?.[0] ?? null, event.currentTarget)}
+        />
+      </div>
     </div>
   );
 
@@ -94,7 +89,9 @@ export function InvoiceCaptureField({
     return (
       <div className="space-y-1">
         {controls}
-        {pending ? <p className="text-xs text-primary">סורק את המסמך...</p> : null}
+        <p className="text-[11px] text-muted-foreground">
+          {pending ? "סורק את המסמך..." : "צלם במצלמה או בחר מהגלריה / קבצים."}
+        </p>
       </div>
     );
   }
@@ -106,7 +103,7 @@ export function InvoiceCaptureField({
       <FieldDescription>
         {pending
           ? "סורק את המסמך וממלא כמויות..."
-          : "בטלפון «צלם חשבונית» פותח מצלמה ישירות. במחשב אפשר לבחור קובץ. חובה לשמור את הקובץ."}
+          : "שתי אפשרויות — העובד בוחר: «צלם חשבונית» פותח מצלמה בטלפון, והעלאת הקובץ נשארת לבחירה מהגלריה או מתיקייה. במחשב ממשיכים עם בחירת קובץ. חובה לצרף צילום."}
       </FieldDescription>
     </Field>
   );

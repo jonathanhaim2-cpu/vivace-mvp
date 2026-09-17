@@ -276,9 +276,9 @@ export default async function InvoicesPage({
               allowEmpty={branches.length === 0}
             />
           </CompactField>
-          <CompactField label="קובץ" htmlFor="photo" grow className="min-w-[16rem]">
+          <div className="min-w-[16rem] flex-1">
             <InvoiceCaptureField compact required />
-          </CompactField>
+          </div>
           <CompactField label="חודש לדיווח" htmlFor="periodMonth">
             <NativeSelect id="periodMonth" name="periodMonth" defaultValue={monthKeyFromDate()}>
               {monthOptions.map((key) => (
