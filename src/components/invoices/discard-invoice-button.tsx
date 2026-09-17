@@ -37,7 +37,7 @@ export function DiscardInvoiceButton({
       <Button
         type="submit"
         size="sm"
-        variant={notInvoice || isDuplicate ? "destructive" : "outline"}
+        variant={notInvoice ? "default" : isDuplicate ? "destructive" : "outline"}
         className={cn(notInvoice ? "min-w-[7.5rem]" : undefined, className)}
       >
         {text}

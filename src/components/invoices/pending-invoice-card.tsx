@@ -166,7 +166,7 @@ export function PendingInvoiceCard({
           ) : null}
           <div className="flex flex-wrap items-center gap-2">
             {notInvoice ? <DiscardInvoiceButton photoId={photo.id} notInvoice /> : null}
-            <Button type="submit" form={formId} size="sm">
+            <Button type="submit" form={formId} size="sm" variant={notInvoice ? "outline" : "default"}>
               שמירת סיווג
             </Button>
             {notInvoice ? null : <DiscardInvoiceButton photoId={photo.id} />}
