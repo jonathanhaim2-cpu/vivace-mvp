@@ -206,7 +206,9 @@ export async function confirmAiSuggestion(photoId: string, formData?: FormData) 
   }
   if (!formData) await requireBranchAccess(branchId, session);
   const periodMonth = resolvedPeriodMonth(photo.periodMonth, photo.aiInvoiceDate);
-  const suggestedType = parsePhotoDocumentType(photo.aiDocumentType);
+  const suggestedType = formData?.has("documentType")
+    ? parsePhotoDocumentType(formData.get("documentType"))
+    : parsePhotoDocumentType(photo.aiDocumentType);
   await prisma.invoicePhoto.update({
     where: { id: photoId },
     data: {

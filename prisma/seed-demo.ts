@@ -643,6 +643,16 @@ export async function seedDemo(prisma: PrismaClient) {
       title: "שכר דירה חנות",
       documentType: "UNKNOWN",
     },
+    {
+      id: "photo_credit_produce",
+      fileName: "demo-credit-produce.svg",
+      originalName: "זיכוי-ירקות-אוגוסט.svg",
+      accountId: "acc_food_produce",
+      amountIls: 180,
+      voiceNoteText: "חשבונית זיכוי ירקות השרון אוגוסט",
+      title: "חשבונית זיכוי",
+      documentType: "CREDIT_NOTE",
+    },
   ];
 
   for (const doc of extraDocs) {

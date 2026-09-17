@@ -257,7 +257,7 @@ model InvoicePhoto {
   paid           Boolean       @default(false)
   paidAt         DateTime?
   sentToAccountant Boolean     @default(false)
-  /// INVOICE | RECEIPT | UNKNOWN. Default UNKNOWN so Railway `db push` backfills existing rows.
+  /// INVOICE | CREDIT_NOTE | RECEIPT | UNKNOWN. String (not Prisma enum) so Railway `db push` stays additive.
   documentType   String        @default("UNKNOWN")
   aiDocumentType String?
   aiSupplierName String?

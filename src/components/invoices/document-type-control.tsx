@@ -7,7 +7,7 @@ import {
 import { INVOICE_DOCUMENT_TYPE_FILTERS } from "@/lib/invoice-filters";
 import { cn } from "@/lib/utils";
 
-const selectClassName = "h-8 w-full min-w-[8rem] rounded-lg border border-input bg-background px-2.5 text-sm";
+const selectClassName = "h-8 w-full min-w-[10rem] rounded-lg border border-input bg-background px-2.5 text-sm";
 
 export function DocumentTypeSelect({
   id,
@@ -60,6 +60,7 @@ export function DocumentTypeBadge({ value }: { value: string | null | undefined 
       className={cn(
         "inline-flex h-5 items-center rounded-full px-2 text-[11px] font-medium",
         type === "INVOICE" && "bg-sky-100 text-sky-950 dark:bg-sky-950/60 dark:text-sky-100",
+        type === "CREDIT_NOTE" && "bg-rose-100 text-rose-950 dark:bg-rose-950/60 dark:text-rose-100",
         type === "RECEIPT" && "bg-violet-100 text-violet-950 dark:bg-violet-950/60 dark:text-violet-100",
         type === "UNKNOWN" && "bg-muted text-muted-foreground",
       )}

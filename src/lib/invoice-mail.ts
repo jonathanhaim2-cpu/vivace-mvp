@@ -40,10 +40,21 @@ export const INVOICE_MAIL_INVOICE_KEYWORDS = [
 /** Subject/body tokens that mean the message is a receipt / קבלה (HE + EN). */
 export const INVOICE_MAIL_RECEIPT_KEYWORDS = ["קבלה", "קבלות", "receipt", "receipts"] as const;
 
-/** Subject/body tokens that mean the message is an invoice or receipt (HE + EN). */
+/** Subject/body tokens that mean the message is a credit note / חשבונית זיכוי (HE + EN). */
+export const INVOICE_MAIL_CREDIT_KEYWORDS = [
+  "חשבונית זיכוי",
+  "זיכוי",
+  "credit note",
+  "credit notes",
+  "credit invoice",
+  "credit invoices",
+] as const;
+
+/** Subject/body tokens that mean the message is an invoice, credit note, or receipt (HE + EN). */
 export const INVOICE_MAIL_KEYWORDS = [
   ...INVOICE_MAIL_INVOICE_KEYWORDS,
   ...INVOICE_MAIL_RECEIPT_KEYWORDS,
+  ...INVOICE_MAIL_CREDIT_KEYWORDS,
 ] as const;
 
 export type InvoiceMailConfig = {
@@ -282,17 +293,19 @@ export function emailLooksLikeInvoice(subject?: string | null, text?: string | n
   return haystackHasKeyword(haystack, INVOICE_MAIL_KEYWORDS);
 }
 
-/** Prefill INVOICE/RECEIPT only when subject/body clearly says one family, not both. */
+/** Prefill a type only when subject/body clearly says one family. Credit keywords dominate invoice words (חשבונית זיכוי). */
 export function inferDocumentTypeFromMail(
   subject?: string | null,
   text?: string | null,
 ): PhotoDocumentType {
   const haystack = mailKeywordHaystack(subject, text);
   if (!haystack.trim()) return PHOTO_DOCUMENT_TYPE.UNKNOWN;
+  const credit = haystackHasKeyword(haystack, INVOICE_MAIL_CREDIT_KEYWORDS);
   const invoice = haystackHasKeyword(haystack, INVOICE_MAIL_INVOICE_KEYWORDS);
   const receipt = haystackHasKeyword(haystack, INVOICE_MAIL_RECEIPT_KEYWORDS);
-  if (invoice && !receipt) return PHOTO_DOCUMENT_TYPE.INVOICE;
-  if (receipt && !invoice) return PHOTO_DOCUMENT_TYPE.RECEIPT;
+  if (credit && !receipt) return PHOTO_DOCUMENT_TYPE.CREDIT_NOTE;
+  if (invoice && !receipt && !credit) return PHOTO_DOCUMENT_TYPE.INVOICE;
+  if (receipt && !invoice && !credit) return PHOTO_DOCUMENT_TYPE.RECEIPT;
   return PHOTO_DOCUMENT_TYPE.UNKNOWN;
 }
 

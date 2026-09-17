@@ -63,6 +63,11 @@ test("parseInvoiceFilters accepts all-months, date range, and classified status"
   assert.equal(filters.documentType, "RECEIPT");
 });
 
+test("parseInvoiceFilters accepts CREDIT_NOTE and ignores unknown types", () => {
+  assert.equal(parseInvoiceFilters({ documentType: "CREDIT_NOTE" }).documentType, "CREDIT_NOTE");
+  assert.equal(parseInvoiceFilters({ documentType: "NOPE" }).documentType, "all");
+});
+
 test("parseInvoiceFilters ignores invalid dates", () => {
   const filters = parseInvoiceFilters({ from: "15/09/2026", to: "not-a-date" });
   assert.equal(filters.from, "");
@@ -134,23 +139,35 @@ test("invoicesFilterQuery omits default all-status and empty fields", () => {
     invoicesFilterQuery({ month: "2026-09", documentType: "RECEIPT" }),
     "/invoices?month=2026-09&documentType=RECEIPT",
   );
+  assert.equal(
+    invoicesFilterQuery({ month: "2026-09", documentType: "CREDIT_NOTE" }),
+    "/invoices?month=2026-09&documentType=CREDIT_NOTE",
+  );
 });
 
-test("document type filter matches INVOICE/RECEIPT/UNKNOWN and ignores all", () => {
+test("document type filter matches INVOICE/CREDIT_NOTE/RECEIPT/UNKNOWN and ignores all", () => {
   const base = parseInvoiceFilters({ month: "2026-09", status: "all" });
   const invoice = photo({ documentType: "INVOICE" });
+  const credit = photo({ documentType: "CREDIT_NOTE" });
   const receipt = photo({ documentType: "RECEIPT" });
   const unknown = photo({ documentType: "UNKNOWN" });
   assert.equal(matchesDocumentTypeFilter(invoice, "all"), true);
   assert.equal(matchesDocumentTypeFilter(invoice, "INVOICE"), true);
   assert.equal(matchesDocumentTypeFilter(invoice, "RECEIPT"), false);
+  assert.equal(matchesDocumentTypeFilter(credit, "CREDIT_NOTE"), true);
+  assert.equal(matchesDocumentTypeFilter(credit, "INVOICE"), false);
   assert.equal(matchesClassifiedFilters(invoice, { ...base, documentType: "INVOICE" }), true);
   assert.equal(matchesClassifiedFilters(invoice, { ...base, documentType: "RECEIPT" }), false);
+  assert.equal(matchesClassifiedFilters(credit, { ...base, documentType: "CREDIT_NOTE" }), true);
+  assert.equal(matchesClassifiedFilters(credit, { ...base, documentType: "INVOICE" }), false);
   assert.equal(matchesClassifiedFilters(receipt, { ...base, documentType: "RECEIPT" }), true);
   assert.equal(matchesClassifiedFilters(unknown, { ...base, documentType: "UNKNOWN" }), true);
   assert.equal(matchesClassifiedFilters(unknown, { ...base, documentType: "INVOICE" }), false);
   assert.equal(matchesPendingFilters(photo({ accountId: null, documentType: "RECEIPT" }), { ...base, documentType: "RECEIPT" }), true);
   assert.equal(matchesPendingFilters(photo({ accountId: null, documentType: "INVOICE" }), { ...base, documentType: "RECEIPT" }), false);
+  assert.equal(matchesPendingFilters(photo({ accountId: null, documentType: "CREDIT_NOTE" }), { ...base, documentType: "CREDIT_NOTE" }), true);
   assert.equal(matchesSearch(receipt, "קבלה"), true);
   assert.equal(matchesSearch(invoice, "קבלה"), false);
+  assert.equal(matchesSearch(credit, "חשבונית זיכוי"), true);
+  assert.equal(matchesSearch(invoice, "חשבונית זיכוי"), false);
 });

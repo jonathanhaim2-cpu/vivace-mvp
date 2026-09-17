@@ -1,6 +1,7 @@
 import { confirmAiSuggestion } from "@/actions/invoices";
 import { BranchSelect, type BranchOption } from "@/components/branches/branch-select";
 import { Button } from "@/components/ui/button";
+import { DocumentTypeSelect } from "@/components/invoices/document-type-control";
 import { isLowConfidence } from "@/lib/ai";
 import { AI_QUOTA_MESSAGE } from "@/lib/ai-throttle";
 import { photoDocumentTypeLabel } from "@/lib/constants";
@@ -119,7 +120,7 @@ export function AiSuggestionCard({
             <dd className="ai-suggestion-value">{formatIls(totalIls)}</dd>
           </div>
         ) : null}
-        {documentType ? (
+        {documentType && !suggestedAccount ? (
           <div className="flex justify-between gap-2">
             <dt className="ai-suggestion-muted">סוג</dt>
             <dd className="ai-suggestion-value">{photoDocumentTypeLabel(documentType)}</dd>
@@ -139,21 +140,33 @@ export function AiSuggestionCard({
       {reason ? <p className="ai-suggestion-muted text-xs">{reason}</p> : null}
       {suggestedAccount ? (
         <form action={confirmAiSuggestion.bind(null, photoId)} className="space-y-2">
-          {branches.length > 0 ? (
+          <div className="grid gap-2 sm:grid-cols-2">
             <div className="space-y-1">
-              <label htmlFor={`ai-branch-${photoId}`} className="ai-suggestion-muted block text-[11px] font-medium">
-                סניף
+              <label htmlFor={`ai-type-${photoId}`} className="ai-suggestion-muted block text-[11px] font-medium">
+                סוג מסמך
               </label>
-              <BranchSelect
-                id={`ai-branch-${photoId}`}
+              <DocumentTypeSelect
+                id={`ai-type-${photoId}`}
+                defaultValue={documentType}
                 className="ai-suggestion-control"
-                branches={branches}
-                defaultValue={defaultBranchId ?? branches[0]?.id}
-                required
-                allowEmpty={false}
               />
             </div>
-          ) : null}
+            {branches.length > 0 ? (
+              <div className="space-y-1">
+                <label htmlFor={`ai-branch-${photoId}`} className="ai-suggestion-muted block text-[11px] font-medium">
+                  סניף
+                </label>
+                <BranchSelect
+                  id={`ai-branch-${photoId}`}
+                  className="ai-suggestion-control"
+                  branches={branches}
+                  defaultValue={defaultBranchId ?? branches[0]?.id}
+                  required
+                  allowEmpty={false}
+                />
+              </div>
+            ) : null}
+          </div>
           <Button type="submit" size="sm" className="w-full">
             אשר הצעה
           </Button>
