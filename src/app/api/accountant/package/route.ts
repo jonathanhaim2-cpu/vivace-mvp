@@ -4,6 +4,7 @@ import JSZip from "jszip";
 import { NextResponse } from "next/server";
 import { accountantPackageText } from "@/lib/accountant-package";
 import { getAccountRollup } from "@/lib/accounts";
+import { includeInAccountantPackage } from "@/lib/money";
 import { monthRangeUtc, previousMonthKey } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { UPLOAD_DIR } from "@/lib/uploads";
@@ -29,6 +30,7 @@ export async function GET(request: Request) {
   zip.file("סיכום-הנהח.txt", `${subject}\n\n${body}\n`);
 
   for (const photo of photos) {
+    if (!includeInAccountantPackage(photo.documentType)) continue;
     const parent = photo.account?.parent?.name ?? "ללא-אב";
     const leaf = photo.account?.name ?? "ללא-קטגוריה";
     const folder = `${sanitize(parent)}/${sanitize(leaf)}`;

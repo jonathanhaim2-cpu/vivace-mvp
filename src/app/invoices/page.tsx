@@ -175,6 +175,9 @@ export default async function InvoicesPage({
         <Link href="/invoices/package" className={cn(buttonVariants())}>
           חבילה להנה״ח
         </Link>
+        <Link href="/reports/food-cost" className={cn(buttonVariants({ variant: "ghost" }))}>
+          עלות רכש
+        </Link>
         <Link href="/ap" className={cn(buttonVariants({ variant: "outline" }))}>
           תשלומים וכרטסת
         </Link>
@@ -268,6 +271,9 @@ export default async function InvoicesPage({
             documentType: photo.documentType,
             paid: photo.paid,
             sentToAccountant: photo.sentToAccountant,
+            vatIncluded: photo.vatIncluded,
+            amountExVat: photo.amountExVat,
+            vatAmount: photo.vatAmount,
           }))}
           branches={branches}
           emptyTitle={classifiedTotal === 0 ? "אין חשבוניות משובצות" : "אין תוצאות לסינון"}
@@ -300,6 +306,12 @@ export default async function InvoicesPage({
           <CompactField label="סוג מסמך" htmlFor="documentType">
             <DocumentTypeSelect id="documentType" />
           </CompactField>
+          <CompactField label="מע״מ" htmlFor="vatIncluded">
+            <NativeSelect id="vatIncluded" name="vatIncluded" defaultValue="incl">
+              <option value="incl">כולל מע״מ</option>
+              <option value="ex">לפני מע״מ</option>
+            </NativeSelect>
+          </CompactField>
           <CompactField label="חודש לדיווח" htmlFor="periodMonth">
             <NativeSelect id="periodMonth" name="periodMonth" defaultValue={monthKeyFromDate()}>
               {monthOptions.map((key) => (
@@ -309,8 +321,8 @@ export default async function InvoicesPage({
               ))}
             </NativeSelect>
           </CompactField>
-          <CompactField label="סכום ללא מע״מ" htmlFor="amountIls">
-            <Input id="amountIls" name="amountIls" type="number" min={0} step="0.01" />
+          <CompactField label="סכום (₪, זיכוי במינוס)" htmlFor="amountIls">
+            <Input id="amountIls" name="amountIls" type="number" step="0.01" />
           </CompactField>
           <CompactField label="הערה" htmlFor="voiceNoteText" grow>
             <Input id="voiceNoteText" name="voiceNoteText" placeholder="למשל: ירקות השרון אוגוסט" />

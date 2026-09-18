@@ -1,5 +1,6 @@
 import { CHART_OF_ACCOUNTS, isChartLeafId } from "@/lib/chart-of-accounts";
 import { INVOICE_IN_TOTALS_WHERE, scanExistingInvoiceDuplicates } from "@/lib/invoice-duplicates";
+import { includeInAccountantPackage, signedDocumentAmount } from "@/lib/money";
 import { monthRangeUtc } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 
@@ -103,9 +104,10 @@ export async function getAccountRollup(month?: string): Promise<AccountRollupRow
 
   for (const photo of photos) {
     if (!photo.accountId) continue;
+    if (!includeInAccountantPackage(photo.documentType)) continue;
     const receiptAmount =
       photo.goodsReceipt?.lines.reduce((sum, line) => sum + line.receivedQty * line.invoicePrice, 0) ?? 0;
-    const amount = photo.amountIls ?? (receiptAmount > 0 ? receiptAmount : 0);
+    const amount = signedDocumentAmount(photo) || (receiptAmount !== 0 ? receiptAmount : 0);
     const current = byLeaf.get(photo.accountId) ?? { documents: 0, amount: 0 };
     current.documents += 1;
     current.amount += amount;

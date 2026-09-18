@@ -6,9 +6,8 @@ import { CompactField, CompactPanel, FilterBar, NativeSelect } from "@/component
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getNonProcurementChecklist, getSupplierApRows, payMethodLabel } from "@/lib/ap";
 import { PAYMENT_METHODS } from "@/lib/constants";
-import { formatIls } from "@/lib/format";
+import { expenseCategoryLabel, formatIls } from "@/lib/format";
 import { monthKeyFromDate, monthLabel, recentMonthKeys } from "@/lib/months";
-import { expenseCategoryLabel } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +24,8 @@ export default async function ApPage({
     <div className="space-y-6">
       <PageHeader
         title="תשלומים לספקים"
-        description={`כרטסת ל־${monthLabel(month)}. בקשת כרטסת נכנסת לתור מייל (אין מיילר ב-MVP).`}
+        description={`כרטסת ל־${monthLabel(month)} נפרדת מחשבוניות. בקשת כרטסת נכנסת לתור. זיכוי מוריד את סכום הרכש.`}
+        action={{ href: "/expenses", label: "הוצאות קבועות" }}
       />
 
       <FilterBar submitLabel="הצגה">
@@ -50,6 +50,7 @@ export default async function ApPage({
               <TableHead>ספק</TableHead>
               <TableHead>לתשלום</TableHead>
               <TableHead>רכש</TableHead>
+              <TableHead>גילול / כרטסת</TableHead>
               <TableHead>סטטוס</TableHead>
               <TableHead>פעולות</TableHead>
             </TableRow>
@@ -66,6 +67,9 @@ export default async function ApPage({
                 <TableCell>{formatIls(row.amountDue)}</TableCell>
                 <TableCell>{formatIls(row.purchased)}</TableCell>
                 <TableCell className="text-muted-foreground">
+                  {row.statements ? formatIls(row.statements) : "—"}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
                   {row.ap?.approvedForPayment ? `אושר (${payMethodLabel(row.ap.payMethod)})` : "ממתין"}
                 </TableCell>
                 <TableCell>
@@ -78,6 +82,7 @@ export default async function ApPage({
                     </form>
                     <form action={approveSupplierPayment.bind(null, row.supplier.id)} className="flex items-center gap-1.5">
                       <input type="hidden" name="month" value={month} />
+                      <input type="hidden" name="approved" value={row.ap?.approvedForPayment ? "off" : "on"} />
                       <NativeSelect
                         name="payMethod"
                         defaultValue={row.ap?.payMethod ?? row.supplier.paymentMethod ?? "TRANSFER"}
@@ -89,8 +94,8 @@ export default async function ApPage({
                           </option>
                         ))}
                       </NativeSelect>
-                      <Button type="submit" size="sm">
-                        אישור
+                      <Button type="submit" size="sm" variant={row.ap?.approvedForPayment ? "outline" : "default"}>
+                        {row.ap?.approvedForPayment ? "לא שולם" : "אישור"}
                       </Button>
                     </form>
                   </div>

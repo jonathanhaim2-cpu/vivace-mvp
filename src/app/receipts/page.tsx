@@ -2,11 +2,12 @@ import Link from "next/link";
 import { AuditInfoButton } from "@/components/audit-info-button";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { ReceiptStatusBadge } from "@/components/status-badge";
-import { CompactField, FilterBar, NativeSelect } from "@/components/ui/compact-form";
+import { CompactField, CompactPanel, FilterBar, NativeSelect } from "@/components/ui/compact-form";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DocumentTypeBadge } from "@/components/invoices/document-type-control";
 import { AUDIT_ACTIONS, firstAuditsFor, formatAuditStamp } from "@/lib/audit";
-import { RECEIPT_STATUSES } from "@/lib/constants";
+import { INVOICE_SOURCE, RECEIPT_STATUSES, invoiceSourceLabel } from "@/lib/constants";
 import { formatDateTime, receiptStatusLabel } from "@/lib/format";
 import { monthLabel, monthRangeUtc, parseMonthParam, recentMonthKeys } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
@@ -42,6 +43,37 @@ export default async function ReceiptsPage({
     },
     orderBy: { createdAt: "desc" },
   });
+  const importedPhotos = await prisma.invoicePhoto.findMany({
+    where: {
+      isDuplicate: false,
+      source: { in: [INVOICE_SOURCE.EMAIL, INVOICE_SOURCE.BULK_IMPORT] },
+      ...(range ? { createdAt: { gte: range.start, lt: range.end } } : {}),
+      ...(session.isNetwork
+        ? branchId
+          ? { OR: [{ branchId }, { goodsReceipt: { order: { branchId } } }] }
+          : {}
+        : {
+            OR: [
+              { branchId: session.branchId ?? undefined },
+              { goodsReceipt: { order: { branchId: session.branchId ?? undefined } } },
+            ],
+          }),
+      ...(q
+        ? {
+            OR: [
+              { originalName: { contains: q } },
+              { aiSupplierName: { contains: q } },
+              { goodsReceipt: { order: { supplier: { name: { contains: q } } } } },
+            ],
+          }
+        : {}),
+    },
+    include: {
+      branch: true,
+      goodsReceipt: { include: { order: { include: { supplier: true, branch: true } } } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
   const actors = await firstAuditsFor(
     "GoodsReceipt",
     receipts.map((receipt) => receipt.id),
@@ -52,7 +84,7 @@ export default async function ReceiptsPage({
     <div>
       <PageHeader
         title="קליטת סחורה"
-        description="השוואה מול הזמנה, סימון חוסרים וסטיות מחיר, ואישור משרד הרשת למחירון חדש."
+        description="קליטות מול הזמנה וגם מסמכים שיובאו ממייל/תיקייה. חודש לפי שעון ירושלים."
       />
       <FilterBar>
         <CompactField label="חודש" htmlFor="receipts-month">
@@ -93,8 +125,12 @@ export default async function ReceiptsPage({
       </FilterBar>
       {receipts.length === 0 ? (
         <EmptyState
-          title="אין קליטות"
-          description={month ? `אין קליטות ב־${monthLabel(month)} לפי הסינון.` : "פתחו הזמנה שנשלחה וקלטו מולה את הסחורה."}
+          title="אין קליטות מול הזמנה"
+          description={
+            month
+              ? `אין קליטות ב־${monthLabel(month)} לפי הסינון.${importedPhotos.length ? ` יש ${importedPhotos.length} מסמכים מייבוא למטה.` : ""}`
+              : "פתחו הזמנה שנשלחה וקלטו מולה את הסחורה."
+          }
           action={{ href: "/orders", label: "אל ההזמנות" }}
         />
       ) : (
@@ -132,6 +168,48 @@ export default async function ReceiptsPage({
           </TableBody>
         </Table>
       )}
+
+      {importedPhotos.length > 0 ? (
+        <div className="mt-6">
+          <CompactPanel
+            title={`מסמכים מייבוא · ${importedPhotos.length}`}
+            description="מייל ותיקייה נספרים גם בלי הזמנה. חודש לפי תאריך הקליטה בשעון ירושלים."
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>מסמך</TableHead>
+                  <TableHead>מקור</TableHead>
+                  <TableHead>סוג</TableHead>
+                  <TableHead>סניף</TableHead>
+                  <TableHead>תאריך</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {importedPhotos.map((photo) => (
+                  <TableRow key={photo.id}>
+                    <TableCell>
+                      <Link href="/invoices" className="font-medium hover:underline">
+                        {photo.aiSupplierName || photo.originalName}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{invoiceSourceLabel(photo.source)}</TableCell>
+                    <TableCell>
+                      <DocumentTypeBadge value={photo.documentType} />
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {photo.branch?.name ?? photo.goodsReceipt?.order.branch.name ?? "—"}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                      {formatDateTime(photo.createdAt)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CompactPanel>
+        </div>
+      ) : null}
     </div>
   );
 }

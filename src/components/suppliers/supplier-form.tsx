@@ -34,10 +34,27 @@ type SupplierValues = {
   paymentMethod: string | null;
   accountingPhone: string | null;
   accountingEmail: string | null;
+  paymentChargeDay?: number | null;
+  card1Label?: string | null;
+  card2Label?: string | null;
   plantsCouncilUrl: string | null;
   plantsCouncilDiscountPct: number | null;
   plantsCouncilRelevant?: boolean;
-  branchLinks?: { branchId: string; whatsappPhone?: string | null }[];
+  branchLinks?: {
+    branchId: string;
+    whatsappPhone?: string | null;
+    taxId?: string | null;
+    driverName?: string | null;
+    agentName?: string | null;
+    agentPhone?: string | null;
+    deliveryDays?: string | null;
+    orderDays?: string | null;
+    orderCutoffTime?: string | null;
+    catalogKind?: string | null;
+    notes?: string | null;
+    paymentMethod?: string | null;
+    paymentChargeDay?: number | null;
+  }[];
 };
 
 export function SupplierForm({
@@ -52,10 +69,11 @@ export function SupplierForm({
   const action = supplier ? updateSupplier.bind(null, supplier.id) : createSupplier;
   const days = supplier ? parseDeliveryDays(supplier.deliveryDays) : [0, 2, 4];
   const orderDays = supplier ? parseWeekdays(supplier.orderDays) : days;
-  const selectedBranches = supplier?.branchLinks?.map((link) => link.branchId) ?? branches.map((b) => b.id);
+  const selectedBranches = supplier?.branchLinks?.map((link) => link.branchId) ?? [];
   const branchPhones = Object.fromEntries(
     (supplier?.branchLinks ?? []).map((link) => [link.branchId, link.whatsappPhone ?? ""]),
   );
+  const branchLinkDefaults = Object.fromEntries((supplier?.branchLinks ?? []).map((link) => [link.branchId, link]));
   const weekdayOptions = WEEKDAYS.map((day) => ({ value: String(day.value), label: day.label }));
 
   return (
@@ -230,6 +248,26 @@ export function SupplierForm({
             </NativeSelect>
           </Field>
           <Field>
+            <FieldLabel htmlFor="paymentChargeDay">יום חיוב בחודש</FieldLabel>
+            <Input
+              id="paymentChargeDay"
+              name="paymentChargeDay"
+              type="number"
+              min={1}
+              max={28}
+              defaultValue={supplier?.paymentChargeDay ?? ""}
+              placeholder="15"
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="card1Label">כרטיס 1</FieldLabel>
+            <Input id="card1Label" name="card1Label" defaultValue={supplier?.card1Label ?? ""} placeholder="ויזה 12" />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="card2Label">כרטיס 2</FieldLabel>
+            <Input id="card2Label" name="card2Label" defaultValue={supplier?.card2Label ?? ""} placeholder="מקס 34" />
+          </Field>
+          <Field>
             <FieldLabel htmlFor="accountingPhone">טלפון הנה״ח</FieldLabel>
             <Input id="accountingPhone" name="accountingPhone" defaultValue={supplier?.accountingPhone ?? ""} />
           </Field>
@@ -252,6 +290,7 @@ export function SupplierForm({
             branches={branches}
             defaultSelected={selectedBranches}
             defaultPhones={branchPhones}
+            defaultLinks={branchLinkDefaults}
           />
           <PlantsCouncilSupplierFields
             relevant={supplier?.plantsCouncilRelevant ?? false}

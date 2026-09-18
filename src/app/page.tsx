@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { saveDashboardSettings } from "@/actions/dashboard";
-import { ClockTime } from "@/components/clock-time";
 import { ForecastInputForm } from "@/components/dashboard/forecast-form";
 import { NetworkBranchCompare } from "@/components/dashboard/network-branch-compare";
+import { TodayTaskList } from "@/components/dashboard/today-task-list";
 import { PageHeader } from "@/components/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +17,7 @@ import {
   getRogueBranches,
 } from "@/lib/dashboard";
 import { getOverdueAccountantItems } from "@/lib/ap";
-import { formatIls, lineTotal } from "@/lib/format";
+import { formatIls } from "@/lib/format";
 import { monthKeyFromDate, monthLabel } from "@/lib/months";
 import { getAppSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -211,49 +211,41 @@ export default async function HomePage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-primary/30 bg-primary/5 lg:col-span-2">
           <CardHeader>
-            <CardTitle>סחורה לקליטה היום</CardTitle>
-            <CardDescription>הזמנות פתוחות שיום האספקה שלהן היום.</CardDescription>
+            <CardTitle>היום</CardTitle>
+            <CardDescription>פתוח למעלה. בוצע — ירוק עם V, יורד למטה.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            {toReceive.length === 0 ? (
-              <p className="text-muted-foreground">אין קליטות מתוכננות להיום.</p>
-            ) : (
-              toReceive.map((order) => (
-                <Link key={order.id} href={`/orders/${order.id}/receive`} className="flex justify-between hover:underline">
-                  <span>
-                    {order.supplier.name}
-                    {session.isNetwork ? ` · ${order.branch.name}` : ""}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {formatIls(order.lines.reduce((s, l) => s + lineTotal(l.qty, l.unitPrice, l.discountPercent), 0))}
-                  </span>
-                </Link>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>הזמנות להוציא היום</CardTitle>
-            <CardDescription>חלון הזמנה פתוח, ואין הזמנה פתוחה לספק.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            {toOrder.length === 0 ? (
-              <p className="text-muted-foreground">אין ספקים שצריך להזמין מהם עכשיו.</p>
-            ) : (
-              toOrder.map((supplier) => (
-                <Link
-                  key={supplier.id}
-                  href={`/orders/new?supplierId=${supplier.id}`}
-                  className="block hover:underline"
-                >
-                  {supplier.name} · סגירה <ClockTime value={supplier.orderCutoffTime} />
-                </Link>
-              ))
-            )}
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">הזמנות לשליחה</p>
+              <TodayTaskList
+                items={toOrder.map((item) => ({
+                  id: item.id,
+                  href: item.href,
+                  title: item.name,
+                  meta: item.done ? "בוצע" : undefined,
+                  done: item.done,
+                }))}
+              />
+              {toOrder.some((item) => !item.done) ? (
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  סגירה: {toOrder.filter((item) => !item.done).slice(0, 1).map((item) => item.cutoff)}
+                </p>
+              ) : null}
+            </div>
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">סחורה לקליטה</p>
+              <TodayTaskList
+                items={toReceive.map((item) => ({
+                  id: item.id,
+                  href: item.href,
+                  title: session.isNetwork ? `${item.supplierName} · ${item.branchName}` : item.supplierName,
+                  meta: undefined,
+                  done: item.done,
+                }))}
+              />
+            </div>
           </CardContent>
         </Card>
       </div>

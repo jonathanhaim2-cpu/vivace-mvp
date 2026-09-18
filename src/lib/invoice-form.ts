@@ -1,5 +1,6 @@
 import { parsePhotoDocumentType } from "@/lib/constants";
 import { parseInvoiceBranchFormValue } from "@/lib/invoice-branch";
+import { normalizeCreditEntryAmount, parseVatIncludedFlag, splitVat } from "@/lib/money";
 import { monthKeyFromDate, resolvedPeriodMonth } from "@/lib/months";
 
 export function isInvoiceImage(mimeType: string) {
@@ -47,5 +48,20 @@ export function invoiceClassificationFromForm(formData: FormData) {
   const periodMonth =
     resolvedPeriodMonth(String(formData.get("periodMonth") ?? ""), invoiceDate) ?? monthKeyFromDate();
   const documentType = parsePhotoDocumentType(formData.get("documentType"));
-  return { invoiceDate, supplierName, amountIls, note, accountId, periodMonth, branchId, documentType };
+  const vatIncluded = parseVatIncludedFlag(formData.get("vatIncluded"), true);
+  const signedAmount = normalizeCreditEntryAmount(documentType, amountIls);
+  const vat = signedAmount != null ? splitVat(signedAmount, vatIncluded) : null;
+  return {
+    invoiceDate,
+    supplierName,
+    amountIls: signedAmount,
+    note,
+    accountId,
+    periodMonth,
+    branchId,
+    documentType,
+    vatIncluded,
+    amountExVat: vat?.amountExVat ?? null,
+    vatAmount: vat?.vatAmount ?? null,
+  };
 }

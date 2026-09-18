@@ -1,4 +1,5 @@
 import { PRODUCT_CATEGORIES } from "@/lib/product-categories";
+import { countsTowardPurchase, signedDocumentAmount } from "@/lib/money";
 
 export type CategoryAccount = {
   id: string;
@@ -35,16 +36,28 @@ export function catalogCategoryAccounts(): CategoryAccount[] {
   ]);
 }
 
+export const UNCATEGORIZED_PURCHASE_ID = "pcat_uncategorized";
+export const UNCATEGORIZED_PURCHASE_NAME = "ללא קטגוריה";
+
 export function addInvoiceAmountToCategory(
   spentByParent: Map<string, number>,
   accountId: string | null | undefined,
   amount: number | null | undefined,
   categories: CategoryAccount[],
 ) {
-  if (amount == null || !Number.isFinite(amount) || amount <= 0) return;
-  const parentId = parentCategoryIdForAccount(accountId, categories);
-  if (!parentId) return;
+  if (amount == null || !Number.isFinite(amount) || amount === 0) return;
+  const parentId = parentCategoryIdForAccount(accountId, categories) ?? UNCATEGORIZED_PURCHASE_ID;
   spentByParent.set(parentId, (spentByParent.get(parentId) ?? 0) + amount);
+}
+
+export function addSignedPurchaseAmount(
+  spentByParent: Map<string, number>,
+  accountId: string | null | undefined,
+  photo: { documentType?: string | null; amountIls?: number | null; aiTotalIls?: number | null },
+  categories: CategoryAccount[],
+) {
+  if (!countsTowardPurchase(photo.documentType)) return;
+  addInvoiceAmountToCategory(spentByParent, accountId, signedDocumentAmount(photo), categories);
 }
 
 export function resolvedInvoiceBranchId(photo: {

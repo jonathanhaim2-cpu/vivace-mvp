@@ -50,11 +50,24 @@ export const INVOICE_MAIL_CREDIT_KEYWORDS = [
   "credit invoices",
 ] as const;
 
+/** Subject/body tokens that mean a delivery note / תעודת משלוח. */
+export const INVOICE_MAIL_DELIVERY_KEYWORDS = [
+  "תעודת משלוח",
+  "תעודות משלוח",
+  "delivery note",
+  "delivery notes",
+] as const;
+
+/** Subject/body tokens that mean גילול / כרטסת (not a generic English "statement"). */
+export const INVOICE_MAIL_STATEMENT_KEYWORDS = ["גילול", "כרטסת", "karteset", "giulol"] as const;
+
 /** Subject/body tokens that mean the message is an invoice, credit note, or receipt (HE + EN). */
 export const INVOICE_MAIL_KEYWORDS = [
   ...INVOICE_MAIL_INVOICE_KEYWORDS,
   ...INVOICE_MAIL_RECEIPT_KEYWORDS,
   ...INVOICE_MAIL_CREDIT_KEYWORDS,
+  ...INVOICE_MAIL_DELIVERY_KEYWORDS,
+  ...INVOICE_MAIL_STATEMENT_KEYWORDS,
 ] as const;
 
 export type InvoiceMailConfig = {
@@ -303,8 +316,12 @@ export function inferDocumentTypeFromMail(
   const credit = haystackHasKeyword(haystack, INVOICE_MAIL_CREDIT_KEYWORDS);
   const invoice = haystackHasKeyword(haystack, INVOICE_MAIL_INVOICE_KEYWORDS);
   const receipt = haystackHasKeyword(haystack, INVOICE_MAIL_RECEIPT_KEYWORDS);
+  const delivery = haystackHasKeyword(haystack, INVOICE_MAIL_DELIVERY_KEYWORDS);
+  const statement = haystackHasKeyword(haystack, INVOICE_MAIL_STATEMENT_KEYWORDS);
   if (credit && !receipt) return PHOTO_DOCUMENT_TYPE.CREDIT_NOTE;
-  if (invoice && !receipt && !credit) return PHOTO_DOCUMENT_TYPE.INVOICE;
+  if (delivery && !credit) return PHOTO_DOCUMENT_TYPE.DELIVERY_NOTE;
+  if (statement && !credit && !invoice) return PHOTO_DOCUMENT_TYPE.STATEMENT;
+  if (invoice && !receipt && !credit && !delivery) return PHOTO_DOCUMENT_TYPE.INVOICE;
   if (receipt && !invoice && !credit) return PHOTO_DOCUMENT_TYPE.RECEIPT;
   return PHOTO_DOCUMENT_TYPE.UNKNOWN;
 }

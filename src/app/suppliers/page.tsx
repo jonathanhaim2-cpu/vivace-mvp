@@ -1,19 +1,11 @@
 import Link from "next/link";
 import { EmptyState, PageHeader } from "@/components/page-header";
-import { ClockTime } from "@/components/clock-time";
 import { NextOrderNotice } from "@/components/orders/next-order-notice";
 import { CompactField, FilterBar, NativeSelect } from "@/components/ui/compact-form";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { listManagedSuppliers } from "@/lib/catalog";
-import {
-  documentTypeLabel,
-  formatWeekdays,
-  nextDeliveryInfo,
-  nextOrderWindow,
-  parseDeliveryDays,
-  resolveOrderDays,
-} from "@/lib/format";
+import { nextOrderWindow, resolveOrderDays } from "@/lib/format";
 import { getAppSession, sessionCan } from "@/lib/session";
 
 export default async function SuppliersPage({
@@ -40,7 +32,7 @@ export default async function SuppliersPage({
         title="ספקים"
         description={
           session.isNetwork
-            ? "כולל ספקים לא פעילים. זכיין רואה רק פעילים וזמינים לסניף."
+            ? "רשימה קצרה. פירוט מלא בכרטיס הספק. בית שמש וקריית יערים מופרדים."
             : "ספקים פעילים שזמינים לסניף זה."
         }
         action={
@@ -85,19 +77,12 @@ export default async function SuppliersPage({
           <TableHeader>
             <TableRow>
               <TableHead>ספק</TableHead>
-              <TableHead>מסמך</TableHead>
-              <TableHead>הזמנה</TableHead>
-              <TableHead>מוצרים</TableHead>
-              <TableHead>סטטוס</TableHead>
+              <TableHead>סניפים</TableHead>
+              <TableHead>הזמנה הבאה</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {suppliers.map((supplier) => {
-              const info = nextDeliveryInfo(
-                parseDeliveryDays(supplier.deliveryDays),
-                supplier.orderCutoffTime,
-                resolveOrderDays(supplier.orderDays, supplier.deliveryDays),
-              );
               const nextOrder = nextOrderWindow(
                 resolveOrderDays(supplier.orderDays, supplier.deliveryDays),
                 supplier.orderCutoffTime,
@@ -109,23 +94,15 @@ export default async function SuppliersPage({
                     <Link href={`/suppliers/${supplier.id}`} className="font-medium hover:underline">
                       {supplier.name}
                     </Link>
-                    {supplier.taxId ? (
-                      <p className="text-xs text-muted-foreground" dir="ltr">
-                        {supplier.taxId}
-                      </p>
-                    ) : null}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{documentTypeLabel(supplier.documentType)}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {supplier.branchLinks.length === 0
+                      ? "לא שויך"
+                      : supplier.branchLinks.map((link) => link.branch?.name ?? link.branchId).join(" · ")}
+                  </TableCell>
                   <TableCell className="text-xs">
-                    <p>
-                      {formatWeekdays(resolveOrderDays(supplier.orderDays, supplier.deliveryDays)) || "—"} · עד{" "}
-                      <ClockTime value={supplier.orderCutoffTime} />
-                    </p>
-                    <p className="text-muted-foreground">{info.label}</p>
                     <NextOrderNotice info={nextOrder} className="text-xs" />
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{supplier._count.products}</TableCell>
-                  <TableCell className="text-muted-foreground">{supplier.active ? "פעיל" : "לא פעיל"}</TableCell>
                 </TableRow>
               );
             })}

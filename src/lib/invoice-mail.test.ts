@@ -222,7 +222,9 @@ test("emailLooksLikeInvoice matches Hebrew and English invoice keywords case-ins
   assert.equal(emailLooksLikeInvoice("", "Tax Invoice 4412"), true);
   assert.equal(emailLooksLikeInvoice("Monthly receipts", "thanks"), true);
   assert.equal(emailLooksLikeInvoice("Invoices from last week", ""), true);
-  assert.equal(emailLooksLikeInvoice("חשבונית זיכוי ספק", ""), true);
+  assert.equal(emailLooksLikeInvoice("תעודת משלוח שבי", ""), true);
+  assert.equal(emailLooksLikeInvoice("", "מצורף גילול ספטמבר"), true);
+  assert.equal(emailLooksLikeInvoice("כרטסת ספק", "שלום"), true);
   assert.equal(emailLooksLikeInvoice("", "מצורף זיכוי"), true);
   assert.equal(emailLooksLikeInvoice("Credit note #12", ""), true);
   assert.equal(emailLooksLikeInvoice("Please see the credit invoice", ""), true);
@@ -329,6 +331,10 @@ test("inferDocumentTypeFromMail prefills only when keywords are exclusive", () =
   assert.equal(inferDocumentTypeFromMail("Please see the credit invoice", ""), "CREDIT_NOTE");
   assert.equal(inferDocumentTypeFromMail("חשבוניות זיכוי אוגוסט", ""), "CREDIT_NOTE");
   assert.equal(inferDocumentTypeFromMail("זיכוי + קבלה", ""), "UNKNOWN");
+  assert.equal(inferDocumentTypeFromMail("תעודת משלוח שבי", ""), "DELIVERY_NOTE");
+  assert.equal(inferDocumentTypeFromMail("Delivery note 88", ""), "DELIVERY_NOTE");
+  assert.equal(inferDocumentTypeFromMail("גילול ספטמבר", ""), "STATEMENT");
+  assert.equal(inferDocumentTypeFromMail("כרטסת ספק", ""), "STATEMENT");
 });
 
 test("message-id + hash dedup treats a processed sentinel as already imported", () => {
