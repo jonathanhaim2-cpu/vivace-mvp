@@ -115,20 +115,23 @@ function chartPrompt() {
 }
 
 function buildPrompt(branches: KnownBranch[] = []) {
-  return `אתה מנתח חשבוניות, חשבוניות זיכוי וקבלות למסעדת Vivac'e / ויואצ'ה (עוסק מורשה 204754121) בישראל.
+  return `אתה מנתח מסמכי ספקים למסעדת Vivac'e / ויואצ'ה (עוסק מורשה 204754121) בישראל.
 חלץ מהמסמך: שם ספק, תאריך, סכום כולל בשקלים אם נראה, וסוג מסמך.
 סוג מסמך (documentType) — חובה אחד מ:
 - INVOICE = חשבונית / חשבונית מס / tax invoice / חשבונית מס-קבלה
 - CREDIT_NOTE = חשבונית זיכוי / credit note / credit invoice (זיכוי, החזר, סכומים שליליים)
 - RECEIPT = קבלה בלבד (אישור תשלום בלי חשבונית מס)
+- DELIVERY_NOTE = תעודת משלוח / delivery note (אין חשבונית מס; מסמך פנימי)
+- STATEMENT = גילול / כרטסת ספק / statement of account (סיכום חוב, לא חשבונית)
 - UNKNOWN = לא ברור
-חשבונית ≠ קבלה ≠ חשבונית זיכוי. אם כתוב במפורש חשבונית זיכוי / זיכוי / credit note — CREDIT_NOTE. אם כתוב במפורש רק קבלה — RECEIPT. אם כתוב חשבונית רגילה — INVOICE.
+חשבונית ≠ קבלה ≠ חשבונית זיכוי ≠ תעודת משלוח ≠ גילול. אם כתוב במפורש חשבונית זיכוי / זיכוי / credit note — CREDIT_NOTE. אם כתוב במפורש תעודת משלוח — DELIVERY_NOTE. אם כתוב גילול או כרטסת — STATEMENT. אם כתוב במפורש רק קבלה — RECEIPT. אם כתוב חשבונית רגילה — INVOICE.
 הצע את הקטגוריה (LEAF בכרטסת) המתאימה ביותר. אסור לבחור קטגוריית אב.
 זהה סניף רק לפי ראיות במסמך: שם סניף, עיר (בית שמש / קרית יערים / קריית יערים), כתובת, נקודת אספקה או יעד משלוח.
 אם זו הוצאה רשתית בלי אתר — ייעוץ, מטה, HQ, הנהלה — branchHint="network".
 אם לא ברור לאן שייך המסמך — השאר branchHint ריק. אל תנחש סניף.
 החזר JSON בלבד במבנה:
 {"supplierName":"","invoiceDate":"YYYY-MM-DD או ריק","totalIls":0,"accountId":"acc_...","documentType":"INVOICE","branchHint":"id או שם סניף או network או ריק","confidence":0.0,"reason":"משפט קצר בעברית"}
+documentType חייב להיות אחד מ: INVOICE, CREDIT_NOTE, RECEIPT, DELIVERY_NOTE, STATEMENT, UNKNOWN.
 confidence בין 0 ל-1. אם לא בטוח — confidence נמוך מ-0.55.
 
 סניפים ידועים:

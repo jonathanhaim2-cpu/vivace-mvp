@@ -12,6 +12,7 @@ import {
   ORDER_STATUSES,
   PRICE_CHANGE,
   RECEIPT_STATUSES,
+  parsePhotoDocumentType,
 } from "@/lib/constants";
 import {
   creditAmountIls,
@@ -286,6 +287,42 @@ export async function markForwardedToAccountant(receiptId: string) {
   });
   revalidatePath(`/receipts/${receiptId}`);
   revalidatePath("/receipts");
+}
+
+export async function attachReceiptPhoto(receiptId: string, formData: FormData) {
+  const session = await requirePermission("action.goods_intake");
+  const receipt = await prisma.goodsReceipt.findUnique({
+    where: { id: receiptId },
+    include: { order: true, lines: true },
+  });
+  if (!receipt) throw new Error("קליטה לא נמצאה");
+  await requireBranchAccess(receipt.order.branchId, session);
+  const photo = formData.get("photo");
+  if (!(photo instanceof File) || photo.size === 0) {
+    throw new Error("חובה לצלם או לבחור קובץ");
+  }
+  const saved = await saveUpload(photo);
+  const documentType = parsePhotoDocumentType(formData.get("documentType"));
+  const amount = receipt.lines.reduce((sum, line) => sum + line.receivedQty * line.invoicePrice, 0);
+  const created = await prisma.invoicePhoto.create({
+    data: {
+      goodsReceiptId: receipt.id,
+      accountId: receipt.accountId,
+      branchId: receipt.order.branchId,
+      amountIls: amount,
+      originalAmountIls: amount,
+      fileName: saved.fileName,
+      originalName: saved.originalName,
+      mimeType: saved.mimeType,
+      contentHash: saved.contentHash,
+      source: "RECEIPT",
+      documentType,
+    },
+  });
+  const duplicate = await markPhotoIfDuplicate(created.id);
+  if (!duplicate) await analyzeStoredPhoto(created.id);
+  revalidatePath(`/receipts/${receiptId}`);
+  revalidatePath("/invoices");
 }
 
 export async function assignReceiptCategory(receiptId: string, formData: FormData) {

@@ -48,6 +48,8 @@ export const DEMO_IDS = {
     "photo_kitchen_wages",
     "photo_produce_aug",
     "photo_rent_aug",
+    "photo_credit_produce",
+    "photo_credit_icecream",
   ],
   dishes: ["dish_dough", "dish_sauce", "dish_margherita", "dish_salad"],
   inventory: ["count_open_herzliya"],
@@ -58,6 +60,8 @@ export const DEMO_IDS = {
     "demo-kitchen-wages.svg",
     "demo-produce-aug.svg",
     "demo-rent-aug.svg",
+    "demo-credit-produce.svg",
+    "demo-credit-icecream.svg",
   ],
 } as const;
 
@@ -653,6 +657,16 @@ export async function seedDemo(prisma: PrismaClient) {
       title: "חשבונית זיכוי",
       documentType: "CREDIT_NOTE",
     },
+    {
+      id: "photo_credit_icecream",
+      fileName: "demo-credit-icecream.svg",
+      originalName: "זיכוי-גלידה.svg",
+      accountId: "acc_food_dessert",
+      amountIls: -90,
+      voiceNoteText: "חשבונית זיכוי גלידה שנמחקה בטעות — שוחזרה בסיד",
+      title: "חשבונית זיכוי גלידה",
+      documentType: "CREDIT_NOTE",
+    },
   ];
 
   for (const doc of extraDocs) {
@@ -666,6 +680,7 @@ export async function seedDemo(prisma: PrismaClient) {
       update: {
         accountId: doc.accountId,
         amountIls: doc.amountIls,
+        originalAmountIls: doc.amountIls,
         voiceNoteText: doc.voiceNoteText,
         fileName: doc.fileName,
         originalName: doc.originalName,
@@ -678,6 +693,7 @@ export async function seedDemo(prisma: PrismaClient) {
         id: doc.id,
         accountId: doc.accountId,
         amountIls: doc.amountIls,
+        originalAmountIls: doc.amountIls,
         voiceNoteText: doc.voiceNoteText,
         fileName: doc.fileName,
         originalName: doc.originalName,

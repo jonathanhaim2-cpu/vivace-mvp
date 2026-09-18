@@ -42,7 +42,8 @@ export function accountantPackageText(month: string, rows: AccountRollupRow[]) {
   };
 }
 
-export function accountantMailto(month: string, rows: AccountRollupRow[]) {
+export function accountantMailto(month: string, rows: AccountRollupRow[], email: string = COMPANY.accountantEmail) {
   const { subject, body } = accountantPackageText(month, rows);
-  return `mailto:${COMPANY.accountantEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const to = email.trim() || COMPANY.accountantEmail;
+  return `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }

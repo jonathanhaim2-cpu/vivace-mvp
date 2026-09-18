@@ -1,14 +1,17 @@
 import { nowInIsrael, nextDeliveryInfo, parseDeliveryDays, parseWeekdays, lineTotal } from "@/lib/format";
 import { monthKeyFromDate, monthRangeUtc } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
-import { RECEIPT_STATUSES } from "@/lib/constants";
+import { ORDER_STATUSES, RECEIPT_STATUSES } from "@/lib/constants";
 import { supplierVisibleToBranch } from "@/lib/catalog";
 import { resolveSupplierForBranch } from "@/lib/supplier-branch";
 import { INVOICE_IN_TOTALS_WHERE } from "@/lib/invoice-duplicates";
+import { countsTowardInvoiceMetric, signedDocumentAmount } from "@/lib/money";
 import {
-  addInvoiceAmountToCategory,
+  addSignedPurchaseAmount,
   overallPurchasePercent,
   standaloneInvoiceCountsForBranch,
+  UNCATEGORIZED_PURCHASE_ID,
+  UNCATEGORIZED_PURCHASE_NAME,
 } from "@/lib/purchase-fill";
 
 const FORECAST_KEY = "dashboard.forecastTurnoverIls";
@@ -99,8 +102,7 @@ export async function getCategoryFill(month = monthKeyFromDate(), forecast: numb
   for (const receipt of receipts) {
     for (const line of receipt.lines) {
       const cat = line.orderLine.product.category;
-      const parentId = cat?.parentId ?? cat?.id;
-      if (!parentId) continue;
+      const parentId = cat?.parentId ?? cat?.id ?? UNCATEGORIZED_PURCHASE_ID;
       const amount = line.receivedQty * line.invoicePrice;
       spentByParent.set(parentId, (spentByParent.get(parentId) ?? 0) + amount);
     }
@@ -110,9 +112,7 @@ export async function getCategoryFill(month = monthKeyFromDate(), forecast: numb
     where: {
       ...INVOICE_IN_TOTALS_WHERE,
       goodsReceiptId: null,
-      accountId: { not: null },
       OR: [{ periodMonth: month }, { periodMonth: null, createdAt: { gte: start, lt: end } }],
-      ...(branchId ? { branchId } : {}),
     },
     select: {
       amountIls: true,
@@ -120,15 +120,16 @@ export async function getCategoryFill(month = monthKeyFromDate(), forecast: numb
       accountId: true,
       branchId: true,
       goodsReceiptId: true,
+      documentType: true,
     },
   });
 
   for (const photo of photos) {
     if (!standaloneInvoiceCountsForBranch(photo, branchId)) continue;
-    addInvoiceAmountToCategory(spentByParent, photo.accountId, photo.amountIls ?? photo.aiTotalIls, categories);
+    addSignedPurchaseAmount(spentByParent, photo.accountId, photo, categories);
   }
 
-  return parents.map((parent): CategoryFill => {
+  const rows = parents.map((parent): CategoryFill => {
     const spent = spentByParent.get(parent.id) ?? 0;
     const actualPercent = forecast > 0 ? (spent / forecast) * 100 : null;
     const target = parent.targetPercent;
@@ -142,6 +143,19 @@ export async function getCategoryFill(month = monthKeyFromDate(), forecast: numb
       over,
     };
   });
+  const uncategorized = spentByParent.get(UNCATEGORIZED_PURCHASE_ID) ?? 0;
+  if (uncategorized !== 0) {
+    const actualPercent = forecast > 0 ? (uncategorized / forecast) * 100 : null;
+    rows.push({
+      id: UNCATEGORIZED_PURCHASE_ID,
+      name: UNCATEGORIZED_PURCHASE_NAME,
+      spent: uncategorized,
+      targetPercent: null,
+      actualPercent,
+      over: false,
+    });
+  }
+  return rows;
 }
 
 export type BranchComparisonRow = {
@@ -180,10 +194,11 @@ export async function getNetworkBranchComparison(month = monthKeyFromDate(), for
     const fill = await getCategoryFill(month, turnover, branch.id);
     const purchaseTotal = fill.reduce((sum, row) => sum + row.spent, 0);
     const branchInvoices = invoices.filter((photo) => {
+      if (!countsTowardInvoiceMetric(photo.documentType)) return false;
       const attributed = photo.branchId ?? photo.goodsReceipt?.order.branchId ?? null;
       return attributed === branch.id;
     });
-    const invoiceTotal = branchInvoices.reduce((sum, photo) => sum + (photo.amountIls ?? photo.aiTotalIls ?? 0), 0);
+    const invoiceTotal = branchInvoices.reduce((sum, photo) => sum + signedDocumentAmount(photo), 0);
     const branchOrders = orders.filter((order) => order.branchId === branch.id);
     const orderVolume = branchOrders.reduce(
       (sum, order) =>
@@ -246,24 +261,54 @@ export async function getAnomalies(branchId?: string | null) {
   return { pricePending, missing, unclassified, exceptional };
 }
 
-export async function getGoodsToReceiveToday(branchId?: string | null) {
+export type TodayReceiveTask = {
+  id: string;
+  supplierName: string;
+  branchName: string;
+  href: string;
+  amount: number;
+  done: boolean;
+};
+
+export type TodayOrderTask = {
+  id: string;
+  name: string;
+  href: string;
+  cutoff: string;
+  done: boolean;
+};
+
+export async function getGoodsToReceiveToday(branchId?: string | null): Promise<TodayReceiveTask[]> {
   const today = nowInIsrael().day;
   const orders = await prisma.order.findMany({
     where: {
-      status: { in: ["CONFIRMED", "SENT"] },
+      status: { in: [ORDER_STATUSES.CONFIRMED, ORDER_STATUSES.SENT, ORDER_STATUSES.PARTIAL, ORDER_STATUSES.RECEIVED] },
       ...(branchId ? { branchId } : {}),
     },
-    include: { supplier: { include: { branchLinks: true } }, branch: true, lines: true },
+    include: { supplier: { include: { branchLinks: true } }, branch: true, lines: true, receipt: true },
     orderBy: { createdAt: "asc" },
   });
-  return orders.filter((order) => {
-    const resolved = resolveSupplierForBranch(order.supplier, order.branchId);
-    const days = parseDeliveryDays(resolved.deliveryDays);
-    return days.includes(today);
-  });
+  const tasks = orders
+    .filter((order) => {
+      const resolved = resolveSupplierForBranch(order.supplier, order.branchId);
+      const days = parseDeliveryDays(resolved.deliveryDays);
+      return days.includes(today);
+    })
+    .map((order) => ({
+      id: order.id,
+      supplierName: order.supplier.name,
+      branchName: order.branch.name,
+      href: order.receipt ? `/receipts/${order.receipt.id}` : `/orders/${order.id}/receive`,
+      amount: order.lines.reduce((sum, line) => sum + lineTotal(line.qty, line.unitPrice, line.discountPercent), 0),
+      done: Boolean(order.receipt) || order.status === ORDER_STATUSES.RECEIVED,
+    }));
+  return tasks.sort((a, b) => Number(a.done) - Number(b.done));
 }
 
-export async function getOrdersToPlaceToday(branchId?: string | null, isNetwork = false) {
+export async function getOrdersToPlaceToday(
+  branchId?: string | null,
+  isNetwork = false,
+): Promise<TodayOrderTask[]> {
   const suppliers = await prisma.supplier.findMany({
     include: { branchLinks: true },
     orderBy: { name: "asc" },
@@ -271,24 +316,48 @@ export async function getOrdersToPlaceToday(branchId?: string | null, isNetwork 
   const visible = suppliers.filter((supplier) =>
     isNetwork ? supplier.active : supplierVisibleToBranch(supplier, branchId ?? null),
   );
-  const openIds = new Set(
-    (
-      await prisma.order.findMany({
-        where: {
-          status: { in: ["CONFIRMED", "SENT"] },
-          ...(branchId ? { branchId } : {}),
-        },
-        select: { supplierId: true },
-      })
-    ).map((o) => o.supplierId),
-  );
-  return visible.filter((supplier) => {
+  const openOrders = await prisma.order.findMany({
+    where: {
+      status: { in: [ORDER_STATUSES.CONFIRMED, ORDER_STATUSES.SENT, ORDER_STATUSES.PARTIAL, ORDER_STATUSES.RECEIVED] },
+      ...(branchId ? { branchId } : {}),
+    },
+    select: { supplierId: true, status: true, createdAt: true },
+  });
+  const israelToday = nowInIsrael();
+  const todayKey = `${israelToday.year}-${String(israelToday.month).padStart(2, "0")}-${String(israelToday.date).padStart(2, "0")}`;
+  const latestBySupplier = new Map<string, (typeof openOrders)[number]>();
+  for (const order of openOrders) {
+    const prev = latestBySupplier.get(order.supplierId);
+    if (!prev || order.createdAt > prev.createdAt) latestBySupplier.set(order.supplierId, order);
+  }
+
+  const tasks = visible.flatMap((supplier) => {
     const resolved = resolveSupplierForBranch(supplier, branchId ?? null);
     const info = nextDeliveryInfo(
       parseDeliveryDays(resolved.deliveryDays),
       resolved.orderCutoffTime,
       parseWeekdays(resolved.orderDays),
     );
-    return info.open && !openIds.has(supplier.id);
+    if (!info.open) return [];
+    const latest = latestBySupplier.get(supplier.id);
+    const orderedToday =
+      latest != null &&
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Jerusalem",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(latest.createdAt) === todayKey;
+    const done = orderedToday;
+    return [
+      {
+        id: supplier.id,
+        name: supplier.name,
+        href: `/orders/new?supplierId=${supplier.id}`,
+        cutoff: resolved.orderCutoffTime,
+        done,
+      },
+    ];
   });
+  return tasks.sort((a, b) => Number(a.done) - Number(b.done) || a.name.localeCompare(b.name, "he"));
 }

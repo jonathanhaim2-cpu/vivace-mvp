@@ -148,6 +148,30 @@ export default async function SupplierDetailPage({
           </p>
           <p>תנאי תשלום: {terms ?? "לא הוגדר"}</p>
           <p>אמצעי תשלום: {method ?? "לא הוגדר"}</p>
+          <p>יום חיוב: {supplier.paymentChargeDay ?? "—"}</p>
+          {supplier.card1Label || supplier.card2Label ? (
+            <p>
+              כרטיסים: {[supplier.card1Label, supplier.card2Label].filter(Boolean).join(" · ")}
+            </p>
+          ) : null}
+          {supplier.branchLinks.some((link) => link.driverName || link.taxId || link.catalogKind || link.paymentMethod) ? (
+            <p className="sm:col-span-2 text-muted-foreground">
+              מפיץ לפי סניף:{" "}
+              {supplier.branchLinks
+                .map((link) => {
+                  const bits = [
+                    link.branch.name,
+                    link.driverName,
+                    link.taxId ? `ח.פ. ${link.taxId}` : null,
+                    link.catalogKind === "NETWORK" ? "מחירון רשת" : link.catalogKind === "FRANCHISEE" ? "מחירון זכיין" : null,
+                    PAYMENT_METHODS.find((item) => item.value === link.paymentMethod)?.label,
+                    link.paymentChargeDay != null ? `חיוב ${link.paymentChargeDay}` : null,
+                  ].filter(Boolean);
+                  return bits.join(" · ");
+                })
+                .join(" | ")}
+            </p>
+          ) : null}
           <p>הנה״ח: {[supplier.accountingPhone, supplier.accountingEmail].filter(Boolean).join(" · ") || "—"}</p>
           {supplier.plantsCouncilRelevant ? (
             <p className="sm:col-span-2">

@@ -58,10 +58,30 @@ export function monthLabel(key: string) {
   return `${MONTH_NAMES[month - 1]} ${year}`;
 }
 
+function zonedMidnightUtc(year: number, month: number, day: number, timeZone = "Asia/Jerusalem") {
+  const utc = Date.UTC(year, month - 1, day, 0, 0, 0);
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(utc));
+  const get = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((part) => part.type === type)?.value);
+  const asIfUtc = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"), get("second"));
+  return new Date(utc - (asIfUtc - utc));
+}
+
+/** Calendar month in Asia/Jerusalem, expressed as UTC instants for SQLite DateTime filters. */
 export function monthRangeUtc(key: string) {
   const [year, month] = key.split("-").map(Number);
-  const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
-  const end = new Date(Date.UTC(year, month, 1, 0, 0, 0));
+  const start = zonedMidnightUtc(year, month, 1);
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const nextYear = month === 12 ? year + 1 : year;
+  const end = zonedMidnightUtc(nextYear, nextMonth, 1);
   return { start, end };
 }
 

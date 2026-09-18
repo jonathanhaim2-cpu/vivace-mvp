@@ -12,6 +12,10 @@ type BranchLink = {
   orderDays?: string | null;
   orderCutoffTime?: string | null;
   notes?: string | null;
+  driverName?: string | null;
+  catalogKind?: string | null;
+  paymentMethod?: string | null;
+  paymentChargeDay?: number | null;
 };
 
 type SupplierLike = {
@@ -27,6 +31,9 @@ type SupplierLike = {
   orderDays: string;
   orderCutoffTime: string;
   notes?: string | null;
+  driverName?: string | null;
+  paymentMethod?: string | null;
+  paymentChargeDay?: number | null;
   branchLinks?: BranchLink[];
 };
 
@@ -52,5 +59,9 @@ export function resolveSupplierForBranch<T extends SupplierLike>(supplier: T, br
     orderDays: pick(link?.orderDays, supplier.orderDays) || supplier.orderDays,
     orderCutoffTime: pick(link?.orderCutoffTime, supplier.orderCutoffTime) || supplier.orderCutoffTime,
     notes: pick(link?.notes, supplier.notes),
+    driverName: pick(link?.driverName, supplier.driverName),
+    catalogKind: link?.catalogKind ?? null,
+    paymentMethod: pick(link?.paymentMethod, supplier.paymentMethod),
+    paymentChargeDay: link?.paymentChargeDay ?? supplier.paymentChargeDay ?? null,
   };
 }

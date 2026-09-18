@@ -59,7 +59,8 @@ export const PRICE_LIST_KIND = {
 
 export const PAYMENT_METHODS = [
   { value: "TRANSFER", label: "העברה בנקאית" },
-  { value: "CARD", label: "כרטיס אשראי" },
+  { value: "CARD", label: "אשראי · כרטיס 1" },
+  { value: "CARD_2", label: "אשראי · כרטיס 2" },
   { value: "CHECK", label: "שיק" },
   { value: "CASH", label: "מזומן" },
 ] as const;
@@ -131,6 +132,8 @@ export const PHOTO_DOCUMENT_TYPE = {
   INVOICE: "INVOICE",
   CREDIT_NOTE: "CREDIT_NOTE",
   RECEIPT: "RECEIPT",
+  DELIVERY_NOTE: "DELIVERY_NOTE",
+  STATEMENT: "STATEMENT",
   UNKNOWN: "UNKNOWN",
 } as const;
 
@@ -140,6 +143,8 @@ export const PHOTO_DOCUMENT_TYPES = [
   { value: PHOTO_DOCUMENT_TYPE.INVOICE, label: "חשבונית" },
   { value: PHOTO_DOCUMENT_TYPE.CREDIT_NOTE, label: "חשבונית זיכוי" },
   { value: PHOTO_DOCUMENT_TYPE.RECEIPT, label: "קבלה" },
+  { value: PHOTO_DOCUMENT_TYPE.DELIVERY_NOTE, label: "תעודת משלוח" },
+  { value: PHOTO_DOCUMENT_TYPE.STATEMENT, label: "גילול / כרטסת" },
   { value: PHOTO_DOCUMENT_TYPE.UNKNOWN, label: "לא ידוע" },
 ] as const;
 
@@ -163,6 +168,25 @@ export function parsePhotoDocumentType(raw: unknown): PhotoDocumentType {
   }
   if (upper === PHOTO_DOCUMENT_TYPE.INVOICE || value === "חשבונית") return PHOTO_DOCUMENT_TYPE.INVOICE;
   if (upper === PHOTO_DOCUMENT_TYPE.RECEIPT || value === "קבלה") return PHOTO_DOCUMENT_TYPE.RECEIPT;
+  if (
+    upper === PHOTO_DOCUMENT_TYPE.DELIVERY_NOTE ||
+    upper === "DELIVERY NOTE" ||
+    value === "תעודת משלוח" ||
+    value === "תעודות משלוח"
+  ) {
+    return PHOTO_DOCUMENT_TYPE.DELIVERY_NOTE;
+  }
+  if (
+    upper === PHOTO_DOCUMENT_TYPE.STATEMENT ||
+    upper === "KARTESET" ||
+    upper === "GIULOL" ||
+    value === "גילול" ||
+    value === "כרטסת" ||
+    value === "גילול / כרטסת" ||
+    value === "גילול/כרטסת"
+  ) {
+    return PHOTO_DOCUMENT_TYPE.STATEMENT;
+  }
   if (upper === PHOTO_DOCUMENT_TYPE.UNKNOWN || value === "לא ידוע") return PHOTO_DOCUMENT_TYPE.UNKNOWN;
   return PHOTO_DOCUMENT_TYPE.UNKNOWN;
 }

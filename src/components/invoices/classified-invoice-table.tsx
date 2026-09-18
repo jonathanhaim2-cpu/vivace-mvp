@@ -34,6 +34,9 @@ export type ClassifiedInvoiceRow = {
   documentType: string;
   paid: boolean;
   sentToAccountant: boolean;
+  vatIncluded?: boolean;
+  amountExVat?: number | null;
+  vatAmount?: number | null;
 };
 
 export function ClassifiedInvoiceTable({
@@ -102,7 +105,17 @@ export function ClassifiedInvoiceTable({
               <TableCell>
                 {invoiceBranchDisplayName(row.branchName, row.branchId)}
               </TableCell>
-              <TableCell>{amount != null ? formatIls(amount) : "—"}</TableCell>
+              <TableCell>
+                <div className="space-y-0.5">
+                  <span>{amount != null ? formatIls(amount) : "—"}</span>
+                  {row.amountExVat != null && row.vatAmount != null ? (
+                    <p className="text-[11px] leading-tight text-muted-foreground">
+                      לפני {formatIls(row.amountExVat)} · מע״מ {formatIls(row.vatAmount)}
+                      {row.vatIncluded === false ? " · הוזן לפני מע״מ" : ""}
+                    </p>
+                  ) : null}
+                </div>
+              </TableCell>
               <TableCell>
                 <AiConfidenceBadge confidence={row.aiConfidence} status={row.aiStatus} />
               </TableCell>

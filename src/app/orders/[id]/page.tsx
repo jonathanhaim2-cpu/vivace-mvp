@@ -1,21 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { NextOrderNotice } from "@/components/orders/next-order-notice";
-import { OrderCompanyHeader } from "@/components/orders/order-company-header";
+import { OrderDocument } from "@/components/orders/order-document";
 import { WhatsAppButton } from "@/components/orders/whatsapp-button";
 import { WhatsAppTicks } from "@/components/orders/whatsapp-ticks";
 import { PrintOnLoad } from "@/components/print-on-load";
 import { OrderStatusBadge } from "@/components/status-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  describePackaging,
-  formatDateTime,
-  formatIls,
-  lineTotal,
-  nextOrderWindow,
-  resolveOrderDays,
-} from "@/lib/format";
+import { formatDateTime, nextOrderWindow, resolveOrderDays } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { resolveSupplierForBranch } from "@/lib/supplier-branch";
 import { buildOrderWhatsAppText, buildWhatsAppUrl } from "@/lib/whatsapp";
@@ -49,10 +42,6 @@ export default async function OrderDetailPage({
 
   const createLog = await firstAuditFor("Order", order.id, AUDIT_ACTIONS.ORDER_CREATE);
 
-  const total = order.lines.reduce(
-    (sum, line) => sum + lineTotal(line.qty, line.unitPrice, line.discountPercent),
-    0,
-  );
   const sendToSuppliers = await getSendToSuppliersEnabled();
   const resolvedSupplier = resolveSupplierForBranch(order.supplier, order.branchId);
   const whatsappPhone = resolveOrderWhatsAppPhone({
@@ -91,30 +80,21 @@ export default async function OrderDetailPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>סיכום להזמנה</CardTitle>
+        <CardTitle>מסמך הזמנה</CardTitle>
           <CardDescription>
             קודם פרטי העסק, ואחר כך שורות ההזמנה
             {sendToSuppliers ? " — נשלח למספר הספק" : " — מצב בדיקה, נשלח לרועי"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <OrderCompanyHeader branch={order.branch} />
-          <ul className="space-y-2 text-sm">
-            {order.lines.map((line) => {
-              const pack = describePackaging(line.qty, line.product.cartonToBags, line.product.bagsToUnits);
-              return (
-                <li key={line.id} className="flex justify-between gap-4">
-                  <span>
-                    {line.product.name} × {line.qty}
-                    {pack ? ` (${pack})` : ""}
-                  </span>
-                  <span>{formatIls(lineTotal(line.qty, line.unitPrice, line.discountPercent))}</span>
-                </li>
-              );
-            })}
-          </ul>
-          <p className="font-medium">סה״כ משוער: {formatIls(total)}</p>
-          <p className="text-sm text-muted-foreground">הערות למפיץ: {order.notesForDriver || "אין"}</p>
+          <OrderDocument
+            branch={order.branch}
+            supplierName={resolvedSupplier.name}
+            deliveryPointNumber={resolvedSupplier.deliveryPointNumber}
+            createdAt={order.createdAt}
+            notesForDriver={order.notesForDriver}
+            lines={order.lines}
+          />
           <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs whitespace-pre-wrap print:border print:bg-white">
             {message}
           </pre>

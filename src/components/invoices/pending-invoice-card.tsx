@@ -7,6 +7,7 @@ import { BranchSelect, type BranchOption } from "@/components/branches/branch-se
 import { DiscardInvoiceButton } from "@/components/invoices/discard-invoice-button";
 import { InvoiceDocumentPreview } from "@/components/invoices/invoice-document-preview";
 import { DocumentTypeBadge, DocumentTypeSelect } from "@/components/invoices/document-type-control";
+import { InvoiceAmountFields } from "@/components/invoices/invoice-amount-fields";
 import { Button } from "@/components/ui/button";
 import { isAiNotInvoiceSuggestion } from "@/lib/invoice-discard";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -42,6 +43,7 @@ export type PendingInvoicePhoto = {
   aiDocumentType: string | null;
   aiBranchId: string | null;
   aiNetworkExpense: boolean;
+  vatIncluded?: boolean;
 };
 
 export function PendingInvoiceCard({
@@ -148,17 +150,12 @@ export function PendingInvoiceCard({
                 placeholder="למשל: ירקות השרון"
               />
             </Field>
-            <Field>
-              <FieldLabel htmlFor={field("amountIls")}>סכום כולל (₪)</FieldLabel>
-              <Input
-                id={field("amountIls")}
-                name="amountIls"
-                type="number"
-                min={0}
-                step="0.01"
-                defaultValue={amount != null ? String(amount) : ""}
-              />
-            </Field>
+            <InvoiceAmountFields
+              idPrefix={`${photo.id}-`}
+              defaultAmount={amount}
+              defaultType={photo.documentType || photo.aiDocumentType}
+              defaultVatIncluded={photo.vatIncluded !== false}
+            />
             <Field>
               <FieldLabel htmlFor={field("accountId")}>קטגוריה</FieldLabel>
               <GroupedAccountSelect id={field("accountId")} defaultValue={photo.aiAccountId} />

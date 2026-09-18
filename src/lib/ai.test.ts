@@ -59,9 +59,23 @@ test("parseInvoiceAiSuggestion reads branchHint without forcing a guess", () => 
   assert.equal(unclear?.branchHint, null);
 });
 
+test("parseInvoiceAiSuggestion maps DELIVERY_NOTE and STATEMENT", () => {
+  const delivery = parseInvoiceAiSuggestion(
+    '{"supplierName":"שבי","invoiceDate":"2026-09-10","totalIls":400,"accountId":"acc_food_produce","documentType":"DELIVERY_NOTE","confidence":0.9,"reason":"תעודת משלוח"}',
+  );
+  assert.equal(delivery?.documentType, PHOTO_DOCUMENT_TYPE.DELIVERY_NOTE);
+
+  const statement = parseInvoiceAiSuggestion(
+    '{"supplierName":"שבי","invoiceDate":"2026-09-30","totalIls":12000,"accountId":"acc_food_misc","documentType":"כרטסת","confidence":0.8,"reason":"גילול"}',
+  );
+  assert.equal(statement?.documentType, PHOTO_DOCUMENT_TYPE.STATEMENT);
+});
+
 test("photoDocumentTypeLabel uses חשבונית זיכוי for CREDIT_NOTE", () => {
   assert.equal(photoDocumentTypeLabel("CREDIT_NOTE"), "חשבונית זיכוי");
   assert.equal(photoDocumentTypeLabel("INVOICE"), "חשבונית");
   assert.equal(photoDocumentTypeLabel("RECEIPT"), "קבלה");
+  assert.equal(photoDocumentTypeLabel("DELIVERY_NOTE"), "תעודת משלוח");
+  assert.equal(photoDocumentTypeLabel("STATEMENT"), "גילול / כרטסת");
   assert.equal(photoDocumentTypeLabel("UNKNOWN"), "לא ידוע");
 });

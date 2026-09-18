@@ -24,6 +24,16 @@ function readBranchIds(formData: FormData) {
     .filter(Boolean);
 }
 
+function optionalInt(value: FormDataEntryValue | null, min: number, max: number) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return null;
+  const rounded = Math.round(n);
+  if (rounded < min || rounded > max) return null;
+  return rounded;
+}
+
 function optionalFloat(value: FormDataEntryValue | null) {
   const raw = String(value ?? "").trim();
   if (!raw) return null;
@@ -74,6 +84,9 @@ function readSupplierInput(formData: FormData) {
     active: formData.getAll("active").some((value) => value === "on" || value === "true" || value === "1"),
     paymentTerms: paymentTerms || null,
     paymentMethod: paymentMethod || null,
+    paymentChargeDay: optionalInt(formData.get("paymentChargeDay"), 1, 28),
+    card1Label: String(formData.get("card1Label") ?? "").trim() || null,
+    card2Label: String(formData.get("card2Label") ?? "").trim() || null,
     accountingPhone: String(formData.get("accountingPhone") ?? "").trim() || null,
     accountingEmail: String(formData.get("accountingEmail") ?? "").trim() || null,
     plantsCouncilUrl: String(formData.get("plantsCouncilUrl") ?? "").trim() || null,
@@ -93,27 +106,45 @@ async function replaceBranches(supplierId: string, branchIds: string[], formData
   if (branchIds.length === 0) return;
   for (const branchId of branchIds) {
     const prev = previous.get(branchId);
-    const fromForm = formData ? String(formData.get(`branchWhatsapp:${branchId}`) ?? "").trim() : "";
+    const field = (name: string) => (formData ? String(formData.get(`${name}:${branchId}`) ?? "").trim() : "");
+    const fromForm = field("branchWhatsapp");
+    const payMethod = field("branchPay") || prev?.paymentMethod || null;
+    const chargeDay = optionalInt(formData?.get(`branchChargeDay:${branchId}`) ?? null, 1, 28) ?? prev?.paymentChargeDay ?? null;
     await prisma.supplierBranch.upsert({
       where: { supplierId_branchId: { supplierId, branchId } },
       update: {
         whatsappPhone: fromForm || prev?.whatsappPhone || null,
+        taxId: field("branchTaxId") || prev?.taxId || null,
+        driverName: field("branchDriver") || prev?.driverName || null,
+        agentName: field("branchAgent") || prev?.agentName || null,
+        agentPhone: field("branchAgentPhone") || prev?.agentPhone || null,
+        deliveryDays: field("branchDeliveryDays") || prev?.deliveryDays || null,
+        orderDays: field("branchOrderDays") || prev?.orderDays || null,
+        orderCutoffTime: field("branchCutoff") || prev?.orderCutoffTime || null,
+        catalogKind: field("branchCatalog") || prev?.catalogKind || null,
+        notes: field("branchNotes") || prev?.notes || null,
+        paymentMethod: payMethod,
+        paymentChargeDay: chargeDay,
       },
       create: {
         supplierId,
         branchId,
         whatsappPhone: fromForm || prev?.whatsappPhone || null,
-        agentName: prev?.agentName,
-        agentPhone: prev?.agentPhone,
+        taxId: field("branchTaxId") || prev?.taxId || null,
+        driverName: field("branchDriver") || prev?.driverName || null,
+        agentName: field("branchAgent") || prev?.agentName || field("branchAgent"),
+        agentPhone: field("branchAgentPhone") || prev?.agentPhone || null,
         accountingPhone: prev?.accountingPhone,
         accountingEmail: prev?.accountingEmail,
-        taxId: prev?.taxId,
         address: prev?.address,
         deliveryPointNumber: prev?.deliveryPointNumber,
-        deliveryDays: prev?.deliveryDays,
-        orderDays: prev?.orderDays,
-        orderCutoffTime: prev?.orderCutoffTime,
-        notes: prev?.notes,
+        deliveryDays: field("branchDeliveryDays") || prev?.deliveryDays || null,
+        orderDays: field("branchOrderDays") || prev?.orderDays || null,
+        orderCutoffTime: field("branchCutoff") || prev?.orderCutoffTime || null,
+        catalogKind: field("branchCatalog") || prev?.catalogKind || null,
+        notes: field("branchNotes") || prev?.notes || null,
+        paymentMethod: payMethod,
+        paymentChargeDay: chargeDay,
       },
     });
   }

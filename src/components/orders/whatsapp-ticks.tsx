@@ -42,14 +42,14 @@ export function WhatsAppTicks({
           {status !== WHATSAPP_STATUS.DELIVERED ? (
             <form action={updateWhatsAppStatus.bind(null, orderId, WHATSAPP_STATUS.DELIVERED)}>
               <button type="submit" className="rounded-full border px-2 py-0.5 text-[11px] hover:bg-muted">
-                הגיע לספק
+                התקבלה
               </button>
             </form>
           ) : null}
           {status !== WHATSAPP_STATUS.READ ? (
             <form action={updateWhatsAppStatus.bind(null, orderId, WHATSAPP_STATUS.READ)}>
               <button type="submit" className="rounded-full border px-2 py-0.5 text-[11px] hover:bg-muted">
-                נקרא
+                נקראה
               </button>
             </form>
           ) : null}

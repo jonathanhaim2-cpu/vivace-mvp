@@ -22,7 +22,7 @@ export default async function ReportsPage({
     <div className="space-y-6">
       <PageHeader
         title="דוח תחילת חודש"
-        description={`סיכום ${monthLabel(month)} לפי קטגוריות — מחשבוניות וקליטות ששובצו.`}
+        description={`סיכום ${monthLabel(month)} לפי קטגוריות — מחשבוניות וקליטות ששובצו. לא כולל תעודות משלוח.`}
       />
 
       <FilterBar submitLabel="רענון">

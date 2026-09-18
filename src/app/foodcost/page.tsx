@@ -145,7 +145,7 @@ export default async function FoodCostPage({
 
       <CompactPanel
         title="הכנסות והוצאות קבועות / משתנות"
-        description={`הכנסות ${formatIls(income)} · הוצאות ${formatIls(expense)} · נטו ${formatIls(income - expense)}`}
+        description={`הכנסות ${formatIls(income)} · הוצאות ${formatIls(expense)} · נטו ${formatIls(income - expense)} · ניהול מלא ב«הוצאות קבועות».`}
       >
         <div className="space-y-3">
           {recurring.length === 0 ? (
@@ -204,9 +204,17 @@ export default async function FoodCostPage({
         </div>
       </CompactPanel>
 
-      <Link href="/reports" className={cn(buttonVariants({ variant: "ghost" }))}>
-        דוחות חודשיים
-      </Link>
+      <div className="flex flex-wrap gap-2">
+        <Link href="/expenses" className={cn(buttonVariants({ variant: "outline" }))}>
+          הוצאות קבועות
+        </Link>
+        <Link href="/reports/food-cost" className={cn(buttonVariants({ variant: "ghost" }))}>
+          עלות רכש לפי ספק
+        </Link>
+        <Link href="/reports" className={cn(buttonVariants({ variant: "ghost" }))}>
+          דוחות חודשיים
+        </Link>
+      </div>
     </div>
   );
 }
