@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   addInvoiceAmountToCategory,
+  addSignedPurchaseAmount,
   catalogCategoryAccounts,
   invoiceInReportMonth,
   overallPurchasePercent,
@@ -9,6 +10,7 @@ import {
   relativeShare,
   resolvedInvoiceBranchId,
   standaloneInvoiceCountsForBranch,
+  UNCATEGORIZED_PURCHASE_ID,
 } from "./purchase-fill";
 
 const categories = catalogCategoryAccounts();
@@ -28,6 +30,25 @@ test("standalone invoice amounts add to category spend without a goods receipt",
   addInvoiceAmountToCategory(spent, "acc_food_produce", 0, categories);
   assert.equal(spent.get("pcat_produce"), 2240);
   assert.equal(spent.get("pcat_dairy"), 800);
+});
+
+test("uncategorized and credit amounts still move the purchase total", () => {
+  const spent = new Map<string, number>([["pcat_produce", 1000]]);
+  addSignedPurchaseAmount(
+    spent,
+    "acc_food_produce",
+    { documentType: "CREDIT_NOTE", amountIls: 200 },
+    categories,
+  );
+  addSignedPurchaseAmount(spent, null, { documentType: "INVOICE", amountIls: 50 }, categories);
+  addSignedPurchaseAmount(
+    spent,
+    "acc_food_produce",
+    { documentType: "DELIVERY_NOTE", amountIls: 999 },
+    categories,
+  );
+  assert.equal(spent.get("pcat_produce"), 800);
+  assert.equal(spent.get(UNCATEGORIZED_PURCHASE_ID), 50);
 });
 
 test("receipt-linked photos are excluded so lines are not double-counted", () => {

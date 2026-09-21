@@ -62,6 +62,8 @@ export function DocumentTypeBadge({ value }: { value: string | null | undefined 
         type === "INVOICE" && "bg-sky-100 text-sky-950 dark:bg-sky-950/60 dark:text-sky-100",
         type === "CREDIT_NOTE" && "bg-rose-100 text-rose-950 dark:bg-rose-950/60 dark:text-rose-100",
         type === "RECEIPT" && "bg-violet-100 text-violet-950 dark:bg-violet-950/60 dark:text-violet-100",
+        type === "DELIVERY_NOTE" && "bg-amber-100 text-amber-950 dark:bg-amber-950/60 dark:text-amber-100",
+        type === "STATEMENT" && "bg-slate-200 text-slate-950 dark:bg-slate-800 dark:text-slate-100",
         type === "UNKNOWN" && "bg-muted text-muted-foreground",
       )}
     >

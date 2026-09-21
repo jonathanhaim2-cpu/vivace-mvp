@@ -11,6 +11,9 @@ export async function createUploadedInvoicePhoto(input: {
   periodMonth: string | null;
   source: string;
   documentType?: string | null;
+  vatIncluded?: boolean;
+  amountExVat?: number | null;
+  vatAmount?: number | null;
 }) {
   const original = await findExistingDuplicateOriginal({
     contentHash: input.saved.contentHash,
@@ -22,6 +25,10 @@ export async function createUploadedInvoicePhoto(input: {
       accountId: input.accountId,
       branchId: input.branchId ?? null,
       amountIls: input.amountIls ?? null,
+      originalAmountIls: input.amountIls ?? null,
+      vatIncluded: input.vatIncluded ?? true,
+      amountExVat: input.amountExVat ?? null,
+      vatAmount: input.vatAmount ?? null,
       voiceNoteText: input.voiceNoteText ?? null,
       fileName: input.saved.fileName,
       originalName: input.saved.originalName,

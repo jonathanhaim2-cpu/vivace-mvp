@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { assignReceiptCategory, markForwardedToAccountant } from "@/actions/receipts";
+import { assignReceiptCategory, attachReceiptPhoto, markForwardedToAccountant } from "@/actions/receipts";
 import { CancelReceiptButton } from "@/components/receipts/cancel-receipt-button";
 import { AuditInfoButton } from "@/components/audit-info-button";
 import { PriceActions } from "@/components/receipts/price-actions";
@@ -8,6 +8,9 @@ import { PriceChangeBadge, ReceiptStatusBadge } from "@/components/status-badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CompactField, CompactForm } from "@/components/ui/compact-form";
+import { DocumentTypeSelect } from "@/components/invoices/document-type-control";
+import { InvoiceCaptureField } from "@/components/invoices/invoice-capture-field";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
 import { COMPANY, EXCEPTION_KIND, PRICE_CHANGE } from "@/lib/constants";
 import { AUDIT_ACTIONS, firstAuditFor, formatAuditStamp, isCancellableReceiptStatus } from "@/lib/audit";
@@ -208,6 +211,17 @@ export default async function ReceiptDetailPage({ params }: { params: Promise<{ 
               )}
             </a>
           ))}
+          <CompactForm action={attachReceiptPhoto.bind(null, receipt.id)} className="sm:col-span-2">
+            <div className="min-w-[16rem] flex-1">
+              <InvoiceCaptureField compact required />
+            </div>
+            <CompactField label="סוג מסמך" htmlFor="receipt-documentType">
+              <DocumentTypeSelect id="receipt-documentType" />
+            </CompactField>
+            <Button type="submit" size="sm">
+              צירוף צילום
+            </Button>
+          </CompactForm>
         </CardContent>
       </Card>
 

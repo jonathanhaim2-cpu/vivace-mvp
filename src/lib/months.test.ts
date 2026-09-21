@@ -34,3 +34,11 @@ test("parseMonthParam treats all as no filter and invalid as fallback", () => {
   assert.equal(parseMonthParam("2026-08", "2026-09"), "2026-08");
   assert.equal(parseMonthParam("nope", "2026-09"), "2026-09");
 });
+
+test("monthRangeUtc uses Jerusalem midnight so early-month Israel receipts stay in September", async () => {
+  const { monthRangeUtc } = await import("./months");
+  const { start, end } = monthRangeUtc("2026-09");
+  // 2026-09-01 00:00 Asia/Jerusalem = 2026-08-31 21:00 UTC (IDT, UTC+3)
+  assert.equal(start.toISOString(), "2026-08-31T21:00:00.000Z");
+  assert.equal(end.toISOString(), "2026-09-30T21:00:00.000Z");
+});

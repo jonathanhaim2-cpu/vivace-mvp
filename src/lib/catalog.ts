@@ -70,7 +70,7 @@ export async function listOrderableSuppliers(opts: { role: Role; branchId: strin
 export async function listManagedSuppliers(opts: { role: Role; branchId: string | null }) {
   const suppliers = await prisma.supplier.findMany({
     include: {
-      branchLinks: true,
+      branchLinks: { include: { branch: true } },
       defaultCategory: { include: { parent: true } },
       _count: { select: { products: true, orders: true } },
     },

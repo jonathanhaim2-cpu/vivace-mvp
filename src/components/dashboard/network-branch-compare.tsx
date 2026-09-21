@@ -1,4 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { MetricHint } from "@/components/dashboard/metric-hint";
 import type { BranchComparisonRow } from "@/lib/dashboard";
 import { formatIls } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -83,10 +84,10 @@ function CompareRow({
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Metric({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (
     <div className="min-w-0 rounded-md bg-background/80 px-2 py-1.5">
-      <p className="text-[11px] leading-tight text-muted-foreground">{label}</p>
+      <MetricHint label={label} hint={hint} />
       <p className="truncate text-sm font-medium leading-tight tabular-nums">{value}</p>
     </div>
   );
@@ -106,10 +107,26 @@ function BranchStatCard({
         <p className="truncate text-sm font-medium">{branch.name}</p>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <Metric label="רכש" value={formatIls(branch.purchaseTotal)} />
-        <Metric label="% מחזור" value={formatPercent(branch.purchasePercent)} />
-        <Metric label="חשבוניות" value={`${branch.invoiceCount} · ${formatIls(branch.invoiceTotal)}`} />
-        <Metric label="הזמנות" value={`${branch.orderCount} · ${formatIls(branch.orderVolume)}`} />
+        <Metric
+          label="רכש"
+          value={formatIls(branch.purchaseTotal)}
+          hint="קליטות סחורה + חשבוניות/זיכויים/קבלות ששובצו לסניף. לא כולל תעודות משלוח או גילול/כרטסת."
+        />
+        <Metric
+          label="% מחזור"
+          value={formatPercent(branch.purchasePercent)}
+          hint="רכש של הסניף חלקי המחזור החזוי של הרשת."
+        />
+        <Metric
+          label="חשבוניות"
+          value={`${branch.invoiceCount} · ${formatIls(branch.invoiceTotal)}`}
+          hint="מסמכי חשבונית וחשבונית זיכוי שמשויכים לסניף — לא הזמנות ולא קליטות בלבד."
+        />
+        <Metric
+          label="הזמנות"
+          value={`${branch.orderCount} · ${formatIls(branch.orderVolume)}`}
+          hint="הזמנות שנפתחו בחודש, גם אם טרם נקלט או שובץ מסמך."
+        />
       </div>
       <div>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-b border-border/70 pb-1 text-[10px] text-muted-foreground">
@@ -158,7 +175,9 @@ export function NetworkBranchCompare({
     <Card>
       <CardHeader>
         <CardTitle>השוואת סניפים</CardTitle>
-        <CardDescription>רכש לפי סניף מול מחזור חזוי {formatIls(forecast)}.</CardDescription>
+        <CardDescription>
+          רכש = קליטות+חשבוניות לסניף מול מחזור חזוי {formatIls(forecast)}. חשבוניות ≠ הזמנות.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className={cn("grid gap-3", branches.length > 1 ? "md:grid-cols-2" : "grid-cols-1")}>

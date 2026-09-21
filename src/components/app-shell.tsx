@@ -19,12 +19,13 @@ import {
 import { logout } from "@/actions/auth";
 import { BrandLogo } from "@/components/brand-logo";
 import { AppChat } from "@/components/chat/app-chat";
+import { CutoffReminderBanner } from "@/components/cutoff-reminder-banner";
 import { SessionSwitcher } from "@/components/session-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { COMPANY } from "@/lib/constants";
 import { hasPermission, type AppRole, type PermissionKey } from "@/lib/roles";
 import { cn } from "@/lib/utils";
-import { CutoffReminderBanner } from "@/components/cutoff-reminder-banner";
+import { REPORT_LINKS } from "@/components/reports/reports-nav";
 import { SendToSuppliersToggle } from "@/components/orders/send-to-suppliers-toggle";
 import type { DueCutoffReminder } from "@/lib/reminders";
 import type { ChatPanelState } from "@/lib/chat-types";
@@ -99,19 +100,39 @@ export function AppShell({
             const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
             const Icon = item.icon;
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition-colors",
-                  active
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground",
-                )}
-              >
-                <Icon className="size-4 shrink-0" />
-                {item.label}
-              </Link>
+              <div key={item.href}>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition-colors",
+                    active
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                      : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                  )}
+                >
+                  <Icon className="size-4 shrink-0" />
+                  {item.label}
+                </Link>
+                {item.href === "/reports" && pathname.startsWith("/reports") ? (
+                  <div className="mt-1 ms-6 flex flex-col gap-0.5">
+                    {REPORT_LINKS.map((sub) => {
+                      const subActive = sub.href === "/reports" ? pathname === "/reports" : pathname.startsWith(sub.href);
+                      return (
+                        <Link
+                          key={sub.href}
+                          href={sub.href}
+                          className={cn(
+                            "rounded-lg px-2 py-1 text-[11px]",
+                            subActive ? "bg-sidebar-accent text-sidebar-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/70",
+                          )}
+                        >
+                          {sub.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
             );
           })}
         </nav>

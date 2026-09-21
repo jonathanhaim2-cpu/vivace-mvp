@@ -7,9 +7,9 @@ export function whatsappStatusLabel(status: string) {
     case WHATSAPP_STATUS.SENT:
       return "נשלח";
     case WHATSAPP_STATUS.DELIVERED:
-      return "הגיע לספק";
+      return "התקבלה";
     case WHATSAPP_STATUS.READ:
-      return "נקרא אצל הספק";
+      return "נקראה";
     default:
       return "סטטוס לא ידוע";
   }

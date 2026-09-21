@@ -1,5 +1,6 @@
 import { logout } from "@/actions/auth";
 import { createBranch } from "@/actions/branches";
+import { saveAccountantExportSettings } from "@/actions/settings";
 import { ForecastInputForm } from "@/components/dashboard/forecast-form";
 import { PageHeader } from "@/components/page-header";
 import { SettingsNav } from "@/components/settings/settings-nav";
@@ -7,6 +8,7 @@ import { AiMissingBanner } from "@/components/ai-missing-banner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { CompactField, CompactForm, CompactPanel } from "@/components/ui/compact-form";
 import { Input } from "@/components/ui/input";
+import { getAccountantExportConfig } from "@/lib/accountant-export";
 import { getAiRuntime } from "@/lib/ai";
 import { isAuthEnabled } from "@/lib/auth";
 import { getForecastTurnover } from "@/lib/dashboard";
@@ -20,11 +22,12 @@ import { cn } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const [runtime, session, forecast, sendToSuppliers] = await Promise.all([
+  const [runtime, session, forecast, sendToSuppliers, accountant] = await Promise.all([
     getAiRuntime(),
     getAppSession(),
     getForecastTurnover(),
     getSendToSuppliersEnabled(),
+    getAccountantExportConfig(),
   ]);
   const providerLabel =
     runtime.provider === "google" ? "Google Gemini Flash" : runtime.provider === "openai" ? "OpenAI" : "אין ספק";
@@ -77,6 +80,51 @@ export default async function SettingsPage() {
           description="כבוי: וואטסאפ נפתח למספר של רועי. דולק: כל הזמנה נשלחת למספר האמיתי של הספק."
         >
           <SendToSuppliersToggle enabled={sendToSuppliers} />
+        </CompactPanel>
+      ) : null}
+
+      {sessionCan(session, "action.manage_settings") ? (
+        <CompactPanel
+          title="ייצוא להנה״ח"
+          description="וואטסאפ מועדף. אם אין Business API — ZIP / מייל / תיקייה. תעודות משלוח וגילול לא נכנסים לחבילה."
+        >
+          <CompactForm action={saveAccountantExportSettings}>
+            <CompactField label="וואטסאפ הנה״ח" htmlFor="accountantWhatsapp">
+              <Input
+                id="accountantWhatsapp"
+                name="accountantWhatsapp"
+                defaultValue={accountant.whatsappPhone}
+                placeholder="0500000000"
+              />
+            </CompactField>
+            <CompactField label="מייל הנה״ח" htmlFor="accountantEmail" grow>
+              <Input
+                id="accountantEmail"
+                name="accountantEmail"
+                type="email"
+                defaultValue={accountant.email}
+                placeholder="accountant@example.com"
+              />
+            </CompactField>
+            <CompactField label="תיקייה / רמז העלאה" htmlFor="accountantFolder" grow>
+              <Input
+                id="accountantFolder"
+                name="accountantFolder"
+                defaultValue={accountant.folderHint}
+                placeholder="הורדת ZIP למחשב / תיקיית הנה״ח"
+              />
+            </CompactField>
+            <Button type="submit">שמירה</Button>
+          </CompactForm>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            <Link href="/invoices/package" className="text-primary hover:underline">
+              חבילה להנה״ח
+            </Link>
+            {" · "}
+            <Link href="/expenses" className="text-primary hover:underline">
+              הוצאות קבועות
+            </Link>
+          </p>
         </CompactPanel>
       ) : null}
 

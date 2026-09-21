@@ -7,6 +7,7 @@ import { analyzeStoredPhoto } from "@/lib/analyze-photo";
 import { IMPORT_ANALYZE_GAP_MS, sleep } from "@/lib/ai-throttle";
 import { INVOICE_DUPLICATE_STATUS, INVOICE_SOURCE, PHOTO_DOCUMENT_TYPE, parsePhotoDocumentType } from "@/lib/constants";
 import { invoiceClassificationFromForm } from "@/lib/invoice-form";
+import { normalizeCreditEntryAmount, parseVatIncludedFlag, splitVat } from "@/lib/money";
 import { resolveInvoiceBranchChoice } from "@/lib/invoice-branch";
 import { invoicesDupRedirect } from "@/lib/invoice-filters";
 import { markPhotoIfDuplicate } from "@/lib/invoice-duplicates";
@@ -84,19 +85,25 @@ export async function uploadStandaloneInvoice(formData: FormData) {
   const voiceNoteText = String(formData.get("voiceNoteText") ?? "").trim() || null;
   const amountRaw = String(formData.get("amountIls") ?? "").trim();
   const amountIls = amountRaw ? Number(amountRaw) : null;
-  const periodMonth = readMonth(formData);
   const documentType = parsePhotoDocumentType(formData.get("documentType"));
+  const vatIncluded = parseVatIncludedFlag(formData.get("vatIncluded"), true);
+  const signed = amountIls != null && Number.isFinite(amountIls) ? normalizeCreditEntryAmount(documentType, amountIls) : null;
+  const vat = signed != null ? splitVat(signed, vatIncluded) : null;
+  const periodMonth = readMonth(formData);
   const saved = await saveUpload(photo);
 
   const created = await createUploadedInvoicePhoto({
     saved,
     accountId,
     branchId,
-    amountIls: amountIls != null && Number.isFinite(amountIls) ? amountIls : null,
+    amountIls: signed,
     voiceNoteText,
     periodMonth,
     source: INVOICE_SOURCE.MANUAL,
     documentType,
+    vatIncluded,
+    amountExVat: vat?.amountExVat ?? null,
+    vatAmount: vat?.vatAmount ?? null,
   });
   if (!created.isDuplicate) {
     await analyzeStoredPhoto(created.id);
@@ -169,6 +176,10 @@ export async function saveInvoiceClassification(photoId: string, formData: FormD
       aiInvoiceDate: parsed.invoiceDate,
       aiSupplierName: parsed.supplierName,
       amountIls: parsed.amountIls,
+      originalAmountIls: parsed.amountIls,
+      vatIncluded: parsed.vatIncluded,
+      amountExVat: parsed.amountExVat,
+      vatAmount: parsed.vatAmount,
       voiceNoteText: parsed.note,
       documentType: parsed.documentType,
       aiStatus: "MANUAL",
@@ -215,7 +226,8 @@ export async function confirmAiSuggestion(photoId: string, formData?: FormData) 
       branchId,
       classifiedAt: new Date(),
       aiStatus: "CONFIRMED",
-      amountIls: photo.amountIls ?? photo.aiTotalIls,
+      amountIls: photo.amountIls ?? (photo.aiTotalIls != null ? normalizeCreditEntryAmount(suggestedType, photo.aiTotalIls) : null),
+      originalAmountIls: photo.originalAmountIls ?? photo.amountIls ?? photo.aiTotalIls,
       ...(suggestedType !== PHOTO_DOCUMENT_TYPE.UNKNOWN || photo.documentType === PHOTO_DOCUMENT_TYPE.UNKNOWN
         ? { documentType: suggestedType }
         : {}),
