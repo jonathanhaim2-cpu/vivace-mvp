@@ -51,7 +51,17 @@ function coerce(value: unknown, dataType: string) {
     return value;
   }
   if (dataType.includes("timestamp") || dataType === "date") {
-    const date = value instanceof Date ? value : new Date(String(value));
+    if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+    if (typeof value === "number" && Number.isFinite(value)) {
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+    const asNum = typeof value === "string" && /^\d+$/.test(value) ? Number(value) : NaN;
+    if (Number.isFinite(asNum)) {
+      const date = new Date(asNum);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+    const date = new Date(String(value));
     return Number.isNaN(date.getTime()) ? null : date;
   }
   return value;
