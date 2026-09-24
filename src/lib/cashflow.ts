@@ -1,5 +1,5 @@
-import { PAYMENT_METHODS } from "@/lib/constants";
 import { getSupplierApRows, payMethodLabel } from "@/lib/ap";
+import { chargeDayFor, projectBalance } from "@/lib/cashflow-view";
 import { monthKeyFromDate } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 
@@ -15,26 +15,29 @@ export type CashflowEntry = {
   note: string | null;
 };
 
-function clampChargeDay(day: number | null | undefined) {
-  if (day == null || !Number.isFinite(day)) return 15;
-  return Math.min(28, Math.max(1, Math.round(day)));
-}
-
 function dateKeyFor(month: string, day: number) {
   return `${month}-${String(day).padStart(2, "0")}`;
 }
 
 export async function getCashflow(month = monthKeyFromDate()) {
-  const [apRows, recurring] = await Promise.all([
+  const [apRows, recurring, cards, openingRow] = await Promise.all([
     getSupplierApRows(month),
     prisma.recurringLine.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
+    prisma.paymentCard.findMany({ where: { active: true }, include: { links: true } }),
+    prisma.appSetting.findUnique({ where: { key: "cashflow.openingBalance" } }),
   ]);
+  const openingBalance = Number(openingRow?.value ?? 0) || 0;
 
   const entries: CashflowEntry[] = [];
 
   for (const row of apRows) {
     const method = row.ap?.payMethod ?? row.supplier.paymentMethod ?? null;
-    const day = clampChargeDay(row.supplier.paymentChargeDay ?? (method?.startsWith("CARD") ? 15 : 1));
+    const card = cards.find((item) => item.links.some((link) => link.supplierId === row.supplier.id));
+    const day = chargeDayFor({
+      paymentChargeDay: row.supplier.paymentChargeDay,
+      paymentMethod: method,
+      cardBillingDay: card?.billingDay,
+    });
     if (row.purchased === 0 && !row.ap?.approvedForPayment) continue;
     entries.push({
       id: `sup-${row.supplier.id}`,
@@ -43,7 +46,7 @@ export async function getCashflow(month = monthKeyFromDate()) {
       name: row.supplier.name,
       kind: "supplier",
       paymentMethod: method,
-      paymentLabel: payMethodLabel(method),
+      paymentLabel: card ? `${card.name} ···· ${card.last4}` : payMethodLabel(method),
       amountIls: row.amountDue,
       note: row.ap?.approvedForPayment ? "אושר לתשלום" : "רכש לחודש",
     });
@@ -51,7 +54,12 @@ export async function getCashflow(month = monthKeyFromDate()) {
 
   for (const line of recurring) {
     if (line.kind !== "EXPENSE") continue;
-    const day = clampChargeDay(line.chargeDay);
+    const card = cards.find((item) => item.links.some((link) => link.accountId && link.accountId === line.accountId));
+    const day = chargeDayFor({
+      paymentChargeDay: line.chargeDay,
+      paymentMethod: line.paymentMethod,
+      cardBillingDay: card?.billingDay,
+    });
     entries.push({
       id: `rec-${line.id}`,
       dateKey: dateKeyFor(month, day),
@@ -76,5 +84,9 @@ export async function getCashflow(month = monthKeyFromDate()) {
 
   const days = [...byDay.values()].sort((a, b) => a.day - b.day);
   const total = entries.reduce((sum, entry) => sum + entry.amountIls, 0);
-  return { month, entries, days, total };
+  const projection = projectBalance(
+    openingBalance,
+    days.map((bucket) => ({ day: bucket.day, amountIls: bucket.amountIls })),
+  );
+  return { month, entries, days, total, openingBalance, projection };
 }

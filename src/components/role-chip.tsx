@@ -27,9 +27,9 @@ export function RoleChip({
       <span className="size-1.5 shrink-0 rounded-full bg-current opacity-70" />
       {name ? (
         <>
-          <span className="truncate">{name}</span>
-          {compact ? null : <span className="text-current/50">·</span>}
-          {compact ? null : <span className="shrink-0">{APP_ROLE_LABELS[role]}</span>}
+          <span className="max-w-[6.5rem] truncate sm:max-w-[10rem]">{name}</span>
+          {compact ? null : <span className="hidden text-current/50 sm:inline">·</span>}
+          {compact ? null : <span className="hidden shrink-0 sm:inline">{APP_ROLE_LABELS[role]}</span>}
         </>
       ) : (
         <span>{APP_ROLE_LABELS[role]}</span>

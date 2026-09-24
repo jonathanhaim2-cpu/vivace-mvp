@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -287,8 +287,11 @@ model InvoicePhoto {
   aiBranch       Branch?       @relation("InvoiceAiBranch", fields: [aiBranchId], references: [id], onDelete: SetNull)
   /// True when AI inferred HQ/consulting with no site — confirm should default to רשת.
   aiNetworkExpense Boolean     @default(false)
+  /// APPROVED rows enter reports. EMAIL intake stays PENDING until a person approves.
+  approvalStatus String        @default("APPROVED")
 
   @@index([contentHash])
+  @@index([approvalStatus])
   @@index([isDuplicate])
   @@index([branchId])
   @@index([aiBranchId])
@@ -532,4 +535,67 @@ model OrderCutoffReminder {
   dateKey    String
   notifiedAt DateTime @default(now())
   @@unique([supplierId, branchId, dateKey])
+}
+
+/// Credit card / payment method that drives cash-flow billing days.
+model PaymentCard {
+  id         String            @id @default(cuid())
+  name       String
+  last4      String
+  billingDay Int
+  notes      String?
+  active     Boolean           @default(true)
+  createdAt  DateTime          @default(now())
+  links      PaymentCardLink[]
+}
+
+model PaymentCardLink {
+  id         String      @id @default(cuid())
+  cardId     String
+  card       PaymentCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  supplierId String?
+  accountId  String?
+  label      String?
+}
+
+/// Goods one branch takes from another. Booked only after both sides approve.
+model InterBranchTransfer {
+  id             String    @id @default(cuid())
+  fromBranchId   String
+  toBranchId     String
+  productId      String?
+  title          String
+  qty            Float
+  unitPrice      Float
+  amountIls      Float
+  /// PENDING until both sides approve, then APPROVED. REJECTED is kept.
+  status         String    @default("PENDING")
+  /// FROM records a sale, TO records a purchase.
+  initiatorSide  String
+  fromApprovedAt DateTime?
+  toApprovedAt   DateTime?
+  periodMonth    String
+  notes          String?
+  createdAt      DateTime  @default(now())
+}
+
+model SupplierQuote {
+  id         String              @id @default(cuid())
+  supplierName String
+  fileName   String?
+  notes      String?
+  createdAt  DateTime            @default(now())
+  lines      SupplierQuoteLine[]
+}
+
+model SupplierQuoteLine {
+  id           String        @id @default(cuid())
+  quoteId      String
+  quote        SupplierQuote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  name         String
+  offered      Float
+  monthlyQty   Float         @default(0)
+  monthAvg     Float?
+  yearAvg      Float?
+  productId    String?
 }

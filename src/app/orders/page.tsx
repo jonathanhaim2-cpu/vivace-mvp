@@ -24,7 +24,8 @@ export default async function OrdersPage({
   const status = params.status?.trim() ?? "";
   const supplierId = params.supplier?.trim() ?? "";
   const q = params.q?.trim() ?? "";
-  const branchId = params.branch?.trim() ?? "";
+  const requestedBranch = params.branch?.trim() ?? "";
+  const branchId = session.isNetwork ? requestedBranch || session.branchId || "" : session.branchId ?? "";
   const range = month ? monthRangeUtc(month) : null;
 
   const [orders, suppliers] = await Promise.all([
@@ -63,8 +64,8 @@ export default async function OrdersPage({
   return (
     <div>
       <PageHeader
-        title="רכש · הזמנות"
-        description="הזמנה מספק, סיכום למפיץ, שליחה בוואטסאפ וקליטה מול חשבונית."
+        title="הזמנות"
+        description="הזמנה היא מה ששולחים לספק. רכש — מה שהתקבל וחויב — נמצא במסך רכש."
         action={{ href: "/orders/new", label: "הזמנה חדשה" }}
       />
       <FilterBar>

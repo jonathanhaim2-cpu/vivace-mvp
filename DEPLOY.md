@@ -159,3 +159,47 @@ Open http://127.0.0.1:43145 — you should see **כניסה למערכת** (שם
 5. If no AI key is configured, classification stays manual. Settings → **שימוש ב-AI** shows call count and estimated USD.
 
 Seed on boot (`db:ready`) upserts Jonathan’s chart of accounts, the category tree, the two live branches (בית שמש / קרית יערים), and routes every supplier phone to Roi. It does not recreate demo suppliers. `SEED_DEMO=true` is opt-in and off by default.
+
+---
+
+## מעבר ל-Postgres ול-Bucket · cutover checklist
+
+הפריסה הנוכחית נשארת על SQLite (`DATABASE_URL=file:/data/dev.db`) ועל קבצים ב-`/data/uploads` עד שמחליפים משתנים. הקוד קורא את הספק דרך `scripts/prisma-cli.mjs`: אם `DATABASE_URL` לא מתחיל ב-`postgres://` / `postgresql://`, ה-schema בזמן ריצה נשאר `sqlite` ו-`db push` מוסיף עמודות בלי למחוק. אל תריצו `db push --force-reset`.
+
+סדר חיתוך (אל תדלגו):
+
+1. פורסים את הקוד הזה כש-`DATABASE_URL` עדיין `file:/data/dev.db`. האפליקציה ממשיכה לעבוד על הווליום.
+2. יוצרים Railway Postgres ו-Railway Bucket. שמים את כתובת ה-Postgres ב-`POSTGRES_URL` (או `TARGET_DATABASE_URL`) ואת משתני ה-Bucket — **בלי** לשנות את `DATABASE_URL`.
+3. דוחפים סכמה ריקה ל-Postgres: `DATABASE_URL="$POSTGRES_URL" npx prisma db push --schema=prisma/schema.prisma` (הקובץ המקורי הוא postgresql). לא `--force-reset`.
+4. מעתיקים נתונים, בלי מחיקה:
+   - `SQLITE_PATH=/data/dev.db TARGET_DATABASE_URL="$POSTGRES_URL" npm run db:migrate-postgres -- --dry-run`
+   - `SQLITE_PATH=/data/dev.db TARGET_DATABASE_URL="$POSTGRES_URL" npm run db:migrate-postgres`
+   - `SQLITE_PATH=/data/dev.db TARGET_DATABASE_URL="$POSTGRES_URL" npm run db:migrate-postgres -- --verify` (יוצא 1 אם ספירת שורות לא תואמת)
+5. מעתיקים קבצים, בלי למחוק את המקומיים:
+   - `UPLOAD_DIR=/data/uploads npm run uploads:migrate-bucket -- --dry-run`
+   - `UPLOAD_DIR=/data/uploads npm run uploads:migrate-bucket`
+   - `UPLOAD_DIR=/data/uploads npm run uploads:migrate-bucket -- --verify`
+6. רק עכשיו: `DATABASE_URL` = כתובת ה-Postgres, ואז restart. `/api/files` קורא קודם מה-Bucket ונופל ל-`UPLOAD_DIR`.
+7. משאירים את `/data/dev.db` ואת `/data/uploads` עד אישור נפרד למחיקה. אין wipe בסקריפטים.
+
+### Env vars (Postgres + bucket)
+
+| Variable | When |
+|---|---|
+| `DATABASE_URL` | Stay `file:/data/dev.db` until step 6, then the Postgres URL |
+| `POSTGRES_URL` or `TARGET_DATABASE_URL` | Postgres URL used by the copy script before cutover |
+| `SQLITE_PATH` | Source file, default `/data/dev.db` |
+| `S3_BUCKET` or `AWS_S3_BUCKET_NAME` or `RAILWAY_BUCKET_NAME` | Bucket name |
+| `S3_ACCESS_KEY_ID` or `AWS_ACCESS_KEY_ID` | Access key |
+| `S3_SECRET_ACCESS_KEY` or `AWS_SECRET_ACCESS_KEY` | Secret |
+| `S3_ENDPOINT` or `AWS_ENDPOINT_URL` | S3-compatible endpoint (Railway Buckets) |
+| `S3_REGION` or `AWS_DEFAULT_REGION` or `AWS_REGION` | Default `auto` |
+| `UPLOAD_DIR` | Local fallback, keep `/data/uploads` |
+
+If the bucket vars are unset, uploads stay on disk and the app keeps serving them.
+
+## English — Postgres / bucket cutover
+
+Do not switch `DATABASE_URL` until the copy and `--verify` both succeed. `scripts/prisma-cli.mjs` keeps the runtime provider on SQLite unless `DATABASE_URL` is a `postgres://` or `postgresql://` URL, so this deploy does not break the live volume. The migration upserts by primary key and never deletes SQLite rows or truncates Postgres. The upload copy never deletes local files. A wipe is a later, separate approval.
+
+Order: deploy this code on SQLite → provision Postgres and the bucket (set `POSTGRES_URL` and S3 vars, leave `DATABASE_URL`) → `prisma db push` against empty Postgres → `db:migrate-postgres` dry-run, apply, verify → `uploads:migrate-bucket` dry-run, apply, verify → set `DATABASE_URL` to Postgres and restart → keep `/data/dev.db` and `/data/uploads`.

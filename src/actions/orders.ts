@@ -7,6 +7,7 @@ import { supplierVisibleToBranch } from "@/lib/catalog";
 import { nextDeliveryInfo, parseDeliveryDays, parseWeekdays } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { requireBranchAccess, requirePermission } from "@/lib/access";
+import { resolveOrderBranchId } from "@/lib/branch-assignment";
 import { AUDIT_ACTIONS, writeAuditLog } from "@/lib/audit";
 
 async function findOpenOrder(supplierId: string, branchId: string) {
@@ -25,7 +26,11 @@ async function findOpenOrder(supplierId: string, branchId: string) {
 export async function createOrder(formData: FormData) {
   const session = await requirePermission("action.create_orders");
   const supplierId = String(formData.get("supplierId") ?? "");
-  const branchId = String(formData.get("branchId") || session.branchId || "");
+  const branchId =
+    resolveOrderBranchId({
+      explicitBranchId: String(formData.get("branchId") ?? ""),
+      sessionBranchId: session.branchId,
+    }) ?? "";
   const notesForDriver = String(formData.get("notesForDriver") ?? "").trim() || null;
   const rawLines = String(formData.get("lines") ?? "[]");
   const sendAnyway = formData.get("sendAnyway") === "true";
@@ -195,4 +200,73 @@ export async function updateWhatsAppStatus(orderId: string, status: string) {
   });
   revalidatePath(`/orders/${orderId}`);
   revalidatePath("/orders");
+}
+
+export async function duplicateOrder(orderId: string) {
+  const session = await requirePermission("action.create_orders");
+  const source = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { lines: true, supplier: true },
+  });
+  if (!source) throw new Error("הזמנה לא נמצאה");
+  const branchId = resolveOrderBranchId({
+    sourceOrderBranchId: source.branchId,
+    sessionBranchId: session.branchId,
+  });
+  if (!branchId) throw new Error("יש לבחור סניף");
+  await requireBranchAccess(branchId, session);
+  const products = await prisma.product.findMany({
+    where: { id: { in: source.lines.map((line) => line.productId) } },
+  });
+  const byId = new Map(products.map((product) => [product.id, product]));
+  const order = await prisma.order.create({
+    data: {
+      supplierId: source.supplierId,
+      branchId,
+      status: ORDER_STATUSES.CONFIRMED,
+      notesForDriver: source.notesForDriver,
+      lines: {
+        create: source.lines.map((line) => {
+          const product = byId.get(line.productId);
+          return {
+            productId: line.productId,
+            qty: line.qty,
+            unitPrice: product?.agreedPrice ?? line.unitPrice,
+            discountPercent: product?.discountPercent ?? line.discountPercent,
+          };
+        }),
+      },
+    },
+  });
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.ORDER_CREATE,
+    entityType: "Order",
+    entityId: order.id,
+    summary: `שכפול הזמנה קודמת · ${source.supplier.name}`,
+    meta: { sourceOrderId: source.id, branchId },
+  });
+  revalidatePath("/orders");
+  redirect(`/orders/${order.id}`);
+}
+
+export async function reassignOrderBranch(orderId: string, formData: FormData) {
+  const session = await requirePermission("action.create_orders");
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) throw new Error("הזמנה לא נמצאה");
+  const branchId = resolveOrderBranchId({
+    explicitBranchId: String(formData.get("branchId") ?? ""),
+    sourceOrderBranchId: order.branchId,
+  });
+  if (!branchId) throw new Error("יש לבחור סניף");
+  await requireBranchAccess(branchId, session);
+  await prisma.order.update({ where: { id: orderId }, data: { branchId } });
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.ORDER_CREATE,
+    entityType: "Order",
+    entityId: orderId,
+    summary: "שויך מחדש סניף להזמנה",
+    meta: { branchId, previousBranchId: order.branchId },
+  });
+  revalidatePath("/orders");
+  revalidatePath("/settings/branch-review");
 }

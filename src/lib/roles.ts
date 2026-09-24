@@ -182,6 +182,8 @@ const PATH_RULES: { prefix: string; key: PermissionKey }[] = [
   { prefix: "/categories", key: "nav.settings" },
   { prefix: "/expenses", key: "nav.ap" },
   { prefix: "/ap", key: "nav.ap" },
+  { prefix: "/purchases", key: "nav.receipts" },
+  { prefix: "/office", key: "nav.reports" },
   { prefix: "/invoices/package", key: "action.accounting_package" },
   { prefix: "/invoices/mail", key: "action.accounting_package" },
   { prefix: "/invoices", key: "nav.invoices" },

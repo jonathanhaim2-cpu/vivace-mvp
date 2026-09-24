@@ -45,9 +45,18 @@ export default async function FoodCostPage({
     <div className="space-y-6">
       <PageHeader
         title="Food Cost"
-        description="עלות תיאורטית ממחירון הספקים. מנות ביניים בלי מחיר מכירה. רולאפ: סה״כ → מחלקה → תת־קטגוריה → מנה."
+        description="עלות תיאורטית ממחירון הספקים. בכל מנה מוצגים גם מחיר אחרון וממוצע שנתי. רולאפ: סה״כ → מחלקה → תת־קטגוריה → מנה."
         action={{ href: "/foodcost/new", label: "מנה חדשה" }}
       />
+      <p className="text-sm">
+        <Link href="/foodcost/hierarchy" className="text-primary hover:underline">
+          היררכיה: קטגוריה, תת־קטגוריה ומוצר
+        </Link>
+        {" · "}
+        <Link href="/reports/trends" className="text-primary hover:underline">
+          מגמות מחיר
+        </Link>
+      </p>
       <FilterBar>
         <CompactField label="סוג מנה" htmlFor="fc-kind">
           <NativeSelect id="fc-kind" name="kind" defaultValue={kind}>

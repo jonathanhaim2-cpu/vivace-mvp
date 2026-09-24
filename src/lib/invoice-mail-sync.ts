@@ -27,6 +27,7 @@ import {
   type InvoiceMailConfig,
   type InvoiceMailStatus,
 } from "@/lib/invoice-mail";
+import { chooseIngestBranch } from "@/lib/branch-assignment";
 import { createUploadedInvoicePhoto } from "@/lib/invoice-photos";
 import { prisma } from "@/lib/prisma";
 import type { AppSession } from "@/lib/session";
@@ -170,6 +171,7 @@ export async function importInvoiceMailMessages(
   const processedUids: number[] = [];
   const toAnalyze: string[] = [];
   const errors: string[] = [];
+  const branches = await prisma.branch.findMany({ select: { id: true, name: true, address: true } });
 
   for (const message of messages) {
     const messageId = fallbackInvoiceMailMessageId({
@@ -232,6 +234,16 @@ export async function importInvoiceMailMessages(
           voiceNoteText: note,
           documentType,
         });
+        const choice = chooseIngestBranch({
+          documentText: [saved.originalName, note, message.subject, message.text].join("\n"),
+          branches,
+        });
+        if (choice.branchId || choice.network) {
+          await prisma.invoicePhoto.update({
+            where: { id: created.id },
+            data: { aiBranchId: choice.branchId, aiNetworkExpense: choice.network },
+          });
+        }
         await markAttachmentImported({
           messageId,
           contentHash: saved.contentHash,

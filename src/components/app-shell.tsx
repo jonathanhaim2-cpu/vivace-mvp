@@ -32,9 +32,9 @@ import type { ChatPanelState } from "@/lib/chat-types";
 
 const NAV: { href: string; label: string; icon: typeof Home; permission: PermissionKey }[] = [
   { href: "/", label: "בית", icon: Home, permission: "nav.home" },
-  { href: "/orders", label: "רכש", icon: ShoppingCart, permission: "nav.orders" },
+  { href: "/orders", label: "הזמנות", icon: ShoppingCart, permission: "nav.orders" },
+  { href: "/purchases", label: "רכש", icon: ClipboardCheck, permission: "nav.receipts" },
   { href: "/suppliers", label: "ספקים", icon: Truck, permission: "nav.suppliers" },
-  { href: "/receipts", label: "קליטה", icon: ClipboardCheck, permission: "nav.receipts" },
   { href: "/invoices", label: "חשבוניות", icon: FileText, permission: "nav.invoices" },
   { href: "/inventory", label: "מלאי", icon: Warehouse, permission: "nav.inventory" },
   { href: "/foodcost", label: "Food Cost", icon: UtensilsCrossed, permission: "nav.foodcost" },
@@ -150,19 +150,25 @@ export function AppShell({
         </div>
       </aside>
 
-      <header className="sticky top-0 z-20 border-b border-border bg-background/90 text-foreground backdrop-blur-md print:hidden lg:ms-64">
-        <div className="flex items-center justify-between gap-3 px-4 py-2.5">
-          <div className="min-w-0 lg:hidden">
+      <header className="sticky top-0 z-20 overflow-x-hidden border-b border-border bg-background/90 text-foreground backdrop-blur-md print:hidden lg:ms-64">
+        <div className="flex flex-wrap items-center gap-2 px-3 py-2">
+          <div className="min-w-0 max-w-[42%] lg:hidden">
             <Link href="/" className="block min-w-0 max-w-full">
               <BrandLogo variant="auto" compact />
             </Link>
           </div>
           <div className="hidden text-sm text-muted-foreground lg:block">
-            מערכת רכש ומלאי
+            הזמנות לספק · רכש שהתקבל
           </div>
-          <div className="flex min-w-0 items-center justify-end gap-2">
+          <div className="ms-auto flex min-w-0 max-w-full flex-1 flex-wrap items-center justify-end gap-1">
             {appRole && userName ? (
-              <SessionSwitcher role={appRole} name={userName} branchId={branchId} branches={branches} />
+              <SessionSwitcher
+                role={appRole}
+                name={userName}
+                branchId={branchId}
+                branches={branches}
+                allowNetwork={appRole === "admin" || appRole === "accounting"}
+              />
             ) : null}
             {canToggleSend ? <SendToSuppliersToggle enabled={sendToSuppliers} compact /> : null}
             <ThemeToggle compact />
@@ -213,8 +219,12 @@ export function AppShell({
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur-md print:hidden lg:hidden">
-        <div className="flex overflow-x-auto">
-          {items.map((item) => {
+        <div className="grid grid-cols-5">
+          {(
+            ["/", "/orders", "/purchases", "/invoices", "/reports"]
+              .map((href) => items.find((item) => item.href === href))
+              .filter((item) => item != null) as typeof items
+          ).map((item) => {
             const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
             const Icon = item.icon;
             return (
@@ -222,7 +232,7 @@ export function AppShell({
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex min-w-[4.6rem] flex-col items-center gap-1 py-2.5 text-[11px] transition-colors",
+                  "flex min-w-0 flex-col items-center gap-1 px-1 py-2 text-[10px] transition-colors",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
               >

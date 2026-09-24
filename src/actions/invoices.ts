@@ -183,6 +183,7 @@ export async function saveInvoiceClassification(photoId: string, formData: FormD
       voiceNoteText: parsed.note,
       documentType: parsed.documentType,
       aiStatus: "MANUAL",
+      approvalStatus: "APPROVED",
     },
   });
   await writeAuditLog(session, {
@@ -210,7 +211,7 @@ export async function confirmAiSuggestion(photoId: string, formData?: FormData) 
     ? await resolveInvoiceBranchId(formData, session, suggestedBranchId, true)
     : photo.aiNetworkExpense
       ? null
-      : suggestedBranchId ?? session.branchId;
+      : suggestedBranchId;
   if (formData == null && branchId) await requireBranchAccess(branchId, session);
   if (formData == null && !branchId && !photo.aiNetworkExpense) {
     throw new Error("יש לבחור סניף או רשת");
@@ -232,6 +233,7 @@ export async function confirmAiSuggestion(photoId: string, formData?: FormData) 
         ? { documentType: suggestedType }
         : {}),
       ...(periodMonth ? { periodMonth } : {}),
+      approvalStatus: "APPROVED",
     },
   });
   await writeAuditLog(session, {
@@ -371,4 +373,42 @@ export async function discardInvoicePhoto(photoId: string) {
 export async function deleteDuplicateInvoice(photoId: string) {
   await finishInvoicePhotoDiscard(photoId, true);
   redirect("/invoices");
+}
+
+/** Keep the file and the row. Email invoices stay out of reports until approved. */
+export async function rejectInvoice(photoId: string) {
+  const session = await requirePermission("nav.invoices");
+  const photo = await prisma.invoicePhoto.findUnique({ where: { id: photoId } });
+  if (!photo) throw new Error("חשבונית לא נמצאה");
+  await prisma.invoicePhoto.update({
+    where: { id: photoId },
+    data: { approvalStatus: "REJECTED" },
+  });
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.INVOICE_CLASSIFY,
+    entityType: "InvoicePhoto",
+    entityId: photoId,
+    summary: `חשבונית נדחתה · ${photo.originalName}`,
+  });
+  revalidateInvoicePaths();
+}
+
+export async function reassignInvoiceBranch(photoId: string, formData: FormData) {
+  const session = await requirePermission("nav.invoices");
+  const photo = await prisma.invoicePhoto.findUnique({ where: { id: photoId } });
+  if (!photo) throw new Error("חשבונית לא נמצאה");
+  const branchId = await resolveInvoiceBranchId(formData, session, photo.branchId, true);
+  await prisma.invoicePhoto.update({
+    where: { id: photoId },
+    data: { branchId },
+  });
+  await writeAuditLog(session, {
+    action: AUDIT_ACTIONS.INVOICE_CLASSIFY,
+    entityType: "InvoicePhoto",
+    entityId: photoId,
+    summary: "שויך מחדש סניף לחשבונית",
+    meta: { branchId },
+  });
+  revalidateInvoicePaths();
+  revalidatePath("/settings/branch-review");
 }
