@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { OrderWizard } from "@/components/orders/order-wizard";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { listOrderableSuppliers } from "@/lib/catalog";
@@ -10,11 +11,36 @@ import { getSendToSuppliersEnabled, resolveOrderWhatsAppPhone } from "@/lib/what
 export default async function NewOrderPage({
   searchParams,
 }: {
-  searchParams: Promise<{ supplierId?: string }>;
+  searchParams: Promise<{ supplierId?: string; branch?: string }>;
 }) {
-  const { supplierId } = await searchParams;
+  const { supplierId, branch: requestedBranch } = await searchParams;
   const [session, sendToSuppliers] = await Promise.all([getAppSession(), getSendToSuppliersEnabled()]);
-  if (!session.branchId) {
+  const activeBranch = requestedBranch
+    ? session.branches.find((item) => item.id === requestedBranch) ?? null
+    : session.branch;
+  if (!activeBranch) {
+    if (session.isNetwork && session.branches.length > 0) {
+      return (
+        <div>
+          <PageHeader
+            title="הזמנה חדשה"
+            description="משרד הרשת בוחר סניף לפני הזמנה. ההזמנה נרשמת על הסניף שנבחר, לא על בית שמש כברירת מחדל."
+          />
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {session.branches.map((item) => (
+              <li key={item.id}>
+                <Link
+                  href={`/orders/new?branch=${item.id}`}
+                  className="block rounded-2xl border bg-card px-4 py-3 font-medium shadow-[var(--shadow-card)]"
+                >
+                  {item.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    }
     return (
       <EmptyState
         title="אין סניף פעיל"
@@ -24,9 +50,9 @@ export default async function NewOrderPage({
     );
   }
 
-  const suppliers = (await listOrderableSuppliers({ role: session.role, branchId: session.branchId })).map(
+  const suppliers = (await listOrderableSuppliers({ role: session.role, branchId: activeBranch.id })).map(
     (supplier) => {
-      const resolved = resolveSupplierForBranch(supplier, session.branchId);
+      const resolved = resolveSupplierForBranch(supplier, activeBranch.id);
       return {
         ...resolved,
         catalogPhone: resolved.whatsappPhone,
@@ -60,7 +86,7 @@ export default async function NewOrderPage({
         where: {
           order: {
             supplierId: allowedSupplier,
-            branchId: session.branchId,
+            branchId: activeBranch.id,
             createdAt: { gte: weekStart },
           },
         },
@@ -74,7 +100,7 @@ export default async function NewOrderPage({
     ? await prisma.order.findFirst({
         where: {
           supplierId: allowedSupplier,
-          branchId: session.branchId,
+          branchId: activeBranch.id,
           status: { in: ["CONFIRMED", "SENT"] },
           receipt: null,
         },
@@ -87,24 +113,20 @@ export default async function NewOrderPage({
     <div>
       <PageHeader
         title="הזמנה חדשה"
-        description={`מנהל ${session.branch?.name ?? "הסניף"} בוחר ספק, כמויות, ומאשר סיכום לפני וואטסאפ.`}
+        description={`הזמנה לסניף ${activeBranch.name}. בחירת ספק, כמויות, ואישור לפני וואטסאפ.`}
       />
       <OrderWizard
         suppliers={suppliers}
         products={products}
         selectedSupplierId={allowedSupplier}
-        branchId={session.branchId}
-        branchName={session.branch?.name ?? "סניף"}
-        branch={
-          session.branch
-            ? {
-                name: session.branch.name,
-                address: session.branch.address,
-                phone: session.branch.phone,
-                contactName: session.branch.contactName,
-              }
-            : null
-        }
+        branchId={activeBranch.id}
+        branchName={activeBranch.name}
+        branch={{
+          name: activeBranch.name,
+          address: activeBranch.address,
+          phone: activeBranch.phone,
+          contactName: activeBranch.contactName,
+        }}
         weeklySpent={weeklySpent}
         sendToSuppliers={sendToSuppliers}
         openOrder={

@@ -151,7 +151,10 @@ function branchMatchesHint(branch: KnownBranch, foldedHint: string) {
   return haystack.some((part) => {
     if (!part) return false;
     if (foldedHint === part) return true;
-    if (foldedHint.includes(part) || part.includes(foldedHint)) return true;
+    // Short fragments ("ים", "branch") must not glue Kiryat Ye'arim onto Beit Shemesh.
+    const shorter = foldedHint.length <= part.length ? foldedHint : part;
+    const longer = shorter === foldedHint ? part : foldedHint;
+    if (shorter.length >= 4 && longer.includes(shorter)) return true;
     const tokens = part.split(" ").filter((token) => token.length >= 3);
     return tokens.length > 0 && tokens.every((token) => foldedHint.includes(token));
   });

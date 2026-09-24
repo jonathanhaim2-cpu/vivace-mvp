@@ -1,13 +1,11 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { analyzeInvoiceDocument, getAiRuntime } from "@/lib/ai";
 import { aiFailureReason } from "@/lib/ai-throttle";
 import { PHOTO_DOCUMENT_TYPE } from "@/lib/constants";
-import { mapAiBranchHint } from "@/lib/invoice-branch";
+import { chooseIngestBranch } from "@/lib/branch-assignment";
 import { markPhotoIfDuplicate } from "@/lib/invoice-duplicates";
 import { resolvedPeriodMonth } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
-import { UPLOAD_DIR } from "@/lib/uploads";
+import { readStoredFile } from "@/lib/uploads";
 
 export async function analyzeStoredPhoto(photoId: string) {
   const photo = await prisma.invoicePhoto.findUnique({ where: { id: photoId } });
@@ -23,7 +21,8 @@ export async function analyzeStoredPhoto(photoId: string) {
   }
 
   try {
-    const buffer = await readFile(path.join(UPLOAD_DIR, photo.fileName));
+    const buffer = await readStoredFile(photo.fileName);
+    if (!buffer) throw new Error("הקובץ לא נמצא");
     const branches = await prisma.branch.findMany({
       select: { id: true, name: true, address: true },
       orderBy: { name: "asc" },
@@ -43,7 +42,13 @@ export async function analyzeStoredPhoto(photoId: string) {
       return null;
     }
 
-    const mappedBranch = mapAiBranchHint(suggestion.branchHint, branches);
+    const mappedBranch = chooseIngestBranch({
+      documentText: [photo.originalName, photo.voiceNoteText, suggestion.reason, suggestion.branchHint]
+        .filter(Boolean)
+        .join("\n"),
+      branches,
+      aiHint: suggestion.branchHint,
+    });
     const periodMonth = resolvedPeriodMonth(photo.periodMonth, suggestion.invoiceDate);
     const keepExistingType = photo.documentType !== PHOTO_DOCUMENT_TYPE.UNKNOWN;
     await prisma.invoicePhoto.update({

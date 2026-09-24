@@ -17,6 +17,7 @@ function session(user: SessionUser | null): AppSession {
     appRole: user?.role ?? "admin",
     role: "network",
     isNetwork: true,
+    isNetworkOffice: true,
     branchId: null,
     branch: null,
     branches: [],

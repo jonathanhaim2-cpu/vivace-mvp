@@ -1,7 +1,6 @@
-import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
-import { UPLOAD_DIR } from "@/lib/uploads";
+import { readStoredFile } from "@/lib/uploads";
 
 export async function GET(_request: Request, context: { params: Promise<{ fileName: string }> }) {
   const { fileName } = await context.params;
@@ -9,7 +8,8 @@ export async function GET(_request: Request, context: { params: Promise<{ fileNa
     return NextResponse.json({ error: "שם קובץ לא חוקי" }, { status: 400 });
   }
   try {
-    const bytes = await readFile(path.join(UPLOAD_DIR, fileName));
+    const bytes = await readStoredFile(fileName);
+    if (!bytes) return NextResponse.json({ error: "הקובץ לא נמצא" }, { status: 404 });
     const ext = path.extname(fileName).toLowerCase();
     const type =
       ext === ".pdf"

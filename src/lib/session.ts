@@ -9,6 +9,7 @@ import {
   parseAppRole,
   resolveRolePermissions,
 } from "@/lib/roles";
+import { selectSessionBranch } from "@/lib/branch-assignment";
 import type { Role } from "@/lib/constants";
 
 export type SessionUser = {
@@ -32,6 +33,8 @@ export type AppSession = {
   appRole: AppRole | null;
   role: Role;
   isNetwork: boolean;
+  /** True when a network user is working as משרד רשת rather than one branch. */
+  isNetworkOffice: boolean;
   branchId: string | null;
   branch: SessionBranch | null;
   branches: SessionBranch[];
@@ -79,7 +82,8 @@ async function buildSession(user: SessionUser | null): Promise<AppSession> {
 
   const jar = await cookies();
   const requested = jar.get("vivace-branch")?.value;
-  const branch = branches.find((item) => item.id === requested) ?? branches[0] ?? null;
+  const branchId = selectSessionBranch({ isNetwork, requested, branches });
+  const branch = branches.find((item) => item.id === branchId) ?? null;
   const permissions = appRole ? await loadPermissionKeys(appRole) : [];
 
   return {
@@ -87,6 +91,7 @@ async function buildSession(user: SessionUser | null): Promise<AppSession> {
     appRole,
     role: viewRole,
     isNetwork,
+    isNetworkOffice: isNetwork && !branch,
     branchId: branch?.id ?? null,
     branch,
     branches,

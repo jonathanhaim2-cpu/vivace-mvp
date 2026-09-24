@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { execFileSync } from "node:child_process";
+import { pushAppSchema } from "./test-db";
 import { mkdtempSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -90,11 +90,7 @@ test("scan marks later same-hash and AI-matching photos without counting them tw
   const dbPath = path.join(dir, "test.db");
   const url = `file:${dbPath}`;
   try {
-    execFileSync("npx", ["prisma", "db", "push", "--skip-generate", "--accept-data-loss"], {
-      cwd: process.cwd(),
-      env: { ...process.env, DATABASE_URL: url },
-      stdio: "pipe",
-    });
+    pushAppSchema(url);
     const client = new PrismaClient({ datasourceUrl: url });
     try {
       const first = await client.invoicePhoto.create({

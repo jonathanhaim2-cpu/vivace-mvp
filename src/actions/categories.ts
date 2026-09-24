@@ -23,6 +23,7 @@ export async function createCategory(formData: FormData) {
     },
   });
   revalidatePath("/categories");
+  revalidatePath("/foodcost/hierarchy");
 }
 
 export async function renameCategory(id: string, formData: FormData) {
@@ -31,6 +32,7 @@ export async function renameCategory(id: string, formData: FormData) {
   if (!name) throw new Error("יש למלא שם");
   await prisma.productCategory.update({ where: { id }, data: { name } });
   revalidatePath("/categories");
+  revalidatePath("/foodcost/hierarchy");
 }
 
 export async function deleteCategory(id: string) {
@@ -41,4 +43,5 @@ export async function deleteCategory(id: string) {
   if (children > 0) throw new Error("מחקו קודם את תתי־הקטגוריות");
   await prisma.productCategory.delete({ where: { id } });
   revalidatePath("/categories");
+  revalidatePath("/foodcost/hierarchy");
 }

@@ -353,6 +353,35 @@ async function callGeminiText(prompt: string) {
   return json.candidates?.[0]?.content?.parts?.map((part) => part.text ?? "").join("") ?? "";
 }
 
+export function parseQuoteExtraction(raw: string) {
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start < 0 || end < 0) return null;
+  try {
+    const parsed = JSON.parse(raw.slice(start, end + 1)) as { lines?: unknown };
+    if (!Array.isArray(parsed.lines)) return null;
+    return parsed.lines
+      .map((item) => {
+        const row = item as Record<string, unknown>;
+        const unitPrice = Number(row.unitPrice);
+        const name = typeof row.name === "string" ? row.name.trim() : "";
+        if (!name || !Number.isFinite(unitPrice)) return null;
+        return { name, unitPrice };
+      })
+      .filter((row): row is { name: string; unitPrice: number } => row != null);
+  } catch {
+    return null;
+  }
+}
+
+export async function analyzeQuoteDocument(input: { buffer: Buffer; mimeType: string; fileName: string }) {
+  const prompt = `אתה קורא הצעת מחיר מספק למסעדת Vivac'e.
+חלץ שורות: שם פריט ומחיר יחידה בשקלים.
+החזר JSON בלבד:
+{"lines":[{"name":"","unitPrice":0}]}`;
+  return runVisionJson(prompt, input, parseQuoteExtraction);
+}
+
 async function callOpenAiText(prompt: string) {
   const key = openaiKey();
   const model = process.env.OPENAI_VISION_MODEL?.trim() || "gpt-4o-mini";

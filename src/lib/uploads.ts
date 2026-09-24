@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { getStoredObject, objectStorageConfig, putStoredObject } from "@/lib/object-storage";
 
 const ALLOWED = new Set([
   "image/jpeg",
@@ -49,10 +50,9 @@ export async function saveUploadBytes(input: {
     throw new Error("סוג קובץ לא נתמך. יש להעלות תמונה, PDF או קובץ קול");
   }
 
-  await mkdir(UPLOAD_DIR, { recursive: true });
   const ext = extensionFor(input.originalName, mime);
   const fileName = `${Date.now()}-${randomUUID()}${ext}`;
-  await writeFile(path.join(UPLOAD_DIR, fileName), buffer);
+  await writeStoredFile(fileName, buffer, mime);
 
   return {
     fileName,
@@ -73,6 +73,33 @@ export async function saveUpload(file: File) {
     originalName: file.name || "upload",
     mimeType: mime,
   });
+}
+
+export async function writeStoredFile(fileName: string, buffer: Buffer, mime: string) {
+  const remote = objectStorageConfig();
+  if (remote) {
+    try {
+      await putStoredObject(remote, fileName, buffer, mime);
+      return;
+    } catch (error) {
+      console.error("S3 upload failed, writing to UPLOAD_DIR", error);
+    }
+  }
+  await mkdir(UPLOAD_DIR, { recursive: true });
+  await writeFile(path.join(UPLOAD_DIR, fileName), buffer);
+}
+
+export async function readStoredFile(fileName: string) {
+  const remote = objectStorageConfig();
+  if (remote) {
+    const bytes = await getStoredObject(remote, fileName);
+    if (bytes) return bytes;
+  }
+  try {
+    return await readFile(path.join(UPLOAD_DIR, fileName));
+  } catch {
+    return null;
+  }
 }
 
 function extensionFor(name: string, mime: string) {

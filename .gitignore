@@ -34,6 +34,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# generated per DATABASE_URL (sqlite until Postgres cutover)
+/prisma/schema.runtime.prisma
+
 # local sqlite
 /dev.db
 /dev.db-journal

@@ -2,11 +2,15 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { PrismaClient } from "@prisma/client";
 import { INVOICE_DUPLICATE_STATUS } from "@/lib/constants";
+import { INVOICE_APPROVAL } from "@/lib/invoice-approval";
 import { prisma } from "@/lib/prisma";
 import { normalizeSupplierName } from "@/lib/supplier-merge";
 import { hashFileBytes, UPLOAD_DIR } from "@/lib/uploads";
 
-export const INVOICE_IN_TOTALS_WHERE = { isDuplicate: false } as const;
+export const INVOICE_IN_TOTALS_WHERE = {
+  isDuplicate: false,
+  approvalStatus: { notIn: [INVOICE_APPROVAL.PENDING, INVOICE_APPROVAL.REJECTED] },
+};
 
 export type DuplicateSignals = {
   id?: string;

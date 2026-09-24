@@ -42,6 +42,9 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
   --color-brand-red: var(--brand-red);
+  --color-brand-green: var(--brand-green);
+  --color-trend-up: var(--trend-up);
+  --color-trend-down: var(--trend-down);
   --color-cream: var(--color-cream);
   --color-overlay: var(--overlay);
   --radius-sm: calc(var(--radius) * 0.6);
@@ -55,8 +58,11 @@
 
 :root {
   color-scheme: light;
-  --brand-red: #b34b3c;
-  --header-red: #b34b3c;
+  --brand-red: #a14a3d;
+  --brand-green: #3f6b4e;
+  --trend-up: #3f6b4e;
+  --trend-down: #a14a3d;
+  --header-red: #a14a3d;
   --brand-red-hover: #8a3a2e;
   --color-cream: #f9f7f2;
   --background: #f9f7f2;
@@ -65,7 +71,7 @@
   --card-foreground: #2a1f1c;
   --popover: #ffffff;
   --popover-foreground: #2a1f1c;
-  --primary: #b34b3c;
+  --primary: #a14a3d;
   --primary-foreground: #ffffff;
   --secondary: #efe8dc;
   --secondary-foreground: #3a2a26;
@@ -99,6 +105,9 @@
 .dark {
   color-scheme: dark;
   --brand-red: #c45a4a;
+  --brand-green: #8fb59a;
+  --trend-up: #8fb59a;
+  --trend-down: #e07a6a;
   --header-red: #c45a4a;
   --brand-red-hover: #d46b5b;
   --color-cream: #1c1b1a;
@@ -255,6 +264,58 @@
   color: #1c1917;
 }
 
+@media (max-width: 1023px) {
+  [data-slot="table-container"] {
+    overflow: visible;
+  }
+  [data-slot="table"] thead {
+    display: none;
+  }
+  [data-slot="table"] tr {
+    display: block;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem 0.85rem;
+    background: var(--card);
+    box-shadow: var(--shadow-card);
+  }
+  [data-slot="table"] td {
+    display: block;
+    white-space: normal;
+    border: 0;
+    padding: 0.2rem 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  [data-slot="table"] tbody tr:nth-child(even) {
+    background: color-mix(in srgb, var(--muted) 55%, transparent);
+  }
+}
+
+.pnl-sheet {
+  max-width: 42rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow-card);
+}
+.pnl-parent td {
+  font-weight: 600;
+  border-top: 1px solid var(--border);
+  padding-top: 0.45rem;
+}
+.pnl-line td {
+  color: var(--foreground);
+}
+
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
 @media print {
   aside,
   header,
@@ -265,6 +326,12 @@
   }
   main {
     margin: 0 !important;
+  }
+  .pnl-sheet {
+    max-width: none;
+    border: 0;
+    box-shadow: none;
+    padding: 0;
   }
   :root,
   .dark,

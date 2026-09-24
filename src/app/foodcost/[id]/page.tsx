@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { computeDishCost, foodCostPercent } from "@/lib/foodcost";
 import { formatIls } from "@/lib/format";
+import { annualAveragePrice, dishCostFromPrices, lastPurchasePrice, priceGap, type PurchasePoint } from "@/lib/price-stats";
 import { prisma } from "@/lib/prisma";
 
 export default async function DishDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -36,6 +37,38 @@ export default async function DishDetailPage({ params }: { params: Promise<{ id:
   const percent = foodCostPercent(cost, dish.sellPrice);
   const over = percent != null && percent > dish.standardCostPercent;
   const intermediates = dishes.filter((item) => item.id !== dish.id);
+  const qtyByProduct = new Map<string, number>();
+  function walk(id: string, mult: number, seen: Set<string>) {
+    if (seen.has(id)) return;
+    seen.add(id);
+    const current = dishes.find((item) => item.id === id);
+    if (!current) return;
+    for (const component of current.components) {
+      if (component.productId) qtyByProduct.set(component.productId, (qtyByProduct.get(component.productId) ?? 0) + component.qty * mult);
+      if (component.componentDishId) walk(component.componentDishId, component.qty * mult, seen);
+    }
+  }
+  walk(dish.id, 1, new Set());
+  const productIds = [...qtyByProduct.keys()];
+  const year = new Date().getFullYear();
+  const history = productIds.length
+    ? await prisma.goodsReceiptLine.findMany({
+        where: { orderLine: { productId: { in: productIds } }, invoicePrice: { gt: 0 }, receivedQty: { gt: 0 } },
+        include: { goodsReceipt: true, orderLine: true },
+      })
+    : [];
+  const pointsByProduct = new Map<string, PurchasePoint[]>();
+  for (const row of history) {
+    const list = pointsByProduct.get(row.orderLine.productId) ?? [];
+    list.push({ at: row.goodsReceipt.createdAt.toISOString().slice(0, 10), qty: row.receivedQty, unitPrice: row.invoicePrice });
+    pointsByProduct.set(row.orderLine.productId, list);
+  }
+  const lastMap = new Map(productIds.map((id) => [id, lastPurchasePrice(pointsByProduct.get(id) ?? [])]));
+  const avgMap = new Map(productIds.map((id) => [id, annualAveragePrice(pointsByProduct.get(id) ?? [], year)]));
+  const components = [...qtyByProduct.entries()].map(([productId, qty]) => ({ productId, qty }));
+  const lastCost = dishCostFromPrices(components, lastMap);
+  const avgCost = dishCostFromPrices(components, avgMap);
+  const gap = priceGap(lastCost.cost, avgCost.cost);
 
   return (
     <div className="space-y-6">
@@ -92,6 +125,23 @@ export default async function DishDetailPage({ params }: { params: Promise<{ id:
           <Button type="submit">עדכון</Button>
         </CompactForm>
       </CompactPanel>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <article className="rounded-2xl border bg-card p-4">
+          <p className="text-xs text-muted-foreground">לפי מחיר אחרון</p>
+          <p className="text-xl font-semibold tabular-nums">{formatIls(lastCost.cost)}</p>
+        </article>
+        <article className="rounded-2xl border bg-card p-4">
+          <p className="text-xs text-muted-foreground">לפי ממוצע {year}</p>
+          <p className="text-xl font-semibold tabular-nums">{formatIls(avgCost.cost)}</p>
+        </article>
+        <article className="rounded-2xl border bg-card p-4">
+          <p className="text-xs text-muted-foreground">פער</p>
+          <p className={gap?.direction === "up" ? "text-xl font-semibold text-trend-down" : gap?.direction === "down" ? "text-xl font-semibold text-trend-up" : "text-xl font-semibold"}>
+            {gap ? `${gap.direction === "up" ? "▲" : gap.direction === "down" ? "▼" : "–"} ${Math.abs(gap.percent).toFixed(1)}%` : "אין היסטוריה"}
+          </p>
+        </article>
+      </div>
 
       <CompactPanel title="רכיבי מתכון" description="גלם ממחירון הספק, או מנת ביניים עם עץ משלה.">
         {lines.length === 0 ? (

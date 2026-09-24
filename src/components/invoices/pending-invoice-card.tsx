@@ -1,4 +1,4 @@
-import { saveInvoiceClassification } from "@/actions/invoices";
+import { rejectInvoice, saveInvoiceClassification } from "@/actions/invoices";
 import { AuditInfoButton } from "@/components/audit-info-button";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
 import { AiSuggestionCard } from "@/components/ai-suggestion-card";
@@ -52,12 +52,14 @@ export function PendingInvoiceCard({
   auditStamp,
   branches,
   returnTo,
+  showReject = false,
 }: {
   photo: PendingInvoicePhoto;
   months: string[];
   auditStamp: string;
   branches: BranchOption[];
   returnTo?: string;
+  showReject?: boolean;
 }) {
   const fileUrl = publicFileUrl(photo.fileName);
   const reportMonth = resolvedPeriodMonth(photo.periodMonth, photo.aiInvoiceDate) ?? monthKeyFromDate();
@@ -192,8 +194,15 @@ export function PendingInvoiceCard({
           <div className="flex flex-wrap items-center gap-2">
             {notInvoice ? <DiscardInvoiceButton photoId={photo.id} notInvoice /> : null}
             <Button type="submit" form={formId} size="sm" variant={notInvoice ? "outline" : "default"}>
-              שמירת סיווג
+              {showReject ? "אישור" : "שמירת סיווג"}
             </Button>
+            {showReject ? (
+              <form action={rejectInvoice.bind(null, photo.id)}>
+                <Button type="submit" size="sm" variant="ghost">
+                  דחייה
+                </Button>
+              </form>
+            ) : null}
             {notInvoice ? null : <DiscardInvoiceButton photoId={photo.id} />}
           </div>
         </div>

@@ -94,3 +94,26 @@ export async function deleteProduct(id: string) {
   revalidatePath(`/suppliers/${product.supplierId}`);
   redirect(`/suppliers/${product.supplierId}`);
 }
+
+export async function createHierarchyProduct(formData: FormData) {
+  await requirePermission("action.edit_suppliers");
+  const supplierId = String(formData.get("supplierId") ?? "").trim();
+  if (!supplierId) throw new Error("בחרו ספק");
+  const data = readProductInput(formData);
+  const product = await prisma.product.create({ data: { ...data, supplierId } });
+  await syncProductPriceLists(product);
+  revalidatePath("/foodcost/hierarchy");
+  revalidatePath(`/suppliers/${supplierId}`);
+}
+
+export async function setProductCategory(productId: string, formData: FormData) {
+  await requirePermission("action.edit_prices");
+  const categoryId = String(formData.get("categoryId") ?? "").trim() || null;
+  if (categoryId) {
+    const category = await prisma.productCategory.findUnique({ where: { id: categoryId } });
+    if (!category?.parentId) throw new Error("מוצר משויך לתת־קטגוריה");
+  }
+  await prisma.product.update({ where: { id: productId }, data: { categoryId } });
+  revalidatePath("/foodcost/hierarchy");
+  revalidatePath("/categories");
+}

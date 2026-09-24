@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { ExternalLinkIcon, FileTextIcon } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import type { AccountRollupRow } from "@/lib/accounts";
 import { formatDate, formatIls } from "@/lib/format";
+import { presentPnl } from "@/lib/pnl";
 import { cn } from "@/lib/utils";
 
 export type AccountRollupDocument = {
@@ -27,7 +27,6 @@ export type AccountRollupDocument = {
 };
 
 const EMPTY_DOCS: AccountRollupDocument[] = [];
-const OPEN_HINT = "לחיצה כפולה לפתיחה";
 
 export function AccountRollup({
   rows,
@@ -36,8 +35,6 @@ export function AccountRollup({
   rows: AccountRollupRow[];
   documents?: AccountRollupDocument[];
 }) {
-  const expenses = rows.filter((row) => row.kind === "EXPENSE");
-  const income = rows.filter((row) => row.kind === "INCOME");
   const [openLeaf, setOpenLeaf] = useState<{ id: string; name: string } | null>(null);
 
   const docsByAccount = useMemo(() => {
@@ -53,22 +50,50 @@ export function AccountRollup({
   const openDocs = openLeaf ? (docsByAccount.get(openLeaf.id) ?? []) : [];
   const canBrowse = documents.length > 0;
 
+  const figures = presentPnl(rows).figures;
+
   return (
-    <div className="space-y-6">
-      <RollupSection
-        title="הוצאות"
-        description="קטגוריות + סיכום לקטגוריית האב, לפי סדר כרטיסי הנה״ח"
-        rows={expenses}
-        canBrowse={canBrowse}
-        onOpenLeaf={setOpenLeaf}
-      />
-      <RollupSection
-        title='הכנסות ללא מע"מ'
-        description="מדידה לכל כרטיס ולסיכום האב"
-        rows={income}
-        canBrowse={canBrowse}
-        onOpenLeaf={setOpenLeaf}
-      />
+    <article className="pnl-sheet space-y-4">
+      <header className="pnl-heading">
+        <h2 className="font-heading text-lg font-semibold">דוח רווח והפסד</h2>
+        <p className="text-xs text-muted-foreground">סכומים ומספר מסמכים זהים לחישוב הקיים. לחיצה על שורה פותחת את המסמכים.</p>
+      </header>
+      {(["EXPENSE", "INCOME"] as const).map((kind) => {
+        const title = kind === "EXPENSE" ? "הוצאות" : 'הכנסות ללא מע"מ';
+        const section = figures.filter((figure) => figure.kind === kind);
+        if (section.length === 0) return null;
+        return (
+          <section key={kind}>
+            <h3 className="mb-1 text-sm font-semibold">{title}</h3>
+            <table className="pnl-table w-full text-sm">
+              <tbody>
+                {section.map((figure) => {
+                  const canOpen = canBrowse && figure.depth === 1 && figure.documents > 0;
+                  return (
+                    <tr key={figure.id} className={figure.depth === 0 ? "pnl-parent" : "pnl-line"}>
+                      <td className={cn("py-1", figure.depth === 1 && "ps-4")}>{figure.name}</td>
+                      <td className="w-16 py-1 text-end tabular-nums text-muted-foreground">{figure.documents}</td>
+                      <td className="w-28 py-1 text-end tabular-nums">
+                        {canOpen ? (
+                          <button
+                            type="button"
+                            className="underline-offset-2 hover:underline"
+                            onClick={() => setOpenLeaf({ id: figure.id, name: figure.name })}
+                          >
+                            {formatIls(figure.amount)}
+                          </button>
+                        ) : (
+                          formatIls(figure.amount)
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </section>
+        );
+      })}
       <AccountInvoicesDialog
         open={openLeaf != null}
         onOpenChange={(next) => {
@@ -77,91 +102,7 @@ export function AccountRollup({
         title={openLeaf?.name ?? ""}
         documents={openDocs}
       />
-    </div>
-  );
-}
-
-function RollupSection({
-  title,
-  description,
-  rows,
-  canBrowse,
-  onOpenLeaf,
-}: {
-  title: string;
-  description: string;
-  rows: AccountRollupRow[];
-  canBrowse: boolean;
-  onOpenLeaf: (leaf: { id: string; name: string }) => void;
-}) {
-  return (
-    <div className="space-y-3">
-      <div>
-        <h2 className="font-heading text-lg font-semibold">{title}</h2>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </div>
-      {rows.map((parent) => (
-        <Card key={parent.id}>
-          <CardHeader className="border-b">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <CardTitle>{parent.name}</CardTitle>
-                <CardDescription>סיכום {parent.children.length} כרטיסים</CardDescription>
-              </div>
-              <div className="text-end text-sm">
-                <p className="font-medium">{formatIls(parent.amount)}</p>
-                <p className="text-muted-foreground">{parent.documents} מסמכים</p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="divide-y p-0">
-            {parent.children.map((child) => {
-              const canOpen = canBrowse && child.documents > 0;
-              return (
-                <div
-                  key={child.id}
-                  className={cn(
-                    "flex items-center justify-between gap-3 px-4 py-2.5 text-sm",
-                    canOpen && "cursor-pointer select-none hover:bg-muted/50",
-                  )}
-                  onDoubleClick={() => {
-                    if (canOpen) onOpenLeaf({ id: child.id, name: child.name });
-                  }}
-                  title={canOpen ? OPEN_HINT : undefined}
-                >
-                  <span>{child.name}</span>
-                  <span className="flex shrink-0 items-center gap-2">
-                    <DocumentCountBadge count={child.documents} canOpen={canOpen} />
-                    <span className="text-muted-foreground">{formatIls(child.amount)}</span>
-                  </span>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-function DocumentCountBadge({ count, canOpen }: { count: number; canOpen: boolean }) {
-  if (count <= 0) {
-    return <span className="text-muted-foreground">{count}</span>;
-  }
-
-  return (
-    <span
-      className={cn(
-        "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold",
-        canOpen
-          ? "cursor-pointer bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
-          : "bg-muted text-muted-foreground",
-      )}
-      title={canOpen ? OPEN_HINT : undefined}
-      aria-label={canOpen ? `${count} מסמכים, ${OPEN_HINT}` : `${count} מסמכים`}
-    >
-      {count}
-    </span>
+    </article>
   );
 }
 

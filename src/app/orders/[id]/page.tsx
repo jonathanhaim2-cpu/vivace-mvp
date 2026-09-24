@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { duplicateOrder } from "@/actions/orders";
 import { notFound } from "next/navigation";
 import { NextOrderNotice } from "@/components/orders/next-order-notice";
 import { OrderDocument } from "@/components/orders/order-document";
@@ -6,7 +7,7 @@ import { WhatsAppButton } from "@/components/orders/whatsapp-button";
 import { WhatsAppTicks } from "@/components/orders/whatsapp-ticks";
 import { PrintOnLoad } from "@/components/print-on-load";
 import { OrderStatusBadge } from "@/components/status-badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDateTime, nextOrderWindow, resolveOrderDays } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
@@ -108,6 +109,13 @@ export default async function OrderDetailPage({
             <Link href={`/orders/${order.id}?print=1`} className={cn(buttonVariants({ variant: "outline" }))}>
               הדפסה / PDF
             </Link>
+            {sessionCan(session, "action.create_orders") ? (
+              <form action={duplicateOrder.bind(null, order.id)}>
+                <Button type="submit" variant="outline">
+                  שכפול הזמנה קודמת
+                </Button>
+              </form>
+            ) : null}
             {!order.receipt && sessionCan(session, "action.goods_intake") ? (
               <Link href={`/orders/${order.id}/receive`} className={cn(buttonVariants({ variant: "secondary" }))}>
                 קליטת סחורה

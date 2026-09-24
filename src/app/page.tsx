@@ -3,9 +3,11 @@ import { saveDashboardSettings } from "@/actions/dashboard";
 import { ForecastInputForm } from "@/components/dashboard/forecast-form";
 import { NetworkBranchCompare } from "@/components/dashboard/network-branch-compare";
 import { TodayTaskList } from "@/components/dashboard/today-task-list";
+import { PendingInvoiceCard } from "@/components/invoices/pending-invoice-card";
 import { PageHeader } from "@/components/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { chooseIngestBranch } from "@/lib/branch-assignment";
 import { COMPANY } from "@/lib/constants";
 import {
   getAnomalies,
@@ -18,7 +20,9 @@ import {
 } from "@/lib/dashboard";
 import { getOverdueAccountantItems } from "@/lib/ap";
 import { formatIls } from "@/lib/format";
-import { monthKeyFromDate, monthLabel } from "@/lib/months";
+import { INVOICE_APPROVAL, invoiceMismatchFlags } from "@/lib/invoice-approval";
+import { monthKeyFromDate, monthLabel, recentMonthKeys } from "@/lib/months";
+import { prisma } from "@/lib/prisma";
 import { getAppSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
@@ -26,19 +30,25 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const session = await getAppSession();
-  const branchId = session.isNetwork ? null : session.branchId;
+  const office = session.isNetworkOffice;
+  const branchId = session.branchId;
   const month = monthKeyFromDate();
   const forecast = await getForecastTurnover();
-  const [fill, anomalies, toReceive, toOrder, overdue, rogue, comparison] = await Promise.all([
+  const [fill, anomalies, toReceive, toOrder, overdue, rogue, comparison, pending] = await Promise.all([
     getCategoryFill(month, forecast, branchId),
     getAnomalies(branchId),
     getGoodsToReceiveToday(branchId),
-    getOrdersToPlaceToday(branchId, session.isNetwork),
+    getOrdersToPlaceToday(branchId, office),
     getOverdueAccountantItems(month),
-    session.isNetwork ? getRogueBranches(month, forecast) : Promise.resolve({ threshold: 2, branches: [] as { id: string; name: string; reasons: string[] }[] }),
-    session.isNetwork
+    office ? getRogueBranches(month, forecast) : Promise.resolve({ threshold: 2, branches: [] as { id: string; name: string; reasons: string[] }[] }),
+    office
       ? getNetworkBranchComparison(month, forecast)
       : Promise.resolve({ forecast, branches: [], unattributedInvoices: 0 }),
+    prisma.invoicePhoto.findMany({
+      where: { approvalStatus: INVOICE_APPROVAL.PENDING, source: "EMAIL" },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+    }),
   ]);
 
   const anomalyCount =
@@ -47,11 +57,13 @@ export default async function HomePage() {
     anomalies.exceptional.length +
     (anomalies.unclassified > 0 ? 1 : 0);
   const overCount = fill.filter((row) => row.over).length;
+  const purchaseTotal = fill.reduce((sum, row) => sum + row.spent, 0);
+  const title = office ? "משרד רשת" : session.branch?.name ?? "אין סניף עדיין";
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={session.isNetwork ? "משרד הרשת" : session.branch?.name ?? "אין סניף עדיין"}
+        title={title}
         description={`${COMPANY.nameHe} · ${COMPANY.tagline} · ${monthLabel(month)}`}
       />
 
@@ -73,7 +85,60 @@ export default async function HomePage() {
         </Link>
       ) : null}
 
-      {session.isNetwork && rogue.branches.length > 0 ? (
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          ["מחזור חזוי", formatIls(forecast)],
+          ["רכש החודש", formatIls(purchaseTotal)],
+          ["חריגות", String(anomalyCount)],
+          ["ממתינות לאישור", String(pending.length)],
+        ].map(([label, value]) => (
+          <article key={label} className="rounded-2xl border bg-card px-4 py-3 shadow-[var(--shadow-card)]">
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className="text-xl font-semibold tabular-nums">{value}</p>
+          </article>
+        ))}
+      </div>
+
+      {pending.length > 0 ? (
+        <section className="space-y-3">
+          <div className="flex items-baseline justify-between gap-2">
+            <h2 className="font-heading text-lg font-semibold">ממתינות לאישור</h2>
+            <Link href="/invoices" className="text-xs text-primary hover:underline">
+              כל החשבוניות
+            </Link>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            חשבוניות מהמייל לא נכנסות לדוחות עד אישור. אפשר לתקן סניף, סוג מסמך, ספק וסכום.
+          </p>
+          {pending.map((photo) => {
+            const evidence = chooseIngestBranch({
+              documentText: [photo.originalName, photo.voiceNoteText, photo.aiReason, photo.aiSupplierName].filter(Boolean).join("\n"),
+              branches: session.branches,
+            });
+            const flags = invoiceMismatchFlags({
+              evidenceBranchId: evidence.branchId,
+              selectedBranchId: photo.branchId ?? photo.aiBranchId,
+            });
+            return (
+              <div key={photo.id} className="space-y-2">
+                {flags.length > 0 ? (
+                  <p className="text-xs text-trend-down">{flags.join(" · ")}</p>
+                ) : null}
+                <PendingInvoiceCard
+                  photo={photo}
+                  months={recentMonthKeys()}
+                  auditStamp=""
+                  branches={session.branches}
+                  returnTo="/"
+                  showReject
+                />
+              </div>
+            );
+          })}
+        </section>
+      ) : null}
+
+      {office && rogue.branches.length > 0 ? (
         <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm">
           <p className="font-medium text-destructive">חריגה מיעד (≥ {rogue.threshold} נקודות אחוז)</p>
           <ul className="mt-1 space-y-1">
@@ -88,7 +153,7 @@ export default async function HomePage() {
         </div>
       ) : null}
 
-      {session.isNetwork && comparison.branches.length > 0 ? (
+      {office && comparison.branches.length > 0 ? (
         <NetworkBranchCompare
           branches={comparison.branches}
           forecast={comparison.forecast}
@@ -102,7 +167,7 @@ export default async function HomePage() {
             <CardTitle>מחזור חזוי מול רכש</CardTitle>
             <CardDescription>
               מילוי קטגוריה מול יעד % מהמחזור
-              {session.isNetwork ? " (כל הסניפים)" : ""}. כולל חשבוניות ששובצו גם בלי הזמנה. אדום = מעל היעד. מחזור{" "}
+              {office ? " (כל הסניפים)" : ""}. כולל חשבוניות ששובצו גם בלי הזמנה. אדום = מעל היעד. מחזור{" "}
               {formatIls(forecast)}.
             </CardDescription>
           </CardHeader>
@@ -119,7 +184,9 @@ export default async function HomePage() {
                 return (
                   <div key={row.id} className="space-y-1">
                     <div className="flex items-baseline justify-between gap-2 text-sm">
-                      <span>{row.name}</span>
+                      <Link href={`/reports/drill?month=${month}&category=${row.id}`} className="hover:underline">
+                        {row.name}
+                      </Link>
                       <span className={row.over ? "font-medium text-destructive" : "text-muted-foreground"} dir="ltr">
                         {row.actualPercent != null ? `${row.actualPercent.toFixed(1)}%` : "—"}
                         {row.targetPercent != null ? ` / ${row.targetPercent}%` : ""}
@@ -211,7 +278,7 @@ export default async function HomePage() {
           </CardContent>
         </Card>
 
-        <Card className="border-primary/30 bg-primary/5 lg:col-span-2">
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>היום</CardTitle>
             <CardDescription>פתוח למעלה. בוצע — ירוק עם V, יורד למטה.</CardDescription>
@@ -240,7 +307,7 @@ export default async function HomePage() {
                 items={toReceive.map((item) => ({
                   id: item.id,
                   href: item.href,
-                  title: session.isNetwork ? `${item.supplierName} · ${item.branchName}` : item.supplierName,
+                  title: office ? `${item.supplierName} · ${item.branchName}` : item.supplierName,
                   meta: undefined,
                   done: item.done,
                 }))}

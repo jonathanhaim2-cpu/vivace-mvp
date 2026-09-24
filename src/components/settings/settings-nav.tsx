@@ -17,6 +17,8 @@ export function SettingsNav({ permissions }: { permissions: readonly string[] })
       key: "action.manage_permissions" as PermissionKey,
     },
     { href: "/settings/activity", label: "פעילות", match: "prefix", key: "nav.activity" as PermissionKey },
+    { href: "/settings/payments", label: "אמצעי תשלום", match: "prefix", key: "nav.settings" as PermissionKey },
+    { href: "/settings/branch-review", label: "שיוך סניף", match: "prefix", key: "nav.settings" as PermissionKey },
   ].filter((item) => hasPermission(permissions, item.key));
 
   if (items.length === 0) return null;

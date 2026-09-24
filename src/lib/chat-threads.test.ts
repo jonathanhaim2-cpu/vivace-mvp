@@ -5,6 +5,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { PrismaClient } from "@prisma/client";
+import { pushAppSchema } from "./test-db";
 import {
   ARCHIVE_THREAD_TITLE,
   CURRENT_THREAD_SETTING_KEY,
@@ -20,11 +21,7 @@ function openTempDb() {
   const dir = mkdtempSync(path.join(os.tmpdir(), "chat-threads-"));
   const dbPath = path.join(dir, "test.db");
   const url = `file:${dbPath}`;
-  execFileSync("npx", ["prisma", "db", "push", "--skip-generate", "--accept-data-loss"], {
-    cwd: process.cwd(),
-    env: { ...process.env, DATABASE_URL: url },
-    stdio: "pipe",
-  });
+  pushAppSchema(url);
   return { dir, client: new PrismaClient({ datasourceUrl: url }) };
 }
 
@@ -217,7 +214,7 @@ model AppSetting {
       await bootstrap.$disconnect();
     }
 
-    push(path.join(process.cwd(), "prisma", "schema.prisma"));
+    pushAppSchema(url);
     const client = new PrismaClient({ datasourceUrl: url });
     try {
       const orphans = await client.chatMessage.count({ where: { threadId: null } });

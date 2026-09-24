@@ -1,3 +1,4 @@
+import { approvalForSource } from "@/lib/invoice-approval";
 import { duplicateInvoiceData, findExistingDuplicateOriginal } from "@/lib/invoice-duplicates";
 import { PHOTO_DOCUMENT_TYPE, parsePhotoDocumentType } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
@@ -11,6 +12,7 @@ export async function createUploadedInvoicePhoto(input: {
   periodMonth: string | null;
   source: string;
   documentType?: string | null;
+  approvalStatus?: string | null;
   vatIncluded?: boolean;
   amountExVat?: number | null;
   vatAmount?: number | null;
@@ -36,6 +38,7 @@ export async function createUploadedInvoicePhoto(input: {
       contentHash: input.saved.contentHash,
       periodMonth: input.periodMonth,
       source: input.source,
+      approvalStatus: input.approvalStatus ?? approvalForSource(input.source),
       documentType: parsePhotoDocumentType(input.documentType ?? PHOTO_DOCUMENT_TYPE.UNKNOWN),
       classifiedAt: input.accountId && !duplicate ? new Date() : null,
       ...(duplicate ?? { isDuplicate: false, duplicateOfId: null, duplicateStatus: null }),
