@@ -117,6 +117,9 @@ test("routes map to permission keys", () => {
   assert.equal(requiredPermissionForPath("/settings/permissions"), "action.manage_permissions");
   assert.equal(requiredPermissionForPath("/settings/activity"), "nav.activity");
   assert.equal(requiredPermissionForPath("/orders/new"), "nav.orders");
+  assert.equal(requiredPermissionForPath("/receiving"), "nav.receipts");
+  assert.equal(requiredPermissionForPath("/credits"), "nav.receipts");
+  assert.equal(requiredPermissionForPath("/menu"), "nav.home");
   assert.equal(requiredPermissionForPath("/ap"), "nav.ap");
   assert.equal(requiredPermissionForPath("/expenses"), "nav.ap");
   assert.equal(requiredPermissionForPath("/reports/cashflow"), "nav.reports");

@@ -7,7 +7,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CompactField, FilterBar, NativeSelect } from "@/components/ui/compact-form";
 import { getAccountRollup } from "@/lib/accounts";
 import { INVOICE_IN_TOTALS_WHERE } from "@/lib/invoice-duplicates";
-import { monthLabel, monthRangeUtc, previousMonthKey, recentMonthKeys } from "@/lib/months";
+import { monthLabel, previousMonthKey, recentMonthKeys } from "@/lib/months";
+import { invoiceInPnlPeriod, pnlMonthKey } from "@/lib/pnl-month";
 import { prisma } from "@/lib/prisma";
 import { publicFileUrl } from "@/lib/uploads";
 
@@ -17,20 +18,23 @@ export default async function ReportsPage({
   searchParams: Promise<{ month?: string }>;
 }) {
   const { month: requested } = await searchParams;
-  const month = requested && /^\d{4}-\d{2}$/.test(requested) ? requested : previousMonthKey();
-  const range = monthRangeUtc(month);
+  const isAnnual = Boolean(requested && /^\d{4}$/.test(requested));
+  const month = isAnnual ? requested! : requested && /^\d{4}-\d{2}$/.test(requested) ? requested : previousMonthKey();
+  const annualYear = month.slice(0, 4);
   const [rollup, photos] = await Promise.all([
     getAccountRollup(month),
     prisma.invoicePhoto.findMany({
       where: {
         ...INVOICE_IN_TOTALS_WHERE,
         accountId: { not: null },
-        OR: [{ periodMonth: month }, { periodMonth: null, createdAt: { gte: range.start, lt: range.end } }],
       },
       include: { goodsReceipt: { include: { order: { include: { supplier: true } } } } },
     }),
   ]);
-  const documents = photos.flatMap((photo) =>
+  const periodPhotos = photos.filter((photo) =>
+    invoiceInPnlPeriod(pnlMonthKey({ invoiceDate: photo.aiInvoiceDate, createdAt: photo.createdAt }), month),
+  );
+  const documents = periodPhotos.flatMap((photo) =>
     photo.accountId
       ? [
           {
@@ -52,7 +56,11 @@ export default async function ReportsPage({
     <div className="space-y-6">
       <PageHeader
         title="דוחות"
-        description={`כל הדוחות במקום אחד. רווח והפסד ל־${monthLabel(month)} — אותם סכומים, תצוגה קומפקטית.`}
+        description={
+          isAnnual
+            ? `כל הדוחות במקום אחד. רווח והפסד שנתי ${annualYear} — לפי תאריך החשבונית.`
+            : `כל הדוחות במקום אחד. רווח והפסד ל־${monthLabel(month)} — לפי תאריך החשבונית.`
+        }
       />
       <ReportsNav />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -78,6 +86,7 @@ export default async function ReportsPage({
       <FilterBar submitLabel="רענון">
         <CompactField label="חודש" htmlFor="report-month">
           <NativeSelect id="report-month" name="month" defaultValue={month}>
+            <option value={annualYear}>שנת {annualYear}</option>
             {recentMonthKeys().map((key) => (
               <option key={key} value={key}>
                 {monthLabel(key)}

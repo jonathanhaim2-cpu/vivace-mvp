@@ -20,6 +20,10 @@ export async function createRecurringLine(formData: FormData) {
   if (!Number.isFinite(amountIls)) throw new Error("סכום לא חוקי");
   const chargeDayRaw = String(formData.get("chargeDay") ?? "").trim();
   const chargeDay = chargeDayRaw ? Number(chargeDayRaw) : null;
+  const expectedRaw = String(formData.get("expectedInvoicesPerMonth") ?? "").trim();
+  const expectedInvoicesPerMonth = expectedRaw ? Number(expectedRaw) : null;
+  const supplierId = String(formData.get("supplierId") ?? "").trim() || null;
+  const branchId = String(formData.get("branchId") ?? "").trim() || null;
   await prisma.recurringLine.create({
     data: {
       name,
@@ -29,12 +33,41 @@ export async function createRecurringLine(formData: FormData) {
       notes: String(formData.get("notes") ?? "").trim() || null,
       paymentMethod: String(formData.get("paymentMethod") ?? "").trim() || null,
       chargeDay: chargeDay != null && Number.isFinite(chargeDay) ? Math.min(28, Math.max(1, Math.round(chargeDay))) : 1,
+      supplierId,
+      branchId,
+      keywords: String(formData.get("keywords") ?? "").trim() || null,
+      expectedInvoicesPerMonth:
+        expectedInvoicesPerMonth != null && Number.isFinite(expectedInvoicesPerMonth)
+          ? Math.max(0, Math.round(expectedInvoicesPerMonth))
+          : null,
     },
   });
   revalidatePath("/foodcost");
   revalidatePath("/expenses");
+  revalidatePath("/");
   revalidatePath("/reports/cashflow");
   revalidatePath("/settings");
+}
+
+export async function assignInvoiceToExpense(formData: FormData) {
+  await requireExpenseEdit();
+  const invoicePhotoId = String(formData.get("invoicePhotoId") ?? "").trim();
+  const recurringLineId = String(formData.get("recurringLineId") ?? "").trim();
+  if (!invoicePhotoId || !recurringLineId) throw new Error("יש לבחור חשבונית והוצאה");
+  await prisma.invoiceExpenseLink.upsert({
+    where: { invoicePhotoId },
+    create: { invoicePhotoId, recurringLineId, source: "MANUAL" },
+    update: { recurringLineId, source: "MANUAL" },
+  });
+  revalidatePath("/expenses");
+  revalidatePath("/");
+}
+
+export async function unassignInvoiceExpense(linkId: string) {
+  await requireExpenseEdit();
+  await prisma.invoiceExpenseLink.delete({ where: { id: linkId } });
+  revalidatePath("/expenses");
+  revalidatePath("/");
 }
 
 export async function deleteRecurringLine(id: string) {

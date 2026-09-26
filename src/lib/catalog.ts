@@ -1,5 +1,6 @@
 import { PRICE_LIST_KIND } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
+import { backfillSupplierOrderableOnce } from "@/lib/supplier-orderable";
 import type { Role } from "@/lib/constants";
 
 export async function ensurePriceLists(supplierId: string) {
@@ -58,8 +59,9 @@ export function supplierVisibleToBranch(supplier: {
 }
 
 export async function listOrderableSuppliers(opts: { role: Role; branchId: string | null }) {
+  await backfillSupplierOrderableOnce();
   const suppliers = await prisma.supplier.findMany({
-    where: { active: true },
+    where: { active: true, isOrderable: true },
     include: { branchLinks: true },
     orderBy: { name: "asc" },
   });

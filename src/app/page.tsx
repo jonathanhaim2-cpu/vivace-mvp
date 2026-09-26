@@ -19,7 +19,8 @@ import {
   getRogueBranches,
 } from "@/lib/dashboard";
 import { getOverdueAccountantItems } from "@/lib/ap";
-import { formatIls } from "@/lib/format";
+import { formatIls, nowInIsrael } from "@/lib/format";
+import { listMissingInvoiceAlerts } from "@/lib/missing-invoice-alerts";
 import { INVOICE_APPROVAL, invoiceMismatchFlags } from "@/lib/invoice-approval";
 import { monthKeyFromDate, monthLabel, recentMonthKeys } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
@@ -28,13 +29,21 @@ import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
+  const params = await searchParams;
+  const view = params.view === "ops" || params.view === "mgmt" ? params.view : null;
   const session = await getAppSession();
   const office = session.isNetworkOffice;
   const branchId = session.branchId;
   const month = monthKeyFromDate();
+  const clock = nowInIsrael();
   const forecast = await getForecastTurnover();
-  const [fill, anomalies, toReceive, toOrder, overdue, rogue, comparison, pending] = await Promise.all([
+  const [fill, anomalies, toReceive, toOrder, overdue, rogue, comparison, pending, openCredits, invoiceAlerts] =
+    await Promise.all([
     getCategoryFill(month, forecast, branchId),
     getAnomalies(branchId),
     getGoodsToReceiveToday(branchId),
@@ -49,6 +58,20 @@ export default async function HomePage() {
       orderBy: { createdAt: "desc" },
       take: 8,
     }),
+    prisma.supplierRequest.findMany({
+      where: {
+        status: "OPEN",
+        kind: "CREDIT",
+        ...(branchId ? { branchId } : {}),
+      },
+      include: { supplier: true, branch: true },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+    }),
+    listMissingInvoiceAlerts({
+      today: { year: clock.year, month: clock.month, date: clock.date },
+      branchId,
+    }),
   ]);
 
   const anomalyCount =
@@ -59,6 +82,14 @@ export default async function HomePage() {
   const overCount = fill.filter((row) => row.over).length;
   const purchaseTotal = fill.reduce((sum, row) => sum + row.spent, 0);
   const title = office ? "משרד רשת" : session.branch?.name ?? "אין סניף עדיין";
+  const hour = Math.floor(clock.minutes / 60);
+  const greeting =
+    hour < 5 ? "לילה טוב" : hour < 12 ? "בוקר טוב" : hour < 17 ? "צהריים טובים" : hour < 21 ? "ערב טוב" : "לילה טוב";
+  const who = session.user?.name ? `, ${session.user.name}` : "";
+  const executeToday = toOrder.filter((item) => !item.done).length;
+  const receiveToday = toReceive.filter((item) => !item.done).length;
+  const opsClass = view === "mgmt" ? "hidden" : view === "ops" ? "space-y-4" : "space-y-4 lg:hidden";
+  const mgmtClass = view === "ops" ? "hidden" : view === "mgmt" ? "space-y-6" : "hidden space-y-6 lg:block";
 
   return (
     <div className="space-y-6">
@@ -66,6 +97,64 @@ export default async function HomePage() {
         title={title}
         description={`${COMPANY.nameHe} · ${COMPANY.tagline} · ${monthLabel(month)}`}
       />
+      <div className="flex w-fit gap-1 rounded-full bg-muted p-1 text-sm">
+        <Link
+          href="/?view=ops"
+          className={cn("rounded-full px-3 py-1", view === "ops" ? "bg-card shadow-sm" : "text-muted-foreground")}
+        >
+          מבט תפעולי
+        </Link>
+        <Link
+          href="/?view=mgmt"
+          className={cn("rounded-full px-3 py-1", view === "mgmt" ? "bg-card shadow-sm" : "text-muted-foreground")}
+        >
+          מבט ניהולי
+        </Link>
+      </div>
+      <section className={opsClass}>
+        <div>
+          <h2 className="text-2xl font-semibold">
+            {greeting}
+            {who}!
+          </h2>
+          <p className="text-sm text-muted-foreground">{title}</p>
+        </div>
+        <div className="grid gap-3">
+          <Link href="/orders" className="rounded-2xl border bg-card px-4 py-5 shadow-[var(--shadow-card)]">
+            <p className="text-2xl font-semibold tabular-nums">{executeToday}</p>
+            <p className="text-sm">הזמנות לביצוע היום</p>
+          </Link>
+          <Link href="/receiving" className="rounded-2xl border bg-card px-4 py-5 shadow-[var(--shadow-card)]">
+            <p className="text-2xl font-semibold tabular-nums">{receiveToday}</p>
+            <p className="text-sm">הזמנות לקבלה היום</p>
+          </Link>
+        </div>
+      </section>
+      <section className="space-y-2">
+        <h2 className="font-heading text-lg font-semibold">חריגים</h2>
+        {openCredits.length === 0 && invoiceAlerts.length === 0 ? (
+          <p className="rounded-2xl border bg-card px-4 py-3 text-sm text-muted-foreground">אין חריגים פתוחים.</p>
+        ) : (
+          <ul className="space-y-2">
+            {openCredits.map((credit) => (
+              <li key={credit.id}>
+                <Link href="/credits" className="block rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm">
+                  בקשת זיכוי פתוחה · {credit.supplier.name}
+                  {office ? ` · ${credit.branch.name}` : ""}
+                </Link>
+              </li>
+            ))}
+            {invoiceAlerts.map((alert) => (
+              <li key={alert.id}>
+                <Link href={alert.href} className="block rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                  {alert.message}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <div className={mgmtClass}>
 
       {session.branches.length === 0 ? (
         <Link
@@ -315,6 +404,7 @@ export default async function HomePage() {
             </div>
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   );

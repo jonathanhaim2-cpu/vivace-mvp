@@ -30,17 +30,22 @@ export async function createDish(formData: FormData) {
   const sellPriceRaw = String(formData.get("sellPrice") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim() || null;
 
+  const parentId = String(formData.get("parentId") ?? "").trim() || null;
+  const nodeKind = String(formData.get("nodeKind") ?? "") === "CATEGORY" ? "CATEGORY" : "DISH";
   const dish = await prisma.dish.create({
     data: {
       name,
-      kind,
-      sellPrice: kind === "INTERMEDIATE" ? null : sellPriceRaw ? Number(sellPriceRaw) : null,
+      kind: nodeKind === "CATEGORY" ? "DISH" : kind,
+      nodeKind,
+      parentId,
+      sellPrice: nodeKind === "CATEGORY" || kind === "INTERMEDIATE" ? null : sellPriceRaw ? Number(sellPriceRaw) : null,
       notes,
     },
   });
 
   revalidatePath("/foodcost");
-  redirect(`/foodcost/${dish.id}`);
+  if (parentId) revalidatePath(`/foodcost/menu/${parentId}`);
+  redirect(nodeKind === "CATEGORY" ? `/foodcost/menu/${dish.id}` : `/foodcost/${dish.id}`);
 }
 
 export async function addDishComponent(dishId: string, formData: FormData) {

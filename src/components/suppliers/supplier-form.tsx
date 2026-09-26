@@ -40,6 +40,8 @@ type SupplierValues = {
   plantsCouncilUrl: string | null;
   plantsCouncilDiscountPct: number | null;
   plantsCouncilRelevant?: boolean;
+  isOrderable?: boolean;
+  paymentCardId?: string | null;
   branchLinks?: {
     branchId: string;
     whatsappPhone?: string | null;
@@ -61,10 +63,12 @@ export function SupplierForm({
   supplier,
   categoryTree = [],
   branches = [],
+  paymentCards = [],
 }: {
   supplier?: SupplierValues & { id: string };
   categoryTree?: { id: string; name: string; children: { id: string; name: string }[] }[];
   branches?: { id: string; name: string }[];
+  paymentCards?: { id: string; name: string; last4: string }[];
 }) {
   const action = supplier ? updateSupplier.bind(null, supplier.id) : createSupplier;
   const days = supplier ? parseDeliveryDays(supplier.deliveryDays) : [0, 2, 4];
@@ -105,6 +109,17 @@ export function SupplierForm({
           <NativeSelect id="active" name="active" defaultValue={supplier?.active === false ? "false" : "true"}>
             <option value="true">פעיל</option>
             <option value="false">לא פעיל</option>
+          </NativeSelect>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="isOrderable">ספק הזמנות</FieldLabel>
+          <NativeSelect
+            id="isOrderable"
+            name="isOrderable"
+            defaultValue={supplier ? (supplier.isOrderable === false ? "false" : "true") : "true"}
+          >
+            <option value="true">כן — מופיע בקליטת סחורה</option>
+            <option value="false">לא — חשמל, שכירות וכדומה</option>
           </NativeSelect>
         </Field>
         <Field>
@@ -243,6 +258,17 @@ export function SupplierForm({
               {PAYMENT_METHODS.map((method) => (
                 <option key={method.value} value={method.value}>
                   {method.label}
+                </option>
+              ))}
+            </NativeSelect>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="paymentCardId">כרטיס אשראי</FieldLabel>
+            <NativeSelect id="paymentCardId" name="paymentCardId" defaultValue={supplier?.paymentCardId ?? ""}>
+              <option value="">בלי כרטיס</option>
+              {paymentCards.map((card) => (
+                <option key={card.id} value={card.id}>
+                  {card.name} · {card.last4}
                 </option>
               ))}
             </NativeSelect>

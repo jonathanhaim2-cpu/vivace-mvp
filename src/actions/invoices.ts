@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { assertLeafAccount } from "@/lib/accounts";
 import { analyzeStoredPhoto } from "@/lib/analyze-photo";
+import { assignInvoiceExpense } from "@/lib/expense-assign";
 import { IMPORT_ANALYZE_GAP_MS, sleep } from "@/lib/ai-throttle";
 import { INVOICE_DUPLICATE_STATUS, INVOICE_SOURCE, PHOTO_DOCUMENT_TYPE, parsePhotoDocumentType } from "@/lib/constants";
 import { invoiceClassificationFromForm } from "@/lib/invoice-form";
@@ -153,7 +154,10 @@ export async function updateInvoiceCategory(photoId: string, formData: FormData)
     summary: "חשבונית שובצה לקטגוריה",
     meta: { accountId, periodMonth: periodMonth || null, documentType },
   });
+  await assignInvoiceExpense(photoId);
   revalidateInvoicePaths();
+  revalidatePath("/expenses");
+  revalidatePath("/");
 }
 
 export async function saveInvoiceClassification(photoId: string, formData: FormData) {
@@ -193,7 +197,10 @@ export async function saveInvoiceClassification(photoId: string, formData: FormD
     summary: "חשבונית סווגה ידנית",
     meta: { accountId: parsed.accountId, periodMonth: parsed.periodMonth, documentType: parsed.documentType },
   });
+  await assignInvoiceExpense(photoId);
   revalidateInvoicePaths();
+  revalidatePath("/expenses");
+  revalidatePath("/");
 }
 
 export async function confirmAiSuggestion(photoId: string, formData?: FormData) {
@@ -243,7 +250,10 @@ export async function confirmAiSuggestion(photoId: string, formData?: FormData) 
     summary: "אושרה הצעת AI לסיווג חשבונית",
     meta: { accountId: photo.aiAccountId, periodMonth, documentType: suggestedType },
   });
+  await assignInvoiceExpense(photoId);
   revalidateInvoicePaths();
+  revalidatePath("/expenses");
+  revalidatePath("/");
 }
 
 export async function analyzeInvoicePhoto(photoId: string, formData?: FormData) {
