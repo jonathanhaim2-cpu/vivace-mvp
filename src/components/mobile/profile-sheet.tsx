@@ -95,16 +95,16 @@ export function ProfileSheet({
       >
         <div className="mx-auto h-1.5 w-10 rounded-full bg-border" />
         <div className="flex items-center gap-3">
-          <SheetClose className="flex size-9 items-center justify-center rounded-full text-muted-foreground" aria-label="סגירה">
-            <X className="size-5" />
-          </SheetClose>
-          <div className="min-w-0 flex-1 text-end">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+            {initials}
+          </span>
+          <div className="min-w-0">
             <SheetTitle className="truncate text-base font-bold">{userName || "משתמש"}</SheetTitle>
             <p className="truncate text-xs text-muted-foreground">{roleLine}</p>
           </div>
-          <span className="flex size-11 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-            {initials}
-          </span>
+          <SheetClose className="ms-auto flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground" aria-label="סגירה">
+            <X className="size-5" />
+          </SheetClose>
         </div>
 
         <div className="flex flex-col gap-2">

@@ -108,9 +108,9 @@ export default async function InvoiceDetailPage({
           ] as const
         ).map(([label, value, Icon]) => (
           <div key={label} className="flex items-center gap-3 border-b border-border px-4 py-3 last:border-b-0">
-            <span className="text-sm text-muted-foreground">{label}</span>
-            <span className="min-w-0 flex-1 truncate text-end text-sm font-medium">{value}</span>
             <Icon className="size-4 shrink-0 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">{label}</span>
+            <span className="ms-auto min-w-0 truncate text-sm font-medium">{value}</span>
           </div>
         ))}
       </section>

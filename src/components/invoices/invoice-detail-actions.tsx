@@ -95,11 +95,11 @@ export function InvoiceEditSheet({
           className="max-h-[88vh] gap-3 overflow-y-auto rounded-t-3xl px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
         >
           <div className="mx-auto h-1.5 w-10 rounded-full bg-border" />
-          <div className="flex items-center gap-2">
-            <SheetClose className="flex size-9 items-center justify-center rounded-full" aria-label="סגירה">
+          <div className="flex items-center justify-between gap-2">
+            <SheetTitle className="text-lg font-bold">עריכה</SheetTitle>
+            <SheetClose className="flex size-9 items-center justify-center rounded-full bg-muted" aria-label="סגירה">
               <X className="size-5" />
             </SheetClose>
-            <SheetTitle className="text-lg font-bold">עריכה</SheetTitle>
           </div>
           <form action={action} className="space-y-3">
             <label className="block text-sm">
