@@ -245,7 +245,7 @@ export function AppShell({
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 overflow-visible border-t border-border bg-background/95 px-1 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-6px_20px_rgb(42_31_28/0.05)] backdrop-blur-md print:hidden lg:hidden">
-        <div className="relative grid h-16 grid-cols-5 items-end">
+        <div className="relative grid h-16 grid-cols-5 items-stretch">
           {MOBILE_NAV_ITEMS.map((item) => {
             if (item.id === "new-order") {
               if (!hasPermission(permissions, "nav.orders")) {
@@ -256,12 +256,12 @@ export function AppShell({
                   key={item.id}
                   href={item.href}
                   aria-label={item.label}
-                  className="relative flex flex-col items-center justify-end"
+                  className="relative flex h-full flex-col items-center justify-end pb-1"
                 >
-                  <span className="absolute -top-7 left-1/2 z-10 flex size-16 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-background">
+                  <span className="absolute bottom-7 left-1/2 z-10 flex size-16 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-background">
                     <Plus className="size-7" strokeWidth={2.4} />
                   </span>
-                  <span className="mt-8 text-[10px] font-semibold text-primary">{item.label}</span>
+                  <span className="relative z-20 whitespace-nowrap text-[11px] font-semibold leading-4 text-primary">{item.label}</span>
                 </Link>
               );
             }
@@ -277,7 +277,7 @@ export function AppShell({
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-w-0 flex-col items-center gap-0.5 px-1 pb-1 text-[11px] font-medium transition-colors",
+                  "flex h-full min-w-0 flex-col items-center justify-end gap-0.5 px-1 pb-1 text-[11px] font-medium leading-4 transition-colors",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
               >
@@ -289,7 +289,7 @@ export function AppShell({
                 >
                   <Icon className="size-5" />
                 </span>
-                {item.label}
+                <span className="leading-4">{item.label}</span>
               </Link>
             );
           })}
