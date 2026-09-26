@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { uploadStandaloneInvoice } from "@/actions/invoices";
-import { AccountRollup } from "@/components/accounts/account-rollup";
 import { GroupedAccountSelect } from "@/components/accounts/grouped-account-select";
 import { InvoiceAiTip } from "@/components/ai-helper-tip";
 import { AiMissingBanner } from "@/components/ai-missing-banner";
@@ -18,7 +17,6 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CompactField, CompactForm, CompactPanel, NativeSelect } from "@/components/ui/compact-form";
 import { Input } from "@/components/ui/input";
-import { getAccountRollup } from "@/lib/accounts";
 import { getAiRuntime } from "@/lib/ai";
 import { firstAuditsFor, formatAuditStamp, INVOICE_ORIGIN_ACTIONS } from "@/lib/audit";
 import { scanExistingInvoiceDuplicates } from "@/lib/invoice-duplicates";
@@ -37,7 +35,6 @@ import { monthKeyFromDate, monthLabel, recentMonthKeys } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { resolvedInvoiceBranchId } from "@/lib/purchase-fill";
 import { getAppSession } from "@/lib/session";
-import { publicFileUrl } from "@/lib/uploads";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -74,7 +71,7 @@ export default async function InvoicesPage({
   const session = await getAppSession();
   const branches = session.branches.map((branch) => ({ id: branch.id, name: branch.name }));
 
-  const [photos, rollup, runtime] = await Promise.all([
+  const [photos, runtime] = await Promise.all([
     prisma.invoicePhoto.findMany({
       include: {
         account: { include: { parent: true } },
@@ -84,7 +81,6 @@ export default async function InvoicesPage({
       },
       orderBy: { createdAt: "desc" },
     }),
-    getAccountRollup(),
     getAiRuntime(),
   ]);
   const invoiceActors = await firstAuditsFor(
@@ -118,23 +114,6 @@ export default async function InvoicesPage({
   const suppliers = uniqueSupplierNames(filterPhotos);
   const monthOptions = recentMonthKeys();
   const monthSummary = filters.month === "all" ? "כל החודשים" : monthLabel(filters.month);
-  const rollupDocuments = uniquePhotos.flatMap((photo) =>
-    photo.accountId
-      ? [
-          {
-            id: photo.id,
-            accountId: photo.accountId,
-            originalName: photo.originalName,
-            fileUrl: publicFileUrl(photo.fileName),
-            mimeType: photo.mimeType,
-            createdAt: photo.createdAt.toISOString(),
-            invoiceDate: photo.aiInvoiceDate,
-            supplierName: photo.aiSupplierName ?? photo.goodsReceipt?.order.supplier.name ?? null,
-            amountIls: photo.amountIls ?? photo.aiTotalIls,
-          },
-        ]
-      : [],
-  );
 
   return (
     <div className="space-y-4">
@@ -172,23 +151,8 @@ export default async function InvoicesPage({
         <Link href="/invoices/mail" className={cn(buttonVariants({ variant: "outline" }))}>
           חיבור מייל
         </Link>
-        <Link href="/invoices/package" className={cn(buttonVariants())}>
+        <Link href="/invoices/package" className={cn(buttonVariants({ variant: "outline" }))}>
           חבילה להנה״ח
-        </Link>
-        <Link href="/reports/food-cost" className={cn(buttonVariants({ variant: "ghost" }))}>
-          עלות רכש
-        </Link>
-        <Link href="/ap" className={cn(buttonVariants({ variant: "outline" }))}>
-          תשלומים וכרטסת
-        </Link>
-        <Link href="/reports" className={cn(buttonVariants({ variant: "ghost" }))}>
-          דוח חודשי
-        </Link>
-        <Link href="/waste" className={cn(buttonVariants({ variant: "ghost" }))}>
-          דוח פחת
-        </Link>
-        <Link href="/settings" className={cn(buttonVariants({ variant: "ghost" }))}>
-          שימוש AI
         </Link>
       </div>
 
@@ -331,7 +295,6 @@ export default async function InvoicesPage({
         </CompactForm>
       </CompactPanel>
 
-      <AccountRollup rows={rollup} documents={rollupDocuments} />
     </div>
   );
 }

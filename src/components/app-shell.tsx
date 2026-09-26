@@ -9,6 +9,7 @@ import {
   History,
   Home,
   Landmark,
+  LayoutGrid,
   LogOut,
   Settings,
   ShoppingCart,
@@ -30,17 +31,52 @@ import { SendToSuppliersToggle } from "@/components/orders/send-to-suppliers-tog
 import type { DueCutoffReminder } from "@/lib/reminders";
 import type { ChatPanelState } from "@/lib/chat-types";
 
-const NAV: { href: string; label: string; icon: typeof Home; permission: PermissionKey }[] = [
+type NavChild = { href: string; label: string; permission: PermissionKey };
+type NavItem = { href: string; label: string; icon: typeof Home; permission: PermissionKey; children?: NavChild[] };
+
+const NAV: NavItem[] = [
   { href: "/", label: "בית", icon: Home, permission: "nav.home" },
-  { href: "/orders", label: "הזמנות", icon: ShoppingCart, permission: "nav.orders" },
-  { href: "/purchases", label: "רכש", icon: ClipboardCheck, permission: "nav.receipts" },
+  {
+    href: "/orders",
+    label: "רכש",
+    icon: ClipboardCheck,
+    permission: "nav.orders",
+    children: [
+      { href: "/orders", label: "הזמנות", permission: "nav.orders" },
+      { href: "/receiving", label: "קליטת סחורה", permission: "nav.receipts" },
+      { href: "/credits", label: "זיכויים פתוחים", permission: "nav.receipts" },
+    ],
+  },
   { href: "/suppliers", label: "ספקים", icon: Truck, permission: "nav.suppliers" },
-  { href: "/invoices", label: "חשבוניות", icon: FileText, permission: "nav.invoices" },
+  {
+    href: "/invoices",
+    label: "כספים",
+    icon: Landmark,
+    permission: "nav.invoices",
+    children: [
+      { href: "/invoices", label: "חשבוניות", permission: "nav.invoices" },
+      { href: "/ap", label: "תשלומים", permission: "nav.ap" },
+      { href: "/expenses", label: "הוצאות קבועות/משתנות", permission: "nav.ap" },
+    ],
+  },
   { href: "/inventory", label: "מלאי", icon: Warehouse, permission: "nav.inventory" },
-  { href: "/foodcost", label: "Food Cost", icon: UtensilsCrossed, permission: "nav.foodcost" },
-  { href: "/reports", label: "דוחות", icon: BarChart3, permission: "nav.reports" },
-  { href: "/ap", label: "תשלומים", icon: Landmark, permission: "nav.ap" },
+  { href: "/foodcost", label: "פודקוסט", icon: UtensilsCrossed, permission: "nav.foodcost" },
+  {
+    href: "/reports",
+    label: "דוחות",
+    icon: BarChart3,
+    permission: "nav.reports",
+    children: REPORT_LINKS.map((link) => ({ ...link, permission: "nav.reports" as PermissionKey })),
+  },
 ];
+
+function pathActive(href: string, pathname: string) {
+  if (href === "/") return pathname === "/";
+  if (href === "/reports") return pathname === "/reports";
+  if (href === "/orders") return pathname === "/orders" || pathname.startsWith("/orders/");
+  if (href === "/invoices") return pathname === "/invoices" || pathname.startsWith("/invoices/");
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 type Branch = { id: string; name: string };
 
@@ -75,7 +111,14 @@ export function AppShell({
     return <>{children}</>;
   }
 
-  const items = NAV.filter((item) => hasPermission(permissions, item.permission));
+  const items = NAV.flatMap((item) => {
+    const children = item.children?.filter((child) => hasPermission(permissions, child.permission));
+    const self = hasPermission(permissions, item.permission);
+    if (children && children.length > 0) return [{ ...item, children }];
+    if (self && !item.children) return [item];
+    if (self) return [{ ...item, children: undefined }];
+    return [];
+  });
   const canSettings = hasPermission(permissions, "nav.settings");
   const canActivity = hasPermission(permissions, "nav.activity");
   const canToggleSend = hasPermission(permissions, "action.toggle_send_to_suppliers");
@@ -97,12 +140,14 @@ export function AppShell({
         </div>
         <nav className="flex flex-1 flex-col gap-1 p-3">
           {items.map((item) => {
-            const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+            const childActive = item.children?.some((child) => pathActive(child.href, pathname)) ?? false;
+            const active = childActive || pathActive(item.href, pathname);
+            const showChildren = Boolean(item.children && (active || childActive));
             const Icon = item.icon;
             return (
               <div key={item.href}>
                 <Link
-                  href={item.href}
+                  href={item.children?.[0]?.href ?? item.href}
                   className={cn(
                     "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition-colors",
                     active
@@ -113,10 +158,10 @@ export function AppShell({
                   <Icon className="size-4 shrink-0" />
                   {item.label}
                 </Link>
-                {item.href === "/reports" && pathname.startsWith("/reports") ? (
+                {showChildren && item.children ? (
                   <div className="mt-1 ms-6 flex flex-col gap-0.5">
-                    {REPORT_LINKS.map((sub) => {
-                      const subActive = sub.href === "/reports" ? pathname === "/reports" : pathname.startsWith(sub.href);
+                    {item.children.map((sub) => {
+                      const subActive = pathActive(sub.href, pathname);
                       return (
                         <Link
                           key={sub.href}
@@ -218,14 +263,33 @@ export function AppShell({
         <div className="w-full px-3 py-6 pb-28 lg:px-4 lg:pb-10">{children}</div>
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur-md print:hidden lg:hidden">
-        <div className="grid grid-cols-5">
+      <nav className="fixed inset-x-0 bottom-0 z-30 overflow-visible border-t border-border bg-background/95 pb-2 pt-2 backdrop-blur-md print:hidden lg:hidden">
+        <div className="relative grid h-14 grid-cols-5 items-center">
           {(
-            ["/", "/orders", "/purchases", "/invoices", "/reports"]
-              .map((href) => items.find((item) => item.href === href))
-              .filter((item) => item != null) as typeof items
+            [
+              { href: "/", label: "בית", icon: Home },
+              { href: "/orders", label: "הזמנות", icon: ShoppingCart },
+              null,
+              { href: "/invoices", label: "מסמכים", icon: FileText },
+              { href: "/menu", label: "תפריט", icon: LayoutGrid },
+            ] as const
           ).map((item) => {
-            const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+            if (!item) {
+              if (!hasPermission(permissions, "nav.orders")) {
+                return <span key="new-order" />;
+              }
+              return (
+                <Link
+                  key="new-order"
+                  href="/orders/new"
+                  aria-label="הזמנה חדשה"
+                  className="absolute bottom-2 left-1/2 z-10 flex size-16 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg"
+                >
+                  <ShoppingCart className="size-7" />
+                </Link>
+              );
+            }
+            const active = pathActive(item.href, pathname);
             const Icon = item.icon;
             return (
               <Link

@@ -1,12 +1,18 @@
 import Link from "next/link";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { NextOrderNotice } from "@/components/orders/next-order-notice";
+import { AnnualTargetCell } from "@/components/suppliers/annual-target-cell";
 import { CompactField, FilterBar, NativeSelect } from "@/components/ui/compact-form";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { listManagedSuppliers } from "@/lib/catalog";
-import { nextOrderWindow, resolveOrderDays } from "@/lib/format";
+import { formatIls, nextOrderWindow, nowInIsrael, resolveOrderDays } from "@/lib/format";
+import { signedDocumentAmount } from "@/lib/money";
+import { pnlMonthKey } from "@/lib/pnl-month";
+import { prisma } from "@/lib/prisma";
 import { getAppSession, sessionCan } from "@/lib/session";
+import { networkRevenueSharePercent, ytdPurchaseStats } from "@/lib/supplier-purchases";
+import { backfillSupplierOrderableOnce } from "@/lib/supplier-orderable";
 
 export default async function SuppliersPage({
   searchParams,
@@ -14,6 +20,7 @@ export default async function SuppliersPage({
   searchParams: Promise<{ q?: string; active?: string }>;
 }) {
   const session = await getAppSession();
+  await backfillSupplierOrderableOnce();
   const params = await searchParams;
   const q = params.q?.trim() ?? "";
   const active = params.active?.trim() || "active";
@@ -25,6 +32,43 @@ export default async function SuppliersPage({
       return true;
     },
   );
+  const office = session.isNetworkOffice;
+  const clock = nowInIsrael();
+  const purchaseBySupplier = new Map<string, { ytd: number; average: number; share: number | null }>();
+  if (office && suppliers.length > 0) {
+    const photos = await prisma.invoicePhoto.findMany({
+      where: { isDuplicate: false, approvalStatus: "APPROVED" },
+      select: {
+        amountIls: true,
+        aiTotalIls: true,
+        documentType: true,
+        aiInvoiceDate: true,
+        aiSupplierName: true,
+        createdAt: true,
+        goodsReceipt: { select: { order: { select: { supplierId: true } } } },
+      },
+    });
+    const buckets = new Map<string, Record<string, number>>();
+    for (const photo of photos) {
+      const month = pnlMonthKey({ invoiceDate: photo.aiInvoiceDate, createdAt: photo.createdAt });
+      if (!month?.startsWith(`${clock.year}-`)) continue;
+      const named = photo.aiSupplierName?.trim().toLocaleLowerCase("he");
+      const supplierId =
+        photo.goodsReceipt?.order.supplierId ??
+        suppliers.find((supplier) => supplier.name.trim().toLocaleLowerCase("he") === named)?.id;
+      if (!supplierId) continue;
+      const bucket = buckets.get(supplierId) ?? {};
+      bucket[month] = (bucket[month] ?? 0) + signedDocumentAmount(photo);
+      buckets.set(supplierId, bucket);
+    }
+    for (const supplier of suppliers) {
+      const stats = ytdPurchaseStats(buckets.get(supplier.id) ?? {}, clock.year, clock.month);
+      purchaseBySupplier.set(supplier.id, {
+        ...stats,
+        share: networkRevenueSharePercent(stats.average, null),
+      });
+    }
+  }
 
   return (
     <div>
@@ -78,7 +122,11 @@ export default async function SuppliersPage({
             <TableRow>
               <TableHead>ספק</TableHead>
               <TableHead>סניפים</TableHead>
-              <TableHead>הזמנה הבאה</TableHead>
+              {office ? <TableHead>ממוצע חודשי</TableHead> : null}
+              {office ? <TableHead>רכש מתחילת השנה</TableHead> : null}
+              {office ? <TableHead>אחוז מהמחזור</TableHead> : null}
+              {office ? <TableHead>יעד שנתי</TableHead> : null}
+              {office ? null : <TableHead>הזמנה הבאה</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -100,9 +148,26 @@ export default async function SuppliersPage({
                       ? "לא שויך"
                       : supplier.branchLinks.map((link) => link.branch?.name ?? link.branchId).join(" · ")}
                   </TableCell>
-                  <TableCell className="text-xs">
-                    <NextOrderNotice info={nextOrder} className="text-xs" />
-                  </TableCell>
+                  {office ? (
+                    <>
+                      <TableCell>{formatIls(purchaseBySupplier.get(supplier.id)?.average ?? 0)}</TableCell>
+                      <TableCell>{formatIls(purchaseBySupplier.get(supplier.id)?.ytd ?? 0)}</TableCell>
+                      <TableCell>
+                        <span title="אין נתוני מחזור או מכירות במערכת, לכן אי אפשר לחשב אחוז מהמחזור.">—</span>
+                      </TableCell>
+                      <TableCell>
+                        {sessionCan(session, "action.edit_suppliers") ? (
+                          <AnnualTargetCell supplierId={supplier.id} value={supplier.annualPurchaseTargetIls} />
+                        ) : (
+                          supplier.annualPurchaseTargetIls != null ? formatIls(supplier.annualPurchaseTargetIls) : "—"
+                        )}
+                      </TableCell>
+                    </>
+                  ) : (
+                    <TableCell className="text-xs">
+                      <NextOrderNotice info={nextOrder} className="text-xs" />
+                    </TableCell>
+                  )}
                 </TableRow>
               );
             })}

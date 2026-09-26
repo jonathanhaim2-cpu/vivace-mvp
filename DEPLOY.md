@@ -96,6 +96,23 @@ Authorization: Bearer $CRON_SECRET
 
 PDF / jpg / png / webp / heic attachments land in the same classification queue as folder import, with source `EMAIL`. Re-runs are deduped by Message-ID + file hash. Successful messages are marked Seen. Manual upload and **ייבוא מתיקייה** are unchanged.
 
+### Outbound email (credit / charge requests) — not wired
+
+Receiving a short or extra delivery creates a supplier request. The receiver must preview it and confirm before anything is sent. There is no outbound mailer in the app yet, so confirm opens a `mailto:` link and marks the request as sent.
+
+TODO: when one of these is set, send the preview body to the supplier accounting email **after** that confirm click. Do not send on receipt save alone.
+
+```
+RESEND_API_KEY=
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASSWORD=
+SMTP_FROM=orders@vivace-pizza.com
+```
+
+Also add the additive SQL in `prisma/migrations/20260926183000_roy_feedback_round2/migration.sql` on Postgres (`prisma migrate deploy`) after the base schema already exists. `db push` applies the same columns on a fresh database. The migration only adds columns and tables.
+
 ### Fly.io
 
 Same idea: persistent volume, `DATABASE_URL=file:/data/dev.db`, `UPLOAD_DIR=/data/uploads`, `npm run start:prod`.

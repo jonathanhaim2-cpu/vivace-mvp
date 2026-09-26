@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { OrderWizard } from "@/components/orders/order-wizard";
+import { SupplierPickGrid } from "@/components/orders/supplier-pick-grid";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { listOrderableSuppliers } from "@/lib/catalog";
 import { lineTotal, startOfIsraelWeek } from "@/lib/format";
@@ -11,9 +12,9 @@ import { getSendToSuppliersEnabled, resolveOrderWhatsAppPhone } from "@/lib/what
 export default async function NewOrderPage({
   searchParams,
 }: {
-  searchParams: Promise<{ supplierId?: string; branch?: string }>;
+  searchParams: Promise<{ supplierId?: string; branch?: string; q?: string; tab?: string }>;
 }) {
-  const { supplierId, branch: requestedBranch } = await searchParams;
+  const { supplierId, branch: requestedBranch, q, tab } = await searchParams;
   const [session, sendToSuppliers] = await Promise.all([getAppSession(), getSendToSuppliersEnabled()]);
   const activeBranch = requestedBranch
     ? session.branches.find((item) => item.id === requestedBranch) ?? null
@@ -96,6 +97,14 @@ export default async function NewOrderPage({
     (sum, line) => sum + lineTotal(line.qty, line.unitPrice, line.discountPercent),
     0,
   );
+  const openOrders = await prisma.order.findMany({
+    where: {
+      branchId: activeBranch.id,
+      status: { in: ["CONFIRMED", "SENT"] },
+      receipt: null,
+    },
+    select: { supplierId: true },
+  });
   const openOrder = allowedSupplier
     ? await prisma.order.findFirst({
         where: {
@@ -115,6 +124,23 @@ export default async function NewOrderPage({
         title="הזמנה חדשה"
         description={`הזמנה לסניף ${activeBranch.name}. בחירת ספק, כמויות, ואישור לפני וואטסאפ.`}
       />
+      <div className={allowedSupplier ? "hidden" : undefined}>
+      <SupplierPickGrid
+        branchId={activeBranch.id}
+        suppliers={suppliers.map((supplier) => ({ id: supplier.id, name: supplier.name }))}
+        openSupplierIds={[...new Set(openOrders.map((order) => order.supplierId))]}
+        query={q ?? ""}
+        tab={tab ?? ""}
+      />
+      </div>
+      {allowedSupplier ? (
+        <p className="mb-3 lg:hidden">
+          <Link href={`/orders/new?branch=${activeBranch.id}`} className="text-sm text-primary hover:underline">
+            בחירת ספק אחר
+          </Link>
+        </p>
+      ) : null}
+      <div className={allowedSupplier ? "" : "hidden lg:block"}>
       <OrderWizard
         suppliers={suppliers}
         products={products}
@@ -135,6 +161,7 @@ export default async function NewOrderPage({
             : null
         }
       />
+      </div>
     </div>
   );
 }

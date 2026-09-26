@@ -24,6 +24,7 @@ model Branch {
   userLinks       UserBranch[]
   invoicePhotos   InvoicePhoto[]
   aiSuggestedPhotos InvoicePhoto[] @relation("InvoiceAiBranch")
+  supplierRequests    SupplierRequest[]
 }
 
 model Supplier {
@@ -60,6 +61,12 @@ model Supplier {
   plantsCouncilUrl         String?
   plantsCouncilDiscountPct Float?
   plantsCouncilRelevant    Boolean   @default(false)
+  /// ספק הזמנות — only these appear in goods receiving and the new-order supplier grid.
+  isOrderable              Boolean   @default(false)
+  /// Network-office annual purchase target (ILS), edited inline on the suppliers list.
+  annualPurchaseTargetIls  Float?
+  paymentCardId            String?
+  paymentCard              PaymentCard? @relation(fields: [paymentCardId], references: [id], onDelete: SetNull)
   createdAt                DateTime  @default(now())
   updatedAt                DateTime  @updatedAt
   products                 Product[]
@@ -69,6 +76,8 @@ model Supplier {
   apMonths                 SupplierApMonth[]
   exceptionalItems         ExceptionalItem[]
   cutoffReminders          OrderCutoffReminder[]
+  recurringLines           RecurringLine[]
+  supplierRequests         SupplierRequest[]
 }
 
 model SupplierBranch {
@@ -166,6 +175,7 @@ model Order {
   lines               OrderLine[]
   receipt             GoodsReceipt?
   exceptionalItems    ExceptionalItem[]
+  supplierRequests    SupplierRequest[]
 }
 
 model OrderLine {
@@ -222,6 +232,7 @@ model GoodsReceipt {
   lines                 GoodsReceiptLine[]
   photos                InvoicePhoto[]
   exceptionalItems      ExceptionalItem[]
+  supplierRequests      SupplierRequest[]
 }
 
 model GoodsReceiptLine {
@@ -289,6 +300,8 @@ model InvoicePhoto {
   aiNetworkExpense Boolean     @default(false)
   /// APPROVED rows enter reports. EMAIL intake stays PENDING until a person approves.
   approvalStatus String        @default("APPROVED")
+  expenseLink    InvoiceExpenseLink?
+  creditRequests SupplierRequest[] @relation("RequestCreditNote")
 
   @@index([contentHash])
   @@index([approvalStatus])
@@ -347,6 +360,13 @@ model Dish {
   updatedAt           DateTime        @updatedAt
   components          DishComponent[] @relation("DishHasComponents")
   usedIn              DishComponent[] @relation("UsedAsComponent")
+  /// Menu tree: CATEGORY nodes (פיצות, סמול…) or DISH. Existing recipes stay DISH.
+  nodeKind            String          @default("DISH")
+  parentId            String?
+  parent              Dish?           @relation("DishMenu", fields: [parentId], references: [id], onDelete: SetNull)
+  children            Dish[]          @relation("DishMenu")
+  sortOrder           Int             @default(0)
+  systemKey           String?         @unique
 }
 
 model DishComponent {
@@ -373,6 +393,13 @@ model RecurringLine {
   paymentMethod String?
   chargeDay     Int?
   active        Boolean @default(true)
+  supplierId    String?
+  supplier      Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  /// Comma-separated keywords used to auto-match incoming invoices.
+  keywords      String?
+  /// Manual override of expected invoices per month. Null = average of the last 3 full months.
+  expectedInvoicesPerMonth Int?
+  expenseLinks  InvoiceExpenseLink[]
 }
 
 model WasteEntry {
@@ -547,6 +574,7 @@ model PaymentCard {
   active     Boolean           @default(true)
   createdAt  DateTime          @default(now())
   links      PaymentCardLink[]
+  suppliers  Supplier[]
 }
 
 model PaymentCardLink {
@@ -598,4 +626,61 @@ model SupplierQuoteLine {
   monthAvg     Float?
   yearAvg      Float?
   productId    String?
+}
+
+/// Credit (בקשת זיכוי) or charge (בקשת חיוב) generated from a receiving discrepancy.
+/// Stays OPEN until a credit note is matched (credits). Charges are tracked separately.
+model SupplierRequest {
+  id                String    @id @default(cuid())
+  /// CREDIT | CHARGE
+  kind              String
+  /// OPEN | CLOSED
+  status            String    @default("OPEN")
+  supplierId        String
+  supplier          Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  branchId          String
+  branch            Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  orderId           String?
+  order             Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  goodsReceiptId    String?
+  goodsReceipt      GoodsReceipt? @relation(fields: [goodsReceiptId], references: [id], onDelete: SetNull)
+  documentNumber    String?
+  deliveryDate      DateTime?
+  previewBody       String
+  sentAt            DateTime?
+  creditNotePhotoId String?
+  creditNotePhoto   InvoicePhoto? @relation("RequestCreditNote", fields: [creditNotePhotoId], references: [id], onDelete: SetNull)
+  closedAt          DateTime?
+  createdAt         DateTime  @default(now())
+  lines             SupplierRequestLine[]
+
+  @@index([status, kind])
+  @@index([supplierId])
+  @@index([goodsReceiptId])
+}
+
+model SupplierRequestLine {
+  id          String          @id @default(cuid())
+  requestId   String
+  request     SupplierRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  productName String
+  orderedQty  Float
+  receivedQty Float
+  unitPrice   Float?
+  amountDiff  Float?
+  /// NOT_ARRIVED | ARRIVED_LESS | ARRIVED_MORE
+  mark        String
+}
+
+/// One invoice assigned to one fixed/variable expense. source AUTO is replaced on re-match; MANUAL sticks.
+model InvoiceExpenseLink {
+  id              String        @id @default(cuid())
+  invoicePhotoId  String        @unique
+  invoicePhoto    InvoicePhoto  @relation(fields: [invoicePhotoId], references: [id], onDelete: Cascade)
+  recurringLineId String
+  recurringLine   RecurringLine @relation(fields: [recurringLineId], references: [id], onDelete: Cascade)
+  source          String        @default("AUTO")
+  createdAt       DateTime      @default(now())
+
+  @@index([recurringLineId])
 }

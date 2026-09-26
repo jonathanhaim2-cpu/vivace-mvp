@@ -1,32 +1,107 @@
 import { approveSupplierPayment, requestKarteset, toggleExpenseFlags } from "@/actions/ap";
+import { updateSupplierPaymentTerms } from "@/actions/suppliers";
 import { PageHeader } from "@/components/page-header";
 import { ReportExportButtons } from "@/components/report-export-buttons";
 import { Button } from "@/components/ui/button";
-import { CompactField, CompactPanel, FilterBar, NativeSelect } from "@/components/ui/compact-form";
+import { CompactField, CompactForm, CompactPanel, FilterBar, NativeSelect } from "@/components/ui/compact-form";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getNonProcurementChecklist, getSupplierApRows, payMethodLabel } from "@/lib/ap";
-import { PAYMENT_METHODS } from "@/lib/constants";
+import { PAYMENT_METHODS, PAYMENT_TERMS } from "@/lib/constants";
 import { expenseCategoryLabel, formatIls } from "@/lib/format";
 import { monthKeyFromDate, monthLabel, recentMonthKeys } from "@/lib/months";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function ApPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string }>;
+  searchParams: Promise<{ month?: string; supplier?: string }>;
 }) {
-  const { month: requested } = await searchParams;
+  const { month: requested, supplier: supplierId } = await searchParams;
   const month = requested && /^\d{4}-\d{2}$/.test(requested) ? requested : monthKeyFromDate();
-  const [rows, expenses] = await Promise.all([getSupplierApRows(month), getNonProcurementChecklist(month)]);
+  const [rows, expenses, suppliers, cards] = await Promise.all([
+    getSupplierApRows(month),
+    getNonProcurementChecklist(month),
+    prisma.supplier.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
+    prisma.paymentCard.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
+  ]);
+  const selected = suppliers.find((supplier) => supplier.id === supplierId) ?? null;
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="תשלומים לספקים"
         description={`כרטסת ל־${monthLabel(month)} נפרדת מחשבוניות. בקשת כרטסת נכנסת לתור. זיכוי מוריד את סכום הרכש.`}
-        action={{ href: "/expenses", label: "הוצאות קבועות" }}
+        action={{ href: "/expenses", label: "הוצאות קבועות / משתנות" }}
       />
+
+      <CompactPanel
+        title="תנאי תשלום לספק"
+        description="צ׳ק, העברה בנקאית או כרטיס אשראי, ואיזה כרטיס. יום החיוב של הכרטיס עצמו שייך לתזרים — לא במסך הזה."
+      >
+        <FilterBar submitLabel="בחירה">
+          <CompactField label="ספק" htmlFor="pay-supplier" grow>
+            <NativeSelect id="pay-supplier" name="supplier" defaultValue={selected?.id ?? ""}>
+              <option value="">בחירת ספק</option>
+              {suppliers.map((supplier) => (
+                <option key={supplier.id} value={supplier.id}>
+                  {supplier.name}
+                </option>
+              ))}
+            </NativeSelect>
+          </CompactField>
+          <input type="hidden" name="month" value={month} />
+        </FilterBar>
+        {selected ? (
+          <CompactForm action={updateSupplierPaymentTerms.bind(null, selected.id)} className="mt-3">
+            <CompactField label="אמצעי" htmlFor="paymentMethod">
+              <NativeSelect id="paymentMethod" name="paymentMethod" defaultValue={selected.paymentMethod ?? ""}>
+                <option value="">לא הוגדר</option>
+                {PAYMENT_METHODS.map((method) => (
+                  <option key={method.value} value={method.value}>
+                    {method.label}
+                  </option>
+                ))}
+              </NativeSelect>
+            </CompactField>
+            <CompactField label="כרטיס" htmlFor="paymentCardId">
+              <NativeSelect id="paymentCardId" name="paymentCardId" defaultValue={selected.paymentCardId ?? ""}>
+                <option value="">בלי כרטיס</option>
+                {cards.map((card) => (
+                  <option key={card.id} value={card.id}>
+                    {card.name} · {card.last4}
+                  </option>
+                ))}
+              </NativeSelect>
+            </CompactField>
+            <CompactField label="תנאי תשלום" htmlFor="paymentTerms">
+              <NativeSelect id="paymentTerms" name="paymentTerms" defaultValue={selected.paymentTerms ?? ""}>
+                <option value="">לא הוגדר</option>
+                {PAYMENT_TERMS.map((term) => (
+                  <option key={term.value} value={term.value}>
+                    {term.label}
+                  </option>
+                ))}
+              </NativeSelect>
+            </CompactField>
+            <CompactField label="יום בחודש" htmlFor="paymentChargeDay">
+              <input
+                id="paymentChargeDay"
+                name="paymentChargeDay"
+                type="number"
+                min={1}
+                max={28}
+                defaultValue={selected.paymentChargeDay ?? ""}
+                className="h-8 w-24 rounded-md border bg-background px-2 text-sm"
+              />
+            </CompactField>
+            <Button type="submit" size="sm">
+              שמירה
+            </Button>
+          </CompactForm>
+        ) : null}
+      </CompactPanel>
 
       <FilterBar submitLabel="הצגה">
         <CompactField label="חודש" htmlFor="ap-month">

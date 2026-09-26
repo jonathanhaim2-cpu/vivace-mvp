@@ -27,6 +27,8 @@ import { prisma } from "@/lib/prisma";
 import { requireBranchAccess, requirePermission } from "@/lib/access";
 import { markPhotoIfDuplicate } from "@/lib/invoice-duplicates";
 import { saveUpload } from "@/lib/uploads";
+import { formatDate } from "@/lib/format";
+import { buildSupplierRequests, renderRequestPreview } from "@/lib/supplier-requests";
 
 function pricesDiffer(a: number, b: number) {
   return Math.abs(a - b) > 0.009;
@@ -158,6 +160,54 @@ export async function submitGoodsReceipt(orderId: string, formData: FormData) {
     });
   }
 
+  const documentNumber = String(formData.get("documentNumber") ?? "").trim() || null;
+  const deliveryRaw = String(formData.get("deliveryDate") ?? "").trim();
+  const deliveryDate = /^\d{4}-\d{2}-\d{2}$/.test(deliveryRaw) ? new Date(`${deliveryRaw}T12:00:00.000Z`) : new Date();
+  const drafts = buildSupplierRequests(
+    lineInputs.map((line) => ({
+      productName: line.productName,
+      orderedQty: line.orderedQty,
+      receivedQty: line.receivedQty,
+      unitPrice: line.invoicePrice,
+      missing: line.missing,
+      mark: String(formData.get(`arrival:${line.orderLineId}`) ?? ""),
+    })),
+  );
+  for (const draft of drafts) {
+    const previewBody = renderRequestPreview({
+      kind: draft.kind,
+      supplierName: order.supplier.name,
+      documentNumber,
+      orderNumber: order.id,
+      deliveryDateLabel: formatDate(deliveryDate),
+      branchName: order.branch.name,
+      lines: draft.lines,
+    });
+    await prisma.supplierRequest.create({
+      data: {
+        kind: draft.kind,
+        status: "OPEN",
+        supplierId: order.supplierId,
+        branchId: order.branchId,
+        orderId,
+        goodsReceiptId: receipt.id,
+        documentNumber,
+        deliveryDate,
+        previewBody,
+        lines: {
+          create: draft.lines.map((line) => ({
+            productName: line.productName,
+            orderedQty: line.orderedQty,
+            receivedQty: line.receivedQty,
+            unitPrice: line.unitPrice,
+            amountDiff: line.amountDiff,
+            mark: line.mark,
+          })),
+        },
+      },
+    });
+  }
+
   await prisma.order.update({
     where: { id: orderId },
     data: { status: hasMissing ? ORDER_STATUSES.PARTIAL : ORDER_STATUSES.RECEIVED },
@@ -181,6 +231,8 @@ export async function submitGoodsReceipt(orderId: string, formData: FormData) {
 
   revalidatePath("/receipts");
   revalidatePath("/orders");
+  revalidatePath("/receiving");
+  revalidatePath("/credits");
   revalidatePath(`/orders/${orderId}`);
   revalidatePath("/");
   revalidatePath("/anomalies");
@@ -198,7 +250,7 @@ export async function submitGoodsReceipt(orderId: string, formData: FormData) {
   }
   revalidatePath("/invoices");
   revalidatePath("/settings");
-  redirect(`/receipts/${stored!.id}`);
+  redirect(drafts.length > 0 ? `/credits/preview/${receipt.id}` : `/receipts/${stored!.id}`);
 }
 
 export async function approvePriceChange(lineId: string) {

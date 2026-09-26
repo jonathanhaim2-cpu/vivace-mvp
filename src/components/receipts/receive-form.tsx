@@ -45,6 +45,7 @@ export function ReceiveForm({
     Object.fromEntries(lines.map((line) => [line.id, line.unitPrice])),
   );
   const [missing, setMissing] = useState<Record<string, boolean>>({});
+  const [arrival, setArrival] = useState<Record<string, string>>({});
   const [billedAs, setBilledAs] = useState<Record<string, string>>({});
   const [mismatchAction, setMismatchAction] = useState<Record<string, ActionChoice>>({});
   const [step, setStep] = useState<1 | 2>(1);
@@ -171,6 +172,31 @@ export function ReceiveForm({
                     }
                   />
                 </Field>
+                <CompactField label="פער בקליטה" htmlFor={`arrival:${line.id}`}>
+                  <NativeSelect
+                    id={`arrival:${line.id}`}
+                    name={`arrival:${line.id}`}
+                    value={arrival[line.id] ?? "OK"}
+                    onChange={(event) => {
+                      const mark = event.target.value;
+                      setArrival((current) => ({ ...current, [line.id]: mark }));
+                      if (mark === "NOT_ARRIVED") {
+                        setQty((current) => ({ ...current, [line.id]: 0 }));
+                        setMissing((current) => ({ ...current, [line.id]: true }));
+                      } else if (mark === "OK") {
+                        setQty((current) => ({ ...current, [line.id]: Math.round(line.qty) }));
+                        setMissing((current) => ({ ...current, [line.id]: false }));
+                      } else {
+                        setMissing((current) => ({ ...current, [line.id]: false }));
+                      }
+                    }}
+                  >
+                    <option value="OK">הגיע</option>
+                    <option value="NOT_ARRIVED">לא הגיע</option>
+                    <option value="ARRIVED_LESS">הגיע פחות</option>
+                    <option value="ARRIVED_MORE">הגיע יותר</option>
+                  </NativeSelect>
+                </CompactField>
                 <CompactField label="סטטוס הגעה" htmlFor={`missing:${line.id}`}>
                   <NativeSelect
                     id={`missing:${line.id}`}
@@ -277,6 +303,16 @@ export function ReceiveForm({
           <GroupedAccountSelect id="accountId" defaultValue={DEFAULT_EXPENSE_LEAF_ID} kinds={["EXPENSE"]} />
         </Field>
 
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field>
+            <FieldLabel htmlFor="documentNumber">מספר חשבונית / תעודת משלוח</FieldLabel>
+            <Input id="documentNumber" name="documentNumber" placeholder="למשל 44821" />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="deliveryDate">תאריך אספקה</FieldLabel>
+            <Input id="deliveryDate" name="deliveryDate" type="date" />
+          </Field>
+        </div>
         <Field>
           <FieldLabel htmlFor="notes">הערות קליטה</FieldLabel>
           <Textarea id="notes" name="notes" placeholder="למשל: ארגז אחד רטוב, חסר פריט" />

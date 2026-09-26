@@ -1,13 +1,8 @@
 import { CHART_OF_ACCOUNTS, isChartLeafId } from "@/lib/chart-of-accounts";
 import { INVOICE_IN_TOTALS_WHERE, scanExistingInvoiceDuplicates } from "@/lib/invoice-duplicates";
 import { includeInAccountantPackage, signedDocumentAmount } from "@/lib/money";
-import { monthRangeUtc } from "@/lib/months";
+import { invoiceInPnlPeriod, pnlMonthKey } from "@/lib/pnl-month";
 import { prisma } from "@/lib/prisma";
-
-function inMonth(month: string) {
-  const { start, end } = monthRangeUtc(month);
-  return { gte: start, lt: end };
-}
 
 export async function seedChartOfAccounts() {
   for (const [parentIndex, parent] of CHART_OF_ACCOUNTS.entries()) {
@@ -86,14 +81,7 @@ export type AccountRollupRow = {
 export async function getAccountRollup(month?: string): Promise<AccountRollupRow[]> {
   await scanExistingInvoiceDuplicates();
   const photos = await prisma.invoicePhoto.findMany({
-    where: {
-      ...INVOICE_IN_TOTALS_WHERE,
-      ...(month
-        ? {
-            OR: [{ periodMonth: month }, { periodMonth: null, createdAt: inMonth(month) }],
-          }
-        : {}),
-    },
+    where: INVOICE_IN_TOTALS_WHERE,
     include: {
       account: true,
       goodsReceipt: { include: { lines: true } },
@@ -103,6 +91,11 @@ export async function getAccountRollup(month?: string): Promise<AccountRollupRow
   const byLeaf = new Map<string, { documents: number; amount: number }>();
 
   for (const photo of photos) {
+    const belongs = invoiceInPnlPeriod(
+      pnlMonthKey({ invoiceDate: photo.aiInvoiceDate, createdAt: photo.createdAt }),
+      month,
+    );
+    if (!belongs) continue;
     if (!photo.accountId) continue;
     if (!includeInAccountantPackage(photo.documentType)) continue;
     const receiptAmount =
@@ -119,12 +112,12 @@ export async function getAccountRollup(month?: string): Promise<AccountRollupRow
       where: {
         accountId: { not: null },
         photos: { none: {} },
-        createdAt: inMonth(month),
       },
       include: { lines: true },
     });
     for (const receipt of receiptsWithoutPhotos) {
       if (!receipt.accountId) continue;
+      if (!invoiceInPnlPeriod(pnlMonthKey({ createdAt: receipt.createdAt }), month)) continue;
       const amount = receipt.lines.reduce((sum, line) => sum + line.receivedQty * line.invoicePrice, 0);
       const current = byLeaf.get(receipt.accountId) ?? { documents: 0, amount: 0 };
       current.documents += 1;

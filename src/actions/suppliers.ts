@@ -94,7 +94,16 @@ function readSupplierInput(formData: FormData) {
     plantsCouncilRelevant: formData
       .getAll("plantsCouncilRelevant")
       .some((value) => value === "on" || value === "true" || value === "1"),
+    isOrderable: String(formData.get("isOrderable") ?? "true") !== "false",
+    paymentCardId: String(formData.get("paymentCardId") ?? "").trim() || null,
   };
+}
+
+async function assertPaymentCard(paymentCardId: string | null) {
+  if (!paymentCardId) return null;
+  const card = await prisma.paymentCard.findUnique({ where: { id: paymentCardId } });
+  if (!card) throw new Error("כרטיס האשראי לא נמצא");
+  return card.id;
 }
 
 async function replaceBranches(supplierId: string, branchIds: string[], formData?: FormData) {
@@ -153,6 +162,7 @@ async function replaceBranches(supplierId: string, branchIds: string[], formData
 export async function createSupplier(formData: FormData) {
   const session = await requirePermission("action.edit_suppliers");
   const data = readSupplierInput(formData);
+  data.paymentCardId = await assertPaymentCard(data.paymentCardId);
   const supplier = await prisma.supplier.create({ data });
   await replaceBranches(supplier.id, readBranchIds(formData), formData);
   await ensurePriceLists(supplier.id);
@@ -170,6 +180,7 @@ export async function createSupplier(formData: FormData) {
 export async function updateSupplier(id: string, formData: FormData) {
   const session = await requirePermission("action.edit_suppliers");
   const data = readSupplierInput(formData);
+  data.paymentCardId = await assertPaymentCard(data.paymentCardId);
   await prisma.supplier.update({ where: { id }, data });
   await replaceBranches(id, readBranchIds(formData), formData);
   await ensurePriceLists(id);
@@ -183,6 +194,46 @@ export async function updateSupplier(id: string, formData: FormData) {
   revalidatePath("/suppliers");
   revalidatePath(`/suppliers/${id}`);
   redirect(`/suppliers/${id}`);
+}
+
+export async function updateAnnualPurchaseTarget(supplierId: string, formData: FormData) {
+  await requirePermission("action.edit_suppliers");
+  const raw = String(formData.get("annualPurchaseTargetIls") ?? "").trim();
+  const annualPurchaseTargetIls = raw ? Number(raw) : null;
+  if (annualPurchaseTargetIls != null && !Number.isFinite(annualPurchaseTargetIls)) {
+    throw new Error("יעד שנתי לא חוקי");
+  }
+  await prisma.supplier.update({
+    where: { id: supplierId },
+    data: { annualPurchaseTargetIls },
+  });
+  revalidatePath("/suppliers");
+}
+
+export async function updateSupplierPaymentTerms(supplierId: string, formData: FormData) {
+  await requirePermission("action.edit_suppliers");
+  const paymentTerms = String(formData.get("paymentTerms") ?? "").trim();
+  const paymentMethod = String(formData.get("paymentMethod") ?? "").trim();
+  const paymentCardId = String(formData.get("paymentCardId") ?? "").trim() || null;
+  if (paymentTerms && !PAYMENT_TERMS.some((term) => term.value === paymentTerms)) {
+    throw new Error("תנאי תשלום לא חוקיים");
+  }
+  if (paymentMethod && !PAYMENT_METHODS.some((method) => method.value === paymentMethod)) {
+    throw new Error("אמצעי תשלום לא חוקי");
+  }
+  await assertPaymentCard(paymentCardId);
+  const chargeDay = optionalInt(formData.get("paymentChargeDay"), 1, 28);
+  await prisma.supplier.update({
+    where: { id: supplierId },
+    data: {
+      paymentTerms: paymentTerms || null,
+      paymentMethod: paymentMethod || null,
+      paymentCardId,
+      paymentChargeDay: chargeDay,
+    },
+  });
+  revalidatePath("/ap");
+  revalidatePath(`/suppliers/${supplierId}`);
 }
 
 export async function deleteSupplier(id: string) {

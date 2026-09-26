@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AuditInfoButton } from "@/components/audit-info-button";
 import { EmptyState, PageHeader } from "@/components/page-header";
+import { ReceiptDocumentButton } from "@/components/orders/receipt-document-button";
 import { WhatsAppTicks } from "@/components/orders/whatsapp-ticks";
 import { OrderStatusBadge } from "@/components/status-badge";
 import { CompactField, FilterBar, NativeSelect } from "@/components/ui/compact-form";
@@ -12,6 +13,7 @@ import { formatDateTime, formatIls, lineTotal, orderStatusLabel } from "@/lib/fo
 import { monthLabel, monthRangeUtc, parseMonthParam, recentMonthKeys } from "@/lib/months";
 import { prisma } from "@/lib/prisma";
 import { getAppSession } from "@/lib/session";
+import { publicFileUrl } from "@/lib/uploads";
 
 export default async function OrdersPage({
   searchParams,
@@ -45,7 +47,7 @@ export default async function OrdersPage({
         supplier: true,
         branch: true,
         lines: true,
-        receipt: true,
+        receipt: { include: { photos: { orderBy: { createdAt: "asc" }, take: 1 } } },
       },
       orderBy: { createdAt: "desc" },
     }),
@@ -122,6 +124,45 @@ export default async function OrdersPage({
           action={{ href: "/orders/new", label: "התחלת הזמנה" }}
         />
       ) : (
+        <>
+        <ul className="space-y-3 lg:hidden">
+          {orders.map((order) => {
+            const total = order.lines.reduce(
+              (sum, line) => sum + lineTotal(line.qty, line.unitPrice, line.discountPercent),
+              0,
+            );
+            const photo = order.receipt?.photos[0];
+            return (
+              <li key={order.id} className="rounded-2xl border bg-card p-4 shadow-[var(--shadow-card)]">
+                <div className="flex items-start justify-between gap-2">
+                  <Link href={`/orders/${order.id}`} className="font-medium hover:underline">
+                    {order.supplier.name}
+                  </Link>
+                  {photo ? (
+                    <ReceiptDocumentButton
+                      supplierName={order.supplier.name}
+                      orderLabel={order.id.slice(-6)}
+                      fileUrl={publicFileUrl(photo.fileName)}
+                      originalName={photo.originalName}
+                      mimeType={photo.mimeType}
+                      supplierEmail={order.supplier.accountingEmail}
+                    />
+                  ) : (
+                    <span className="text-xs text-muted-foreground">{order.receipt ? "נקלטה" : "טרם נקלטה"}</span>
+                  )}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {order.branch.name} · {formatDateTime(order.createdAt)}
+                </p>
+                <div className="mt-2 flex items-center justify-between">
+                  <span>{formatIls(total)}</span>
+                  <OrderStatusBadge status={order.status} />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="hidden lg:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -163,13 +204,27 @@ export default async function OrdersPage({
                     <OrderStatusBadge status={order.status} />
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {order.receipt ? "נקלטה" : "טרם נקלטה"}
+                    <span className="inline-flex items-center gap-1">
+                      {order.receipt ? "נקלטה" : "טרם נקלטה"}
+                      {order.receipt?.photos[0] ? (
+                        <ReceiptDocumentButton
+                          supplierName={order.supplier.name}
+                          orderLabel={order.id.slice(-6)}
+                          fileUrl={publicFileUrl(order.receipt.photos[0].fileName)}
+                          originalName={order.receipt.photos[0].originalName}
+                          mimeType={order.receipt.photos[0].mimeType}
+                          supplierEmail={order.supplier.accountingEmail}
+                        />
+                      ) : null}
+                    </span>
                   </TableCell>
                 </TableRow>
               );
             })}
           </TableBody>
         </Table>
+        </div>
+        </>
       )}
     </div>
   );
