@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0 --port 43145",
     "predev": "npm run db:ready",
-    "db:ready": "sh -c 'test -f .env || cp .env.example .env; node scripts/prisma-cli.mjs generate && node scripts/prisma-cli.mjs db push && tsx prisma/seed.ts'",
+    "db:ready": "sh -c 'test -f .env || cp .env.example .env; node scripts/apply-sql-migrations.mjs && node scripts/prisma-cli.mjs generate && node scripts/prisma-cli.mjs db push && tsx prisma/seed.ts'",
     "db:reset": "node scripts/prisma-cli.mjs db push --force-reset && tsx prisma/seed.ts",
     "build": "node scripts/prisma-cli.mjs generate && next build",
     "test": "node --import tsx --test src/lib/*.test.ts",

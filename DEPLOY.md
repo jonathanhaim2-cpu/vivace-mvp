@@ -111,7 +111,7 @@ SMTP_PASSWORD=
 SMTP_FROM=orders@vivace-pizza.com
 ```
 
-Also add the additive SQL in `prisma/migrations/20260926183000_roy_feedback_round2/migration.sql` on Postgres (`prisma migrate deploy`) after the base schema already exists. `db push` applies the same columns on a fresh database. The migration only adds columns and tables.
+On Postgres, `db:ready` runs every `prisma/migrations/*/migration.sql` first (`prisma db execute --file … --schema prisma/schema.prisma`), then `prisma db push`. Those files are re-run on every boot, so they stay idempotent (`IF NOT EXISTS`, constraints ignored when they already exist). The round-2 file creates `Dish.systemKey`'s unique index itself, so `db push` does not try to add it and does not ask for `--accept-data-loss`. Do not pass that flag. `isOrderable` is filled in only when the column is first added. A fresh empty Postgres skips the SQL (the base tables are not there yet) and lets `db push` create the full schema. SQLite boots skip the SQL files.
 
 ### Fly.io
 
