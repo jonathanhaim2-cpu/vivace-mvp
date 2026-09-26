@@ -7,11 +7,14 @@ import {
 } from "@/lib/constants";
 import { monthKeyFromDate, resolvedPeriodMonth } from "@/lib/months";
 import { matchesInvoiceBranchFilter } from "@/lib/invoice-branch";
+import { isMissingInvoiceBranch } from "@/lib/invoice-list-status";
 
 export const INVOICE_STATUS_FILTERS = [
-  { value: "all", label: "הכול" },
-  { value: "classified", label: "משובצים" },
-  { value: "pending", label: "ממתינות לסיווג" },
+  { value: "all", label: "הכל" },
+  { value: "awaiting_approval", label: "ממתין לאישור" },
+  { value: "pending", label: "ממתין לסיווג" },
+  { value: "classified", label: "משובץ" },
+  { value: "missing_branch", label: "חסר סניף" },
 ] as const;
 
 export type InvoiceStatusFilter = (typeof INVOICE_STATUS_FILTERS)[number]["value"];
@@ -48,6 +51,8 @@ export type InvoiceFilterPhoto = {
   supplierName: string | null;
   branchId: string | null;
   documentType: string | null;
+  approvalStatus?: string | null;
+  aiNetworkExpense?: boolean | null;
 };
 
 const MONTH_RE = /^\d{4}-\d{2}$/;
@@ -66,8 +71,9 @@ export function parseInvoiceFilters(params: {
 }): InvoiceListFilters {
   const monthRaw = params.month?.trim() ?? "";
   const statusRaw = params.status?.trim() ?? "";
-  const status: InvoiceStatusFilter =
-    statusRaw === "classified" || statusRaw === "pending" || statusRaw === "all" ? statusRaw : "all";
+  const status: InvoiceStatusFilter = INVOICE_STATUS_FILTERS.some((item) => item.value === statusRaw)
+    ? (statusRaw as InvoiceStatusFilter)
+    : "all";
   const documentTypeRaw = params.documentType?.trim() ?? "";
   const documentType: InvoiceDocumentTypeFilter =
     documentTypeRaw === "all" || isPhotoDocumentType(documentTypeRaw) ? documentTypeRaw : "all";
@@ -177,9 +183,16 @@ function matchesSharedFilters(
   return matchesDateRange(photo, filters) && matchesSearch(photo, filters.q);
 }
 
+function matchesExtendedStatus(photo: InvoiceFilterPhoto, status: InvoiceStatusFilter) {
+  if (status === "awaiting_approval") return photo.approvalStatus === "PENDING";
+  if (status === "missing_branch") return isMissingInvoiceBranch(photo);
+  return true;
+}
+
 export function matchesClassifiedFilters(photo: InvoiceFilterPhoto, filters: InvoiceListFilters) {
   if (!photo.accountId) return false;
   if (filters.status === "pending") return false;
+  if (!matchesExtendedStatus(photo, filters.status)) return false;
   if (filters.category && photo.accountId !== filters.category) return false;
   return matchesSharedFilters(photo, filters);
 }
@@ -187,6 +200,7 @@ export function matchesClassifiedFilters(photo: InvoiceFilterPhoto, filters: Inv
 export function matchesPendingFilters(photo: InvoiceFilterPhoto, filters: InvoiceListFilters) {
   if (photo.accountId) return false;
   if (filters.status === "classified") return false;
+  if (!matchesExtendedStatus(photo, filters.status)) return false;
   if (filters.category) return false;
   // Month filter applies to classified docs only. Analyzing an older invoice must not
   // yank it out of «ממתינות לסיווג» just because AI filled a date in another month.
@@ -208,6 +222,23 @@ export function invoicesDupRedirect(returnTo: unknown, dupValue = "1") {
   } catch {
     return fallback;
   }
+}
+
+/** Sheet filters only. Month chips and the search field are outside the sheet. */
+export function activeInvoiceSheetFilterCount(filters: InvoiceListFilters) {
+  let count = 0;
+  if (filters.status !== "all") count += 1;
+  if (filters.supplier) count += 1;
+  if (filters.branch) count += 1;
+  if (filters.category) count += 1;
+  if (filters.documentType !== "all") count += 1;
+  if (filters.from) count += 1;
+  if (filters.to) count += 1;
+  return count;
+}
+
+export function matchesInvoiceList(photo: InvoiceFilterPhoto, filters: InvoiceListFilters) {
+  return photo.accountId ? matchesClassifiedFilters(photo, filters) : matchesPendingFilters(photo, filters);
 }
 
 export function invoicesFilterQuery(filters: Partial<InvoiceListFilters>) {

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
@@ -11,6 +12,7 @@ import {
   Landmark,
   LayoutGrid,
   LogOut,
+  Plus,
   Settings,
   ShoppingCart,
   Truck,
@@ -21,62 +23,27 @@ import { logout } from "@/actions/auth";
 import { BrandLogo } from "@/components/brand-logo";
 import { AppChat } from "@/components/chat/app-chat";
 import { CutoffReminderBanner } from "@/components/cutoff-reminder-banner";
+import { MobileChrome } from "@/components/mobile/mobile-chrome";
 import { SessionSwitcher } from "@/components/session-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { COMPANY } from "@/lib/constants";
-import { hasPermission, type AppRole, type PermissionKey } from "@/lib/roles";
+import { hasPermission, type AppRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
-import { REPORT_LINKS } from "@/components/reports/reports-nav";
 import { SendToSuppliersToggle } from "@/components/orders/send-to-suppliers-toggle";
+import { APP_NAV, navPathActive, visibleAppNav } from "@/lib/app-nav";
+import { MOBILE_NAV_ITEMS } from "@/lib/mobile-nav";
 import type { DueCutoffReminder } from "@/lib/reminders";
 import type { ChatPanelState } from "@/lib/chat-types";
 
-type NavChild = { href: string; label: string; permission: PermissionKey };
-type NavItem = { href: string; label: string; icon: typeof Home; permission: PermissionKey; children?: NavChild[] };
-
-const NAV: NavItem[] = [
-  { href: "/", label: "בית", icon: Home, permission: "nav.home" },
-  {
-    href: "/orders",
-    label: "רכש",
-    icon: ClipboardCheck,
-    permission: "nav.orders",
-    children: [
-      { href: "/orders", label: "הזמנות", permission: "nav.orders" },
-      { href: "/receiving", label: "קליטת סחורה", permission: "nav.receipts" },
-      { href: "/credits", label: "זיכויים פתוחים", permission: "nav.receipts" },
-    ],
-  },
-  { href: "/suppliers", label: "ספקים", icon: Truck, permission: "nav.suppliers" },
-  {
-    href: "/invoices",
-    label: "כספים",
-    icon: Landmark,
-    permission: "nav.invoices",
-    children: [
-      { href: "/invoices", label: "חשבוניות", permission: "nav.invoices" },
-      { href: "/ap", label: "תשלומים", permission: "nav.ap" },
-      { href: "/expenses", label: "הוצאות קבועות/משתנות", permission: "nav.ap" },
-    ],
-  },
-  { href: "/inventory", label: "מלאי", icon: Warehouse, permission: "nav.inventory" },
-  { href: "/foodcost", label: "פודקוסט", icon: UtensilsCrossed, permission: "nav.foodcost" },
-  {
-    href: "/reports",
-    label: "דוחות",
-    icon: BarChart3,
-    permission: "nav.reports",
-    children: REPORT_LINKS.map((link) => ({ ...link, permission: "nav.reports" as PermissionKey })),
-  },
-];
-
-function pathActive(href: string, pathname: string) {
-  if (href === "/") return pathname === "/";
-  if (href === "/reports") return pathname === "/reports";
-  if (href === "/orders") return pathname === "/orders" || pathname.startsWith("/orders/");
-  if (href === "/invoices") return pathname === "/invoices" || pathname.startsWith("/invoices/");
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
+const NAV_ICONS = {
+  home: Home,
+  purchasing: ClipboardCheck,
+  suppliers: Truck,
+  accounting: Landmark,
+  inventory: Warehouse,
+  foodcost: UtensilsCrossed,
+  reports: BarChart3,
+} as const;
 
 type Branch = { id: string; name: string };
 
@@ -92,6 +59,7 @@ export function AppShell({
   chatPanel,
   dueReminders = [],
   sendToSuppliers = false,
+  exceptionCount = 0,
 }: {
   children: React.ReactNode;
   appRole: AppRole | null;
@@ -104,25 +72,27 @@ export function AppShell({
   chatPanel: ChatPanelState;
   dueReminders?: DueCutoffReminder[];
   sendToSuppliers?: boolean;
+  exceptionCount?: number;
 }) {
   const pathname = usePathname();
+  const [chatOpen, setChatOpen] = useState(false);
 
   if (pathname === "/login") {
     return <>{children}</>;
   }
 
-  const items = NAV.flatMap((item) => {
-    const children = item.children?.filter((child) => hasPermission(permissions, child.permission));
-    const self = hasPermission(permissions, item.permission);
-    if (children && children.length > 0) return [{ ...item, children }];
-    if (self && !item.children) return [item];
-    if (self) return [{ ...item, children: undefined }];
-    return [];
-  });
+  const items = visibleAppNav(permissions);
   const canSettings = hasPermission(permissions, "nav.settings");
   const canActivity = hasPermission(permissions, "nav.activity");
+  const canUsers = hasPermission(permissions, "action.manage_users");
   const canToggleSend = hasPermission(permissions, "action.toggle_send_to_suppliers");
   const canChat = hasPermission(permissions, "nav.chat");
+  const allowNetwork = appRole === "admin" || appRole === "accounting";
+  const branchLabel = branchId
+    ? (branches.find((branch) => branch.id === branchId)?.name ?? "סניף")
+    : allowNetwork
+      ? "משרד רשת"
+      : (branches[0]?.name ?? "אין סניף");
 
   return (
     <div className="min-h-full bg-background">
@@ -138,16 +108,15 @@ export function AppShell({
             {COMPANY.nameHe} · ע.מ {COMPANY.taxId}
           </p>
         </div>
-        <nav className="flex flex-1 flex-col gap-1 p-3">
+        <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3">
           {items.map((item) => {
-            const childActive = item.children?.some((child) => pathActive(child.href, pathname)) ?? false;
-            const active = childActive || pathActive(item.href, pathname);
-            const showChildren = Boolean(item.children && (active || childActive));
-            const Icon = item.icon;
+            const childActive = item.children?.some((child) => navPathActive(child.href, pathname)) ?? false;
+            const active = childActive || navPathActive(item.href, pathname);
+            const Icon = NAV_ICONS[item.id as keyof typeof NAV_ICONS] ?? Home;
             return (
-              <div key={item.href}>
+              <div key={item.id}>
                 <Link
-                  href={item.children?.[0]?.href ?? item.href}
+                  href={item.href}
                   className={cn(
                     "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition-colors",
                     active
@@ -158,13 +127,13 @@ export function AppShell({
                   <Icon className="size-4 shrink-0" />
                   {item.label}
                 </Link>
-                {showChildren && item.children ? (
+                {item.children ? (
                   <div className="mt-1 ms-6 flex flex-col gap-0.5">
                     {item.children.map((sub) => {
-                      const subActive = pathActive(sub.href, pathname);
+                      const subActive = navPathActive(sub.href, pathname);
                       return (
                         <Link
-                          key={sub.href}
+                          key={`${item.id}-${sub.href}`}
                           href={sub.href}
                           className={cn(
                             "rounded-lg px-2 py-1 text-[11px]",
@@ -196,13 +165,25 @@ export function AppShell({
       </aside>
 
       <header className="sticky top-0 z-20 overflow-x-hidden border-b border-border bg-background/90 text-foreground backdrop-blur-md print:hidden lg:ms-64">
-        <div className="flex flex-wrap items-center gap-2 px-3 py-2">
-          <div className="min-w-0 max-w-[42%] lg:hidden">
-            <Link href="/" className="block min-w-0 max-w-full">
-              <BrandLogo variant="auto" compact />
-            </Link>
-          </div>
-          <div className="hidden text-sm text-muted-foreground lg:block">
+        <MobileChrome
+          userName={userName}
+          appRole={appRole}
+          branchId={branchId}
+          branchLabel={branchLabel}
+          branches={branches}
+          allowNetwork={allowNetwork}
+          exceptionCount={exceptionCount}
+          authEnabled={authEnabled}
+          canSettings={canSettings}
+          canActivity={canActivity}
+          canUsers={canUsers}
+          canToggleSend={canToggleSend}
+          canChat={canChat}
+          sendToSuppliers={sendToSuppliers}
+          onOpenChat={() => setChatOpen(true)}
+        />
+        <div className="hidden flex-wrap items-center gap-2 px-3 py-2 lg:flex">
+          <div className="text-sm text-muted-foreground">
             הזמנות לספק · רכש שהתקבל
           </div>
           <div className="ms-auto flex min-w-0 max-w-full flex-1 flex-wrap items-center justify-end gap-1">
@@ -212,7 +193,7 @@ export function AppShell({
                 name={userName}
                 branchId={branchId}
                 branches={branches}
-                allowNetwork={appRole === "admin" || appRole === "accounting"}
+                allowNetwork={allowNetwork}
               />
             ) : null}
             {canToggleSend ? <SendToSuppliersToggle enabled={sendToSuppliers} compact /> : null}
@@ -260,48 +241,55 @@ export function AppShell({
 
       <main className="lg:ms-64">
         <CutoffReminderBanner initial={dueReminders} />
-        <div className="w-full px-3 py-6 pb-28 lg:px-4 lg:pb-10">{children}</div>
+        <div className="w-full px-3 py-6 pb-[calc(7.75rem+env(safe-area-inset-bottom))] lg:px-4 lg:pb-10">{children}</div>
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 overflow-visible border-t border-border bg-background/95 pb-2 pt-2 backdrop-blur-md print:hidden lg:hidden">
-        <div className="relative grid h-14 grid-cols-5 items-center">
-          {(
-            [
-              { href: "/", label: "בית", icon: Home },
-              { href: "/orders", label: "הזמנות", icon: ShoppingCart },
-              null,
-              { href: "/invoices", label: "מסמכים", icon: FileText },
-              { href: "/menu", label: "תפריט", icon: LayoutGrid },
-            ] as const
-          ).map((item) => {
-            if (!item) {
+      <nav className="fixed inset-x-0 bottom-0 z-30 overflow-visible border-t border-border bg-background/95 px-1 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-6px_20px_rgb(42_31_28/0.05)] backdrop-blur-md print:hidden lg:hidden">
+        <div className="relative grid h-16 grid-cols-5 items-stretch">
+          {MOBILE_NAV_ITEMS.map((item) => {
+            if (item.id === "new-order") {
               if (!hasPermission(permissions, "nav.orders")) {
-                return <span key="new-order" />;
+                return <span key={item.id} />;
               }
               return (
                 <Link
-                  key="new-order"
-                  href="/orders/new"
-                  aria-label="הזמנה חדשה"
-                  className="absolute bottom-2 left-1/2 z-10 flex size-16 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg"
+                  key={item.id}
+                  href={item.href}
+                  aria-label={item.label}
+                  className="relative flex h-full flex-col items-center justify-end pb-1"
                 >
-                  <ShoppingCart className="size-7" />
+                  <span className="absolute bottom-7 left-1/2 z-10 flex size-16 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-background">
+                    <Plus className="size-7" strokeWidth={2.4} />
+                  </span>
+                  <span className="relative z-20 whitespace-nowrap text-[11px] font-semibold leading-4 text-primary">{item.label}</span>
                 </Link>
               );
             }
-            const active = pathActive(item.href, pathname);
-            const Icon = item.icon;
+            const active =
+              item.id === "orders"
+                ? (pathname === "/orders" || pathname.startsWith("/orders/")) && !pathname.startsWith("/orders/new")
+                : navPathActive(item.href, pathname);
+            const Icon =
+              item.id === "home" ? Home : item.id === "orders" ? ShoppingCart : item.id === "invoices" ? FileText : LayoutGrid;
             return (
               <Link
-                key={item.href}
+                key={item.id}
                 href={item.href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-w-0 flex-col items-center gap-1 px-1 py-2 text-[10px] transition-colors",
+                  "flex h-full min-w-0 flex-col items-center justify-end gap-0.5 px-1 pb-1 text-[11px] font-medium leading-4 transition-colors",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
               >
-                <Icon className="size-4" />
-                {item.label}
+                <span
+                  className={cn(
+                    "flex h-8 w-[3.25rem] items-center justify-center rounded-full",
+                    active && "bg-primary/15",
+                  )}
+                >
+                  <Icon className="size-5" />
+                </span>
+                <span className="leading-4">{item.label}</span>
               </Link>
             );
           })}
@@ -309,7 +297,7 @@ export function AppShell({
       </nav>
       {canChat ? (
         <div className="print:hidden">
-          <AppChat panel={chatPanel} aiAvailable={aiAvailable} />
+          <AppChat panel={chatPanel} aiAvailable={aiAvailable} open={chatOpen} onOpenChange={setChatOpen} />
         </div>
       ) : null}
     </div>

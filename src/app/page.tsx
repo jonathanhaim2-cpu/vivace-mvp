@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AlertTriangle, FileText, Package, ShoppingCart, Undo2 } from "lucide-react";
 import { saveDashboardSettings } from "@/actions/dashboard";
 import { ForecastInputForm } from "@/components/dashboard/forecast-form";
 import { NetworkBranchCompare } from "@/components/dashboard/network-branch-compare";
@@ -93,10 +94,12 @@ export default async function HomePage({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={title}
-        description={`${COMPANY.nameHe} · ${COMPANY.tagline} · ${monthLabel(month)}`}
-      />
+      <div className="hidden lg:block">
+        <PageHeader
+          title={title}
+          description={`${COMPANY.nameHe} · ${COMPANY.tagline} · ${monthLabel(month)}`}
+        />
+      </div>
       <div className="flex w-fit gap-1 rounded-full bg-muted p-1 text-sm">
         <Link
           href="/?view=ops"
@@ -113,24 +116,137 @@ export default async function HomePage({
       </div>
       <section className={opsClass}>
         <div>
-          <h2 className="text-2xl font-semibold">
+          <h1 className="text-2xl font-bold tracking-tight">
             {greeting}
-            {who}!
-          </h2>
-          <p className="text-sm text-muted-foreground">{title}</p>
+            {who}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {title} · {monthLabel(month)}
+          </p>
         </div>
-        <div className="grid gap-3">
-          <Link href="/orders" className="rounded-2xl border bg-card px-4 py-5 shadow-[var(--shadow-card)]">
-            <p className="text-2xl font-semibold tabular-nums">{executeToday}</p>
-            <p className="text-sm">הזמנות לביצוע היום</p>
+        <div className="grid grid-cols-2 gap-3">
+          <Link href="/orders" className="rounded-2xl border bg-card p-3.5 shadow-[var(--shadow-card)]">
+            <span className="mb-2 flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <ShoppingCart className="size-5" />
+            </span>
+            <p className="text-3xl font-bold tabular-nums leading-none">{executeToday}</p>
+            <p className="mt-2 text-sm font-semibold leading-snug">הזמנות לביצוע היום</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              {toOrder.find((item) => !item.done)
+                ? `הבאה: ${toOrder.find((item) => !item.done)?.name} · עד ${toOrder.find((item) => !item.done)?.cutoff}`
+                : "אין הזמנות פתוחות"}
+            </p>
           </Link>
-          <Link href="/receiving" className="rounded-2xl border bg-card px-4 py-5 shadow-[var(--shadow-card)]">
-            <p className="text-2xl font-semibold tabular-nums">{receiveToday}</p>
-            <p className="text-sm">הזמנות לקבלה היום</p>
+          <Link href="/receiving" className="rounded-2xl border bg-card p-3.5 shadow-[var(--shadow-card)]">
+            <span className="mb-2 flex size-9 items-center justify-center rounded-xl bg-brand-green/15 text-brand-green">
+              <Package className="size-5" />
+            </span>
+            <p className="text-3xl font-bold tabular-nums leading-none">{receiveToday}</p>
+            <p className="mt-2 text-sm font-semibold leading-snug">הזמנות לקליטה היום</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              {toReceive.filter((item) => item.done).length} כבר נקלטו
+            </p>
           </Link>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold">היום</h2>
+            <Link href="/orders" className="text-sm font-medium text-primary">
+              לוח משימות
+            </Link>
+          </div>
+          <ul className="overflow-hidden rounded-2xl border bg-card shadow-[var(--shadow-card)]">
+            {toReceive.length === 0 && toOrder.length === 0 ? (
+              <li className="px-4 py-3 text-sm text-muted-foreground">אין משימות להיום.</li>
+            ) : null}
+            {toReceive.slice(0, 4).map((item) => (
+              <li key={item.id} className="border-b border-border last:border-b-0">
+                <Link href={item.href} className="flex min-h-[60px] items-center gap-3 px-3 py-2">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold">{item.supplierName}</span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      קליטת סחורה{office ? ` · ${item.branchName}` : ""}
+                    </span>
+                  </span>
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                      item.done ? "bg-brand-green/15 text-brand-green" : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {item.done ? "נקלט" : "ממתין"}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
-      <section className="space-y-2">
+      <div id="exceptions" className="space-y-2">
+      <section className="space-y-2 lg:hidden">
+        <div className="flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-base font-bold">
+            חריגים
+            {openCredits.length + (pending.length > 0 ? 1 : 0) + invoiceAlerts.length > 0 ? (
+              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground">
+                {openCredits.length + (pending.length > 0 ? 1 : 0) + invoiceAlerts.length}
+              </span>
+            ) : null}
+          </h2>
+          <Link href="/anomalies" className="text-sm font-medium text-primary">
+            הכול
+          </Link>
+        </div>
+        {openCredits.length === 0 && invoiceAlerts.length === 0 && pending.length === 0 ? (
+          <p className="rounded-2xl border bg-card px-4 py-3 text-sm text-muted-foreground">אין חריגים פתוחים.</p>
+        ) : (
+          <ul className="overflow-hidden rounded-2xl border bg-card shadow-[var(--shadow-card)]">
+            {openCredits.map((credit) => (
+              <li key={credit.id} className="border-b border-border last:border-b-0">
+                <Link href="/credits" className="flex min-h-[60px] items-center gap-3 px-3 py-2">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+                    <Undo2 className="size-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold">בקשת זיכוי פתוחה</span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {credit.supplier.name}
+                      {office ? ` · ${credit.branch.name}` : ""}
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+            {pending.length > 0 ? (
+              <li className="border-b border-border last:border-b-0">
+                <Link href="/invoices?status=awaiting_approval&month=all" className="flex min-h-[60px] items-center gap-3 px-3 py-2">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
+                    <FileText className="size-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold">{pending.length} חשבוניות ממתינות לאישור</span>
+                    <span className="block truncate text-xs text-muted-foreground">הגיעו מהמייל · לא נכנסות לדוח</span>
+                  </span>
+                </Link>
+              </li>
+            ) : null}
+            {invoiceAlerts.map((alert) => (
+              <li key={alert.id} className="border-b border-border last:border-b-0">
+                <Link href={alert.href} className="flex min-h-[60px] items-center gap-3 px-3 py-2">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+                    <AlertTriangle className="size-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold">חסרה חשבונית</span>
+                    <span className="block truncate text-xs text-muted-foreground">{alert.message}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <section className="hidden space-y-2 lg:block">
         <h2 className="font-heading text-lg font-semibold">חריגים</h2>
         {openCredits.length === 0 && invoiceAlerts.length === 0 ? (
           <p className="rounded-2xl border bg-card px-4 py-3 text-sm text-muted-foreground">אין חריגים פתוחים.</p>
@@ -154,6 +270,7 @@ export default async function HomePage({
           </ul>
         )}
       </section>
+      </div>
       <div className={mgmtClass}>
 
       {session.branches.length === 0 ? (

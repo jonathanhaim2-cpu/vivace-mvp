@@ -23,12 +23,16 @@ export function InvoiceCaptureField({
   pending = false,
   onFile,
   compact = false,
+  idPrefix = "",
 }: {
   required?: boolean;
   pending?: boolean;
   onFile?: (file: File | null) => void;
   compact?: boolean;
+  idPrefix?: string;
 }) {
+  const cameraId = idPrefix ? `${idPrefix}-photo-camera` : "photo-camera";
+  const photoId = idPrefix ? `${idPrefix}-photo` : "photo";
   const photoRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -53,7 +57,7 @@ export function InvoiceCaptureField({
     <div className={cn("flex flex-wrap items-end gap-2", compact ? "" : "sm:items-center")}>
       <input
         ref={cameraRef}
-        id="photo-camera"
+        id={cameraId}
         type="file"
         accept="image/*"
         capture="environment"
@@ -69,12 +73,12 @@ export function InvoiceCaptureField({
         צלם חשבונית
       </Button>
       <div className="min-w-[12rem] flex-1">
-        <label htmlFor="photo" className="mb-1 block text-[11px] font-medium text-muted-foreground">
+        <label htmlFor={photoId} className="mb-1 block text-[11px] font-medium text-muted-foreground">
           בחר מהגלריה
         </label>
         <Input
           ref={photoRef}
-          id="photo"
+          id={photoId}
           name="photo"
           type="file"
           accept="image/*,application/pdf"
