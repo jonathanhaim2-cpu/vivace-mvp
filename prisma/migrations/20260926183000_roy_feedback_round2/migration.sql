@@ -1,15 +1,27 @@
 -- Roy feedback round 2. Additive only: new columns and tables. No deletes.
--- Apply on an existing Postgres database that already has the Vivace schema
--- (created previously via `prisma db push`).
+-- Boot re-runs this file on every Postgres start, so every statement must be a no-op
+-- the second time. Apply on a database that already has the Vivace base schema.
 
-ALTER TABLE "Supplier" ADD COLUMN IF NOT EXISTS "isOrderable" BOOLEAN NOT NULL DEFAULT false;
+-- Backfill isOrderable only when the column is created. A later boot must not turn
+-- a supplier back on after someone set ספק הזמנות off.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'Supplier'
+      AND column_name = 'isOrderable'
+  ) THEN
+    ALTER TABLE "Supplier" ADD COLUMN "isOrderable" BOOLEAN NOT NULL DEFAULT false;
+    UPDATE "Supplier" AS s
+    SET "isOrderable" = true
+    WHERE EXISTS (SELECT 1 FROM "Order" o WHERE o."supplierId" = s."id");
+  END IF;
+END $$;
+
 ALTER TABLE "Supplier" ADD COLUMN IF NOT EXISTS "annualPurchaseTargetIls" DOUBLE PRECISION;
 ALTER TABLE "Supplier" ADD COLUMN IF NOT EXISTS "paymentCardId" TEXT;
-
-UPDATE "Supplier" AS s
-SET "isOrderable" = true
-WHERE s."isOrderable" = false
-  AND EXISTS (SELECT 1 FROM "Order" o WHERE o."supplierId" = s."id");
 
 ALTER TABLE "Dish" ADD COLUMN IF NOT EXISTS "nodeKind" TEXT NOT NULL DEFAULT 'DISH';
 ALTER TABLE "Dish" ADD COLUMN IF NOT EXISTS "parentId" TEXT;
@@ -17,7 +29,6 @@ ALTER TABLE "Dish" ADD COLUMN IF NOT EXISTS "sortOrder" INTEGER NOT NULL DEFAULT
 ALTER TABLE "Dish" ADD COLUMN IF NOT EXISTS "systemKey" TEXT;
 
 CREATE UNIQUE INDEX IF NOT EXISTS "Dish_systemKey_key" ON "Dish"("systemKey");
-CREATE INDEX IF NOT EXISTS "Dish_parentId_idx" ON "Dish"("parentId");
 
 DO $$ BEGIN
   ALTER TABLE "Dish" ADD CONSTRAINT "Dish_parentId_fkey"
@@ -29,7 +40,6 @@ END $$;
 ALTER TABLE "RecurringLine" ADD COLUMN IF NOT EXISTS "supplierId" TEXT;
 ALTER TABLE "RecurringLine" ADD COLUMN IF NOT EXISTS "keywords" TEXT;
 ALTER TABLE "RecurringLine" ADD COLUMN IF NOT EXISTS "expectedInvoicesPerMonth" INTEGER;
-CREATE INDEX IF NOT EXISTS "RecurringLine_supplierId_idx" ON "RecurringLine"("supplierId");
 
 DO $$ BEGIN
   ALTER TABLE "RecurringLine" ADD CONSTRAINT "RecurringLine_supplierId_fkey"
