@@ -28,9 +28,13 @@ function threadLabel(thread: ChatPanelState["threads"][number]) {
 export function AppChat({
   panel,
   aiAvailable,
+  open,
+  onOpenChange,
 }: {
   panel: ChatPanelState;
   aiAvailable: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const pathname = usePathname();
   const [state, setState] = useState(panel);
@@ -77,9 +81,9 @@ export function AppChat({
   const currentThread = state.threads.find((thread) => thread.id === state.currentThreadId);
 
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetTrigger
-        className="fixed bottom-20 end-4 z-40 flex max-w-[calc(100vw-2rem)] cursor-pointer items-end gap-2 border-0 bg-transparent p-0 text-start text-foreground shadow-none outline-none focus-visible:ring-3 focus-visible:ring-ring/50 data-popup-open:invisible data-popup-open:pointer-events-none lg:bottom-6"
+        className="fixed bottom-20 end-4 z-40 hidden max-w-[calc(100vw-2rem)] cursor-pointer items-end gap-2 border-0 bg-transparent p-0 text-start text-foreground shadow-none outline-none focus-visible:ring-3 focus-visible:ring-ring/50 data-popup-open:invisible data-popup-open:pointer-events-none lg:bottom-6 lg:flex"
         title="עוזר Vivac'e"
       >
         <span className="hidden max-w-[11.5rem] rounded-2xl border border-primary/25 bg-primary/10 px-3 py-2 text-[11px] leading-snug shadow-sm sm:inline-block sm:max-w-[14rem] sm:text-xs">

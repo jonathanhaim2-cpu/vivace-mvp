@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { monthKeyFromDate } from "./months";
 import {
+  activeInvoiceSheetFilterCount,
   invoicesDupRedirect,
   invoicesFilterQuery,
   matchesClassifiedFilters,
@@ -174,6 +175,34 @@ test("invoicesFilterQuery omits default all-status and empty fields", () => {
   assert.equal(
     invoicesFilterQuery({ month: "2026-09", documentType: "CREDIT_NOTE" }),
     "/invoices?month=2026-09&documentType=CREDIT_NOTE",
+  );
+});
+
+test("new status filters keep classified and pending values and add approval and missing branch", () => {
+  assert.equal(parseInvoiceFilters({ status: "awaiting_approval" }).status, "awaiting_approval");
+  assert.equal(parseInvoiceFilters({ status: "missing_branch" }).status, "missing_branch");
+  assert.equal(parseInvoiceFilters({ status: "pending" }).status, "pending");
+  assert.equal(parseInvoiceFilters({ status: "classified" }).status, "classified");
+  assert.equal(parseInvoiceFilters({ status: "nope" }).status, "all");
+
+  const base = parseInvoiceFilters({ month: "2026-09", status: "all" });
+  const approved = photo({ approvalStatus: "APPROVED" });
+  const waiting = photo({ approvalStatus: "PENDING", accountId: "acc_food_produce" });
+  const waitingUnclassified = photo({ approvalStatus: "PENDING", accountId: null });
+  const missing = photo({ branchId: null, approvalStatus: "APPROVED" });
+  const network = photo({ branchId: null, approvalStatus: "APPROVED", aiNetworkExpense: true });
+
+  assert.equal(matchesClassifiedFilters(approved, { ...base, status: "awaiting_approval" }), false);
+  assert.equal(matchesClassifiedFilters(waiting, { ...base, status: "awaiting_approval" }), true);
+  assert.equal(matchesPendingFilters(waitingUnclassified, { ...base, status: "awaiting_approval" }), true);
+  assert.equal(matchesClassifiedFilters(missing, { ...base, status: "missing_branch" }), true);
+  assert.equal(matchesClassifiedFilters(network, { ...base, status: "missing_branch" }), false);
+  assert.equal(matchesClassifiedFilters(approved, { ...base, status: "classified" }), true);
+  assert.equal(matchesPendingFilters(photo({ accountId: null }), { ...base, status: "pending" }), true);
+  assert.equal(activeInvoiceSheetFilterCount(base), 0);
+  assert.equal(
+    activeInvoiceSheetFilterCount({ ...base, status: "missing_branch", supplier: "א", from: "2026-09-01" }),
+    3,
   );
 });
 

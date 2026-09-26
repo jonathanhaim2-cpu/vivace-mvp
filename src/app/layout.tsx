@@ -13,6 +13,7 @@ import { getAiRuntime } from "@/lib/ai";
 import { getChatPanel } from "@/actions/chat";
 import { getAppSession, sessionCan } from "@/lib/session";
 import { listDueCutoffReminders } from "@/lib/reminders";
+import { countShellExceptions } from "@/lib/shell-exceptions";
 import { getSendToSuppliersEnabled } from "@/lib/whatsapp-routing";
 import { requiredPermissionForPath } from "@/lib/roles";
 import "./globals.css";
@@ -43,7 +44,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     if (pathname !== "/forbidden") redirect("/forbidden");
   }
 
-  const [runtime, chatPanel, dueReminders, sendToSuppliers] = await Promise.all([
+  const [runtime, chatPanel, dueReminders, sendToSuppliers, exceptionCount] = await Promise.all([
     getAiRuntime(),
     sessionCan(session, "nav.chat")
       ? getChatPanel()
@@ -53,6 +54,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       isNetwork: session.isNetwork,
     }),
     getSendToSuppliersEnabled(),
+    pathname === "/login" ? Promise.resolve(0) : countShellExceptions(session.branchId),
   ]);
 
   return (
@@ -72,6 +74,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 chatPanel={chatPanel}
                 dueReminders={dueReminders}
                 sendToSuppliers={sendToSuppliers}
+                exceptionCount={exceptionCount}
               >
                 {children}
               </AppShell>
